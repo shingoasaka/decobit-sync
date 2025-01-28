@@ -3,6 +3,7 @@ name: Deploy to Fly.io
 on:
   push:
     branches: [main]
+  workflow_dispatch:  # 手動実行を可能にする
 
 jobs:
   deploy:
@@ -15,18 +16,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm install
 
-      - name: Build
+      - name: Build project
         run: npm run build
 
-      - name: Prepare deployment
+      - name: Prepare NestJS app
+        working-directory: apps/nestjs
         run: |
-          cd apps/nestjs
-          npm pkg set dependencies.$(npm pkg get name)@$(npm pkg get version)
-          npm install --package-lock-only
-          npm ci
+          node -e "const pkg=require('./package.json'); delete pkg.dependencies['@operate-ad/shared']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+          cp -r ../../packages/shared/dist ./node_modules/@operate-ad/shared
+          npm install --production
 
       - name: Setup Flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
