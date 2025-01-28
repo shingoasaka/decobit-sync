@@ -3,7 +3,7 @@ name: Deploy to Fly.io
 on:
   push:
     branches:
-      - main  # デプロイをトリガーするブランチ名
+      - main
 
 jobs:
   deploy:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'  # 使用するNode.jsのバージョン
+          node-version: '20'
 
       - name: Install dependencies
         run: |
@@ -26,12 +26,27 @@ jobs:
         run: |
           npm run build
 
+      - name: Prepare for deployment
+        working-directory: apps/nestjs
+        run: |
+          # 一時的なデプロイ用ディレクトリを作成
+          mkdir -p deploy
+          # 必要なファイルをコピー
+          cp -r dist package.json deploy/
+          cp -r ../../packages/shared/dist deploy/node_modules/@operate-ad/shared
+          # デプロイディレクトリに移動
+          cd deploy
+          # 一時的にpackage.jsonを修正（元のファイルは変更しない）
+          node -e "const pkg=require('./package.json'); pkg.dependencies['@operate-ad/shared']='1.0.0'; delete pkg.workspaces; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+          npm install --production --ignore-scripts
+
       - name: Install Fly CLI
         run: |
           curl -L https://fly.io/install.sh | sh
           sudo ln -s ~/.fly/bin/fly /usr/local/bin/fly
 
       - name: Deploy to Fly.io
+        working-directory: apps/nestjs/deploy
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
