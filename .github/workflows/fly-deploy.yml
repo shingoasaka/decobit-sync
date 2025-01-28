@@ -18,27 +18,29 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '9.12.3'
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
-        run: |
-          # ルートのpackage.jsonを一時的に修正
-          node -e "const pkg=require('./package.json'); if (pkg.dependencies) { Object.keys(pkg.dependencies).forEach(dep => { if (pkg.dependencies[dep] === 'workspace:*') pkg.dependencies[dep] = '*' }); require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2)) }"
-          npm install
-          # package.jsonを元に戻す
-          git checkout package.json
+        run: pnpm install
 
-      - name: Build the project
-        run: |
-          npm run build
-
-      - name: Prepare for deployment
-        working-directory: apps/nestjs
-        run: |
-          mkdir -p deploy/node_modules/@operate-ad
-          cp -r dist package.json deploy/
-          cp -r ../../packages/shared/dist deploy/node_modules/@operate-ad/shared
-          cd deploy
-          node -e "const pkg=require('./package.json'); pkg.dependencies['@operate-ad/shared']='1.0.0'; delete pkg.workspaces; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
-          npm install --production --ignore-scripts
+      - name: Build
+        run: pnpm build
 
       - name: Install Fly CLI
         run: |
@@ -46,9 +48,8 @@ jobs:
           sudo ln -s ~/.fly/bin/fly /usr/local/bin/fly
 
       - name: Deploy to Fly.io
-        working-directory: apps/nestjs/deploy
+        working-directory: apps/nestjs
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           fly deploy --remote-only --app operate-ad-nest
-
