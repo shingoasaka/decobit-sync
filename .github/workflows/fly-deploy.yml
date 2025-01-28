@@ -20,7 +20,11 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # ルートのpackage.jsonを一時的に修正
+          node -e "const pkg=require('./package.json'); Object.keys(pkg.dependencies).forEach(dep => { if (pkg.dependencies[dep] === 'workspace:*') pkg.dependencies[dep] = '*' }); require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
           npm install
+          # package.jsonを元に戻す
+          git checkout package.json
 
       - name: Build the project
         run: |
@@ -29,14 +33,10 @@ jobs:
       - name: Prepare for deployment
         working-directory: apps/nestjs
         run: |
-          # 一時的なデプロイ用ディレクトリを作成
-          mkdir -p deploy
-          # 必要なファイルをコピー
+          mkdir -p deploy/node_modules/@operate-ad
           cp -r dist package.json deploy/
           cp -r ../../packages/shared/dist deploy/node_modules/@operate-ad/shared
-          # デプロイディレクトリに移動
           cd deploy
-          # 一時的にpackage.jsonを修正（元のファイルは変更しない）
           node -e "const pkg=require('./package.json'); pkg.dependencies['@operate-ad/shared']='1.0.0'; delete pkg.workspaces; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
           npm install --production --ignore-scripts
 
