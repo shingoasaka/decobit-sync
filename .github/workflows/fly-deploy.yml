@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           # ルートのpackage.jsonを一時的に修正
-          node -e "const pkg=require('./package.json'); Object.keys(pkg.dependencies).forEach(dep => { if (pkg.dependencies[dep] === 'workspace:*') pkg.dependencies[dep] = '*' }); require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2))"
+          node -e "const pkg=require('./package.json'); if (pkg.dependencies) { Object.keys(pkg.dependencies).forEach(dep => { if (pkg.dependencies[dep] === 'workspace:*') pkg.dependencies[dep] = '*' }); require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2)) }"
           npm install
           # package.jsonを元に戻す
           git checkout package.json
@@ -51,3 +51,4 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           fly deploy --remote-only --app operate-ad-nest
+
