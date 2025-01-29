@@ -23,6 +23,9 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 
+# package.jsonをオーバーライド
+RUN echo '{"type":"commonjs"}' > ./package.json
+
 EXPOSE 3000
 
 CMD ["node", "dist/main.js"] 
