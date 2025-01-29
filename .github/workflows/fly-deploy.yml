@@ -52,4 +52,4 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          fly deploy --remote-only --app operate-ad-nest
+          fly deploy --remote-only --app operate-ad

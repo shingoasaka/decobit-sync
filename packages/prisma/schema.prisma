@@ -1,0 +1,105 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ActionLog {
+  id Int @id @default(autoincrement())
+  actionDateTime DateTime?
+  clickDateTime DateTime?
+  adminDateTime DateTime?
+  clientId Int?
+  clientName String?
+  contentId Int?
+  contentName String?
+  partnerId Int?
+  partnerName String?
+  groupId Int?
+  groupName String?
+  siteId Int?
+  siteName String?
+  actionCareer                 String?
+  actionOs                     String?
+  actionUserAgent              String?
+  actionIpAddress              String?
+  actionReferrer               String?
+  queryString                  String?
+  clickPartnerInfo             String?
+  clientInfo                   String?
+  sessionId                    String?
+  actionId                     String?
+  contentBannerNum             String?
+
+  // コスト系はDecimalを推奨（現状AFADは文字列で返すが後で変換）
+  clientClickCost   Decimal? @db.Decimal(10,2)
+  partnerClickCost  Decimal? @db.Decimal(10,2)
+  clientCommissionCost  Decimal? @db.Decimal(10,2)
+  partnerCommissionCost Decimal? @db.Decimal(10,2)
+  clientActionCost  Decimal? @db.Decimal(10,2)
+  partnerActionCost Decimal? @db.Decimal(10,2)
+
+  actionType        Int?
+  tierCommissionCost  Decimal? @db.Decimal(10,2)
+  status            String? 
+  amount            Int?
+  comment           String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ClickLog {
+  id                       Int      @id @default(autoincrement())
+  actionDateTime           String?
+  clickDateTime            String?
+  admitDateTime            String?
+  clientId                 String?
+  clientName               String?
+  contentId                String?
+  contentName              String?
+  partnerId                String?
+  partnerName              String?
+  groupId                  String?
+  groupName                String?
+  siteId                   String?
+  siteName                 String?
+
+  // デバイス/OS/環境
+  actionCareer             String?
+  actionOs                 String?
+  actionUserAgent          String?
+  actionIpAddress          String?
+  actionReferrer           String?
+  queryString              String?
+
+  // その他ログ情報
+  clickPartnerInfo         String?
+  clientInfo               String?
+  sessionId                String?
+  actionId                 String?
+  contentBannerNum         String?
+
+  clientClickCost          String?
+  partnerClickCost         String?
+  clientCommissionCost     String?
+  partnerCommissionCost    String?
+  clientActionCost         String?
+  partnerActionCost        String?
+  actionType               String?
+  status                   String?
+  amount                   String?
+  comment                  String?
+
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+}
