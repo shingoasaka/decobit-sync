@@ -4,14 +4,13 @@ import onlyWarn from "eslint-plugin-only-warn"
 import turboPlugin from "eslint-plugin-turbo"
 import tseslint from "typescript-eslint"
 
-/**
- * A shared ESLint configuration for the repository.
- *
- * @type {import("eslint").Linter.Config}
- * */
+/** @type {import("eslint").Linter.FlatConfig[]} */
 export const config = [
   js.configs.recommended,
-  eslintConfigPrettier,
+  {
+    files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
+    ...eslintConfigPrettier,
+  },
   ...tseslint.configs.recommended,
   {
     plugins: {
@@ -23,10 +22,10 @@ export const config = [
   },
   {
     plugins: {
-      onlyWarn,
+      "only-warn": onlyWarn,
     },
   },
   {
-    ignores: ["dist/**"],
+    ignores: ["**/dist/**"],
   },
 ]

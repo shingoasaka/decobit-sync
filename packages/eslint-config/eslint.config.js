@@ -1,4 +1,4 @@
-import { config } from "@workspace/eslint-config/react-internal"
+import { config } from "./base.js"
 
 /** @type {import("eslint").Linter.FlatConfig[]} */
 export default [
@@ -11,4 +11,4 @@ export default [
       }
     }
   }
-]
+] 
