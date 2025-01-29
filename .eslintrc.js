@@ -1,10 +1,15 @@
-// This configuration only applies to the package manager root.
-/** @type {import("eslint").Linter.Config} */
-module.exports = {
-  ignorePatterns: ["apps/**", "packages/**"],
-  extends: ["@workspace/eslint-config/library.js"],
-  parser: "@typescript-eslint/parser",
-  parserOptions: {
-    project: true,
+/** @type {import("eslint").Linter.FlatConfig[]} */
+export default [
+  {
+    ignores: ["apps/**", "packages/**"],
   },
-}
+  {
+    extends: ["@workspace/eslint-config/library.js"],
+    languageOptions: {
+      parser: "@typescript-eslint/parser",
+      parserOptions: {
+        project: true,
+      },
+    },
+  },
+]

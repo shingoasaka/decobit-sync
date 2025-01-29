@@ -8,42 +8,32 @@ import tseslint from "typescript-eslint"
 
 import { config as baseConfig } from "./base.js"
 
-/**
- * A custom ESLint configuration for libraries that use Next.js.
- *
- * @type {import("eslint").Linter.Config}
- * */
+/** @type {import("eslint").Linter.FlatConfig[]} */
 export const nextJsConfig = [
   ...baseConfig,
   js.configs.recommended,
-  eslintConfigPrettier,
+  {
+    files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
+    ...eslintConfigPrettier,
+  },
   ...tseslint.configs.recommended,
   {
+    files: ["**/*.{jsx,tsx}"],
     ...pluginReact.configs.flat.recommended,
     languageOptions: {
-      ...pluginReact.configs.flat.recommended.languageOptions,
       globals: {
         ...globals.serviceworker,
       },
     },
   },
   {
-    plugins: {
-      "@next/next": pluginNext,
-    },
-    rules: {
-      ...pluginNext.configs.recommended.rules,
-      ...pluginNext.configs["core-web-vitals"].rules,
-    },
-  },
-  {
+    files: ["**/*.{jsx,tsx}"],
     plugins: {
       "react-hooks": pluginReactHooks,
     },
     settings: { react: { version: "detect" } },
     rules: {
       ...pluginReactHooks.configs.recommended.rules,
-      // React scope no longer necessary with new JSX transform.
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
     },
