@@ -1,17 +1,18 @@
 {
   "name": "@operate-ad/prisma",
   "version": "0.0.1",
-  "main": "./generated/index.js",
-  "types": "./generated/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "generate": "prisma generate",
-    "migrate:dev": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy"
+    "build": "tsc",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0"
+    "@prisma/client": "^6.3.0"
   },
   "devDependencies": {
-    "prisma": "^5.22.0"
+    "prisma": "^6.3.0",
+    "typescript": "^5.0.0"
   }
 }
