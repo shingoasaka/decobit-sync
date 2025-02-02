@@ -1,5 +1,3 @@
-// eslint.config.js (Monorepo ルート)
-
 import { config as baseConfig } from './packages/eslint-config/base.js'
 
 /**

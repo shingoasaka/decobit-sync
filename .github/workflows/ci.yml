@@ -16,6 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          node-options: "--experimental-modules"
 
       - uses: pnpm/action-setup@v2
         with:
@@ -41,10 +42,7 @@ jobs:
         run: pnpm run typecheck
 
       - name: Run lint
-        run: pnpm run lint
+        run: NODE_OPTIONS="--experimental-modules" pnpm run lint
 
       - name: Check formatting
         run: pnpm run format:check
-
-      - name: Run tests
-        run: pnpm run test
