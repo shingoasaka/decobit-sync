@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { ActionLogsService } from './action-logs.service';
+import { Injectable, Logger } from "@nestjs/common";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import { ActionLogsService } from "./action-logs.service";
 
 @Injectable()
 export class ActionLogsCronService {
@@ -13,7 +13,7 @@ export class ActionLogsCronService {
       const count = await this.actionLogsService.fetchAndInsertLogs();
       this.logger.log(`Synced ${count} action logs`);
     } catch (error) {
-      this.logger.error('Failed to sync action logs:', error);
+      this.logger.error("Failed to sync action logs:", error);
     }
   }
 }
