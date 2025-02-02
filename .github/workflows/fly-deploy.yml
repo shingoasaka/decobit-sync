@@ -44,7 +44,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm build --filter operate-ad
+        run: pnpm build
 
       - name: Install Fly CLI
         run: |
