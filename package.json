@@ -1,5 +1,5 @@
 {
-  "name": "shadcn-ui-monorepo",
+  "name": "operate-ad",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -8,7 +8,8 @@
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md}\"",
-    "lint:fix": "turbo lint -- --fix"
+    "lint:fix": "turbo lint -- --fix",
+    "typecheck": "pnpm -r run typecheck"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.22.0",
@@ -28,6 +29,5 @@
   "packageManager": "pnpm@9.12.3",
   "engines": {
     "node": ">=20"
-  },
-  "type": "module"
+  }
 }

@@ -19,7 +19,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: '9.12.3'
 
       - name: Get pnpm store directory
         shell: bash
@@ -35,10 +35,16 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm run typecheck
 
       - name: Run lint
         run: pnpm run lint
 
       - name: Check formatting
         run: pnpm run format:check
+
+      - name: Run tests
+        run: pnpm run test

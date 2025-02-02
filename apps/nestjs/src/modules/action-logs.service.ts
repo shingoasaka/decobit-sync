@@ -3,6 +3,42 @@ import { HttpService } from '@nestjs/axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { firstValueFrom } from 'rxjs';
 
+interface ActionLogItem {
+  actionDateTime: Date;
+  clickDateTime: Date;
+  clientId: number;
+  clientName: string;
+  contentId: number;
+  contentName: string;
+  partnerId: number;
+  partnerName: string;
+  groupId: number;
+  groupName: string;
+  siteId: number;
+  siteName: string;
+  actionCareer: string;
+  actionOs: string;
+  actionUserAgent: string;
+  actionIpAddress: string;
+  actionReferrer: string;
+  queryString: string;
+  clickPartnerInfo: string;
+  clientInfo: string;
+  sessionId: string;
+  actionId: string;
+  contentBannerNum: string;
+  clientClickCost: number;
+  partnerClickCost: number;
+  clientCommissionCost: number;
+  partnerCommissionCost: number;
+  clientActionCost: number;
+  partnerActionCost: number;
+  actionType: number;
+  status: string;
+  amount: number;
+  comment: string;
+}
+
 @Injectable()
 export class ActionLogsService {
   constructor(
@@ -17,7 +53,7 @@ export class ActionLogsService {
 
       // バルクインサート
       await this.prisma.actionLog.createMany({
-        data: logs.map((item) => ({
+        data: logs.map((item: ActionLogItem) => ({
           actionDateTime: item.actionDateTime,
           clickDateTime: item.clickDateTime,
           clientId: item.clientId,
