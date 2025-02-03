@@ -1,6 +1,7 @@
 # ---- Stage 1: builder ----
     FROM node:20-slim AS builder
-    RUN apt-get update -y && apt-get install -y openssl git && corepack enable
+    RUN apt-get update -y && apt-get install -y openssl git && \
+        npm install -g pnpm@9.12.3
     WORKDIR /app
     
     # 依存関係をインストールするために必要なファイルをコピー
@@ -24,7 +25,8 @@
     
     # 本番用の軽量コンテナを作成
     FROM node:20-slim
-    RUN apt-get update -y && apt-get install -y openssl
+    RUN apt-get update -y && apt-get install -y openssl && \
+        npm install -g pnpm@9.12.3
     WORKDIR /app
     
     # build ステージから必要なファイルをコピー
@@ -40,8 +42,7 @@
     COPY --from=builder /app/node_modules/.pnpm/@prisma+client@6.3.0_prisma@6.3.0_typescript@5.7.3__typescript@5.7.3/node_modules/.prisma ./node_modules/.pnpm/@prisma+client@6.3.0_prisma@6.3.0_typescript@5.7.3__typescript@5.7.3/node_modules/.prisma
     
     # 本番用依存関係だけをインストール (workspaceリンクは残す)
-    RUN corepack enable && \
-        pnpm install --frozen-lockfile --prod --ignore-scripts && \
+    RUN pnpm install --frozen-lockfile --prod --ignore-scripts && \
         pnpm rebuild
     
     # 環境変数の設定
