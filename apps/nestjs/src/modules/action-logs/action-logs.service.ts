@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "../../prisma/prisma.service";
 import { firstValueFrom } from "rxjs";
-import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class ActionLogsService {
@@ -12,7 +11,6 @@ export class ActionLogsService {
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
-    // 1分前～現在の日時を日本語形式に変換し、APIへ送信
     const start = new Date(Date.now() - 60_000);
     const end = new Date();
     const startStr = formatDateTimeJapanese(start);
@@ -24,7 +22,6 @@ export class ActionLogsService {
       actionDateTime: `${startStr} - ${endStr}`,
     });
 
-    // API呼び出し
     const resp = await firstValueFrom(this.http.post(url, body, { headers }));
     const data = resp.data;
     const logs = data?.params?.logs || [];
@@ -69,22 +66,27 @@ export class ActionLogsService {
           contentBannerNum: item.contentBannerNum,
 
           clientClickCost: item.clientClickCost
-            ? new Prisma.Decimal(parseFloat(item.clientClickCost))
+            ? parseInt(item.clientClickCost, 10)
             : null,
+
           partnerClickCost: item.partnerClickCost
-            ? new Prisma.Decimal(parseFloat(item.partnerClickCost))
+            ? parseInt(item.partnerClickCost, 10)
             : null,
+
           clientCommissionCost: item.clientCommissionCost
-            ? new Prisma.Decimal(parseFloat(item.clientCommissionCost))
+            ? parseInt(item.clientCommissionCost, 10)
             : null,
+
           partnerCommissionCost: item.partnerCommissionCost
-            ? new Prisma.Decimal(parseFloat(item.partnerCommissionCost))
+            ? parseInt(item.partnerCommissionCost, 10)
             : null,
+
           clientActionCost: item.clientActionCost
-            ? new Prisma.Decimal(parseFloat(item.clientActionCost))
+            ? parseInt(item.clientActionCost, 10)
             : null,
+
           partnerActionCost: item.partnerActionCost
-            ? new Prisma.Decimal(parseFloat(item.partnerActionCost))
+            ? parseInt(item.partnerActionCost, 10)
             : null,
 
           actionType: item.actionType ? parseInt(item.actionType, 10) : null,
