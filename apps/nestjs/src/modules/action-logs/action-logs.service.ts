@@ -93,7 +93,6 @@ export class ActionLogsService {
 
       return logs.length;
     } catch (error) {
-      console.error("Failed to fetch or insert logs:", error);
       throw error;
     }
   }

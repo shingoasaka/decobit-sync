@@ -22,15 +22,8 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: '9.12.3'
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Install pnpm globally
+        run: npm install -g pnpm@9.12.3
 
       - name: Setup pnpm cache
         uses: actions/cache@v3
