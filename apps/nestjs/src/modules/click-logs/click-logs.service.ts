@@ -1,61 +1,38 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { PrismaService } from "../prisma/prisma.service";
+import { PrismaService } from "../../prisma/prisma.service";
 import { firstValueFrom } from "rxjs";
 
-interface ActionLogItem {
-  actionDateTime: Date;
-  clickDateTime: Date;
-  clientId: number;
-  clientName: string;
-  contentId: number;
-  contentName: string;
-  partnerId: number;
-  partnerName: string;
-  groupId: number;
-  groupName: string;
-  siteId: number;
-  siteName: string;
-  actionCareer: string;
-  actionOs: string;
-  actionUserAgent: string;
-  actionIpAddress: string;
-  actionReferrer: string;
-  queryString: string;
-  clickPartnerInfo: string;
-  clientInfo: string;
-  sessionId: string;
-  actionId: string;
-  contentBannerNum: string;
-  clientClickCost: number;
-  partnerClickCost: number;
-  clientCommissionCost: number;
-  partnerCommissionCost: number;
-  clientActionCost: number;
-  partnerActionCost: number;
-  actionType: number;
-  status: string;
-  amount: number;
-  comment: string;
-}
-
 @Injectable()
-export class ActionLogsService {
+export class ClickLogsService {
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
-    try {
-      const logs = await this.fetchLogs();
-      if (!logs.length) return 0;
+    const url = "https://api09.catsasp.net/log/click/listspan";
+    const headers = { apiKey: process.env.AFAD_API_KEY };
+    const start = new Date(Date.now() - 60_000);
+    const end = new Date();
+    const startStr = formatDateTime(start);
+    const endStr = formatDateTime(end);
+    const body = {
+      clickDateTime: `${startStr} - ${endStr}`,
+    };
 
-      // バルクインサート
-      await this.prisma.actionLog.createMany({
-        data: logs.map((item: ActionLogItem) => ({
+    const response$ = this.http.post(url, new URLSearchParams(body), {
+      headers,
+    });
+    const resp = await firstValueFrom(response$);
+    const data = resp.data;
+    const logs = data?.params?.logs || [];
+    for (const item of logs) {
+      await this.prisma.clickLog.create({
+        data: {
           actionDateTime: item.actionDateTime,
           clickDateTime: item.clickDateTime,
+          admitDateTime: item.admitDateTime,
           clientId: item.clientId,
           clientName: item.clientName,
           contentId: item.contentId,
@@ -87,37 +64,10 @@ export class ActionLogsService {
           status: item.status,
           amount: item.amount,
           comment: item.comment,
-        })),
-        skipDuplicates: true, // 重複をスキップ
+        },
       });
-
-      return logs.length;
-    } catch (error) {
-      console.error("Failed to fetch or insert logs:", error);
-      throw error;
     }
-  }
-
-  private async fetchLogs() {
-    const url = "https://api09.catsasp.net/log/action/listtime";
-    const headers = { apiKey: process.env.AFAD_API_KEY };
-    const { startStr, endStr } = this.getTimeRange();
-
-    const body = new URLSearchParams({
-      actionDateTime: `${startStr} - ${endStr}`,
-    });
-
-    const resp = await firstValueFrom(this.http.post(url, body, { headers }));
-    return resp.data?.params?.logs || [];
-  }
-
-  private getTimeRange() {
-    const now = new Date();
-    const oneMinuteAgo = new Date(now.getTime() - 60_000);
-    return {
-      startStr: formatDateTime(oneMinuteAgo),
-      endStr: formatDateTime(now),
-    };
+    return logs.length;
   }
 }
 
