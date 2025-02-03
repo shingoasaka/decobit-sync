@@ -47,57 +47,56 @@ export class ActionLogsService {
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
-    try {
-      const logs = await this.fetchLogs();
-      if (!logs.length) return 0;
-
-      // バルクインサート
-      await this.prisma.actionLog.createMany({
-        data: logs.map((item: ActionLogItem) => ({
-          actionDateTime: item.actionDateTime,
-          clickDateTime: item.clickDateTime,
-          clientId: item.clientId,
-          clientName: item.clientName,
-          contentId: item.contentId,
-          contentName: item.contentName,
-          partnerId: item.partnerId,
-          partnerName: item.partnerName,
-          groupId: item.groupId,
-          groupName: item.groupName,
-          siteId: item.siteId,
-          siteName: item.siteName,
-          actionCareer: item.actionCareer,
-          actionOs: item.actionOs,
-          actionUserAgent: item.actionUserAgent,
-          actionIpAddress: item.actionIpAddress,
-          actionReferrer: item.actionReferrer,
-          queryString: item.queryString,
-          clickPartnerInfo: item.clickPartnerInfo,
-          clientInfo: item.clientInfo,
-          sessionId: item.sessionId,
-          actionId: item.actionId,
-          contentBannerNum: item.contentBannerNum,
-          clientClickCost: item.clientClickCost,
-          partnerClickCost: item.partnerClickCost,
-          clientCommissionCost: item.clientCommissionCost,
-          partnerCommissionCost: item.partnerCommissionCost,
-          clientActionCost: item.clientActionCost,
-          partnerActionCost: item.partnerActionCost,
-          actionType: item.actionType,
-          status: item.status,
-          amount: item.amount,
-          comment: item.comment,
-        })),
-        skipDuplicates: true, // 重複をスキップ
-      });
-
-      return logs.length;
-    } catch (error) {
-      throw error;
+    // ログを取得
+    const logs = await this.fetchLogs();
+    if (!logs.length) {
+      return 0;
     }
+
+    // バルクインサート (重複はスキップ)
+    await this.prisma.actionLog.createMany({
+      data: logs.map((item: ActionLogItem) => ({
+        actionDateTime: item.actionDateTime,
+        clickDateTime: item.clickDateTime,
+        clientId: item.clientId,
+        clientName: item.clientName,
+        contentId: item.contentId,
+        contentName: item.contentName,
+        partnerId: item.partnerId,
+        partnerName: item.partnerName,
+        groupId: item.groupId,
+        groupName: item.groupName,
+        siteId: item.siteId,
+        siteName: item.siteName,
+        actionCareer: item.actionCareer,
+        actionOs: item.actionOs,
+        actionUserAgent: item.actionUserAgent,
+        actionIpAddress: item.actionIpAddress,
+        actionReferrer: item.actionReferrer,
+        queryString: item.queryString,
+        clickPartnerInfo: item.clickPartnerInfo,
+        clientInfo: item.clientInfo,
+        sessionId: item.sessionId,
+        actionId: item.actionId,
+        contentBannerNum: item.contentBannerNum,
+        clientClickCost: item.clientClickCost,
+        partnerClickCost: item.partnerClickCost,
+        clientCommissionCost: item.clientCommissionCost,
+        partnerCommissionCost: item.partnerCommissionCost,
+        clientActionCost: item.clientActionCost,
+        partnerActionCost: item.partnerActionCost,
+        actionType: item.actionType,
+        status: item.status,
+        amount: item.amount,
+        comment: item.comment,
+      })),
+      skipDuplicates: true,
+    });
+
+    return logs.length;
   }
 
-  private async fetchLogs() {
+  private async fetchLogs(): Promise<ActionLogItem[]> {
     const url = "https://api09.catsasp.net/log/action/listtime";
     const headers = { apiKey: process.env.AFAD_API_KEY };
     const { startStr, endStr } = this.getTimeRange();
@@ -106,10 +105,13 @@ export class ActionLogsService {
       actionDateTime: `${startStr} - ${endStr}`,
     });
 
+    // HttpService は Observable を返すため、firstValueFrom で Promise に変換
     const resp = await firstValueFrom(this.http.post(url, body, { headers }));
+
     return resp.data?.params?.logs || [];
   }
 
+  //  直近 1 分間 (now - 1分 ~ now) の時間範囲を計算
   private getTimeRange() {
     const now = new Date();
     const oneMinuteAgo = new Date(now.getTime() - 60_000);
@@ -119,6 +121,8 @@ export class ActionLogsService {
     };
   }
 }
+
+// 日時を "YYYY-MM-DD HH:mm" の形式に変換
 
 function formatDateTime(d: Date): string {
   const yyyy = d.getFullYear();
