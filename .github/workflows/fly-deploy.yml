@@ -46,11 +46,11 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Install Fly CLI
+      - name: Setup Flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy to Fly.io
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          fly deploy --app operate-ad --config apps/nestjs/fly.toml
+          flyctl deploy --app operate-ad --config apps/nestjs/fly.toml
