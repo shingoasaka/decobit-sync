@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "../../prisma/prisma.service";
 import { firstValueFrom } from "rxjs";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class ClickLogsService {
@@ -13,57 +14,83 @@ export class ClickLogsService {
   async fetchAndInsertLogs(): Promise<number> {
     const url = "https://api09.catsasp.net/log/click/listspan";
     const headers = { apiKey: process.env.AFAD_API_KEY };
+
     const start = new Date(Date.now() - 60_000);
     const end = new Date();
     const startStr = formatDateTime(start);
     const endStr = formatDateTime(end);
-    const body = {
-      clickDateTime: `${startStr} - ${endStr}`,
-    };
 
-    const response$ = this.http.post(url, new URLSearchParams(body), {
-      headers,
+    const body = new URLSearchParams({
+      clickDateTime: `${startStr} - ${endStr}`,
     });
-    const resp = await firstValueFrom(response$);
+
+    const resp = await firstValueFrom(this.http.post(url, body, { headers }));
     const data = resp.data;
     const logs = data?.params?.logs || [];
+
+    if (logs.length === 0) {
+      return 0;
+    }
+
     for (const item of logs) {
       await this.prisma.clickLog.create({
         data: {
-          actionDateTime: item.actionDateTime,
-          clickDateTime: item.clickDateTime,
-          admitDateTime: item.admitDateTime,
-          clientId: item.clientId,
-          clientName: item.clientName,
-          contentId: item.contentId,
-          contentName: item.contentName,
-          partnerId: item.partnerId,
-          partnerName: item.partnerName,
-          groupId: item.groupId,
-          groupName: item.groupName,
-          siteId: item.siteId,
-          siteName: item.siteName,
-          actionCareer: item.actionCareer,
-          actionOs: item.actionOs,
-          actionUserAgent: item.actionUserAgent,
-          actionIpAddress: item.actionIpAddress,
-          actionReferrer: item.actionReferrer,
-          queryString: item.queryString,
-          clickPartnerInfo: item.clickPartnerInfo,
-          clientInfo: item.clientInfo,
-          sessionId: item.sessionId,
-          actionId: item.actionId,
-          contentBannerNum: item.contentBannerNum,
-          clientClickCost: item.clientClickCost,
-          partnerClickCost: item.partnerClickCost,
-          clientCommissionCost: item.clientCommissionCost,
-          partnerCommissionCost: item.partnerCommissionCost,
-          clientActionCost: item.clientActionCost,
-          partnerActionCost: item.partnerActionCost,
-          actionType: item.actionType,
-          status: item.status,
-          amount: item.amount,
-          comment: item.comment,
+          actionDateTime: item.actionDateTime
+            ? new Date(item.actionDateTime)
+            : null,
+          clickDateTime: item.clickDateTime
+            ? new Date(item.clickDateTime)
+            : null,
+          admitDateTime: item.admitDateTime
+            ? new Date(item.admitDateTime)
+            : null,
+
+          clientId: item.clientId ? parseInt(item.clientId, 10) : null,
+          contentId: item.contentId ? parseInt(item.contentId, 10) : null,
+          partnerId: item.partnerId ? parseInt(item.partnerId, 10) : null,
+          groupId: item.groupId ? parseInt(item.groupId, 10) : null,
+          siteId: item.siteId ? parseInt(item.siteId, 10) : null,
+
+          clientName: item.clientName ?? null,
+          contentName: item.contentName ?? null,
+          partnerName: item.partnerName ?? null,
+          groupName: item.groupName ?? null,
+          siteName: item.siteName ?? null,
+          actionCareer: item.actionCareer ?? null,
+          actionOs: item.actionOs ?? null,
+          actionUserAgent: item.actionUserAgent ?? null,
+          actionIpAddress: item.actionIpAddress ?? null,
+          actionReferrer: item.actionReferrer ?? null,
+          queryString: item.queryString ?? null,
+          clickPartnerInfo: item.clickPartnerInfo ?? null,
+          clientInfo: item.clientInfo ?? null,
+          sessionId: item.sessionId ?? null,
+          actionId: item.actionId ?? null,
+          contentBannerNum: item.contentBannerNum ?? null,
+          comment: item.comment ?? null,
+
+          clientClickCost: item.clientClickCost
+            ? new Prisma.Decimal(parseFloat(item.clientClickCost))
+            : null,
+          partnerClickCost: item.partnerClickCost
+            ? new Prisma.Decimal(parseFloat(item.partnerClickCost))
+            : null,
+          clientCommissionCost: item.clientCommissionCost
+            ? new Prisma.Decimal(parseFloat(item.clientCommissionCost))
+            : null,
+          partnerCommissionCost: item.partnerCommissionCost
+            ? new Prisma.Decimal(parseFloat(item.partnerCommissionCost))
+            : null,
+          clientActionCost: item.clientActionCost
+            ? new Prisma.Decimal(parseFloat(item.clientActionCost))
+            : null,
+          partnerActionCost: item.partnerActionCost
+            ? new Prisma.Decimal(parseFloat(item.partnerActionCost))
+            : null,
+
+          actionType: item.actionType ? parseInt(item.actionType, 10) : null,
+          amount: item.amount ? parseInt(item.amount, 10) : null,
+          status: item.status ?? null,
         },
       });
     }

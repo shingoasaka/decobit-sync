@@ -1,12 +1,8 @@
-// packages/eslint-config/base.js
-
 import js from '@eslint/js'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import onlyWarn from 'eslint-plugin-only-warn'
 import turboPlugin from 'eslint-plugin-turbo'
 
-// TypeScript ESLint の正式パッケージ
-import tseslint from '@typescript-eslint/eslint-plugin'
 import tseslintParser from '@typescript-eslint/parser'
 
 /**
@@ -23,12 +19,11 @@ export const config = [
       '**/.turbo/**',
       '**/build/**',
       '**/coverage/**',
-      // '**/*.js',
       '**/*.d.ts',
       '**/generated/**',
-      '**/.next/**',        // Next.jsの生成ファイルを除外
-      '**/out/**',          // Next.jsのエクスポートディレクトリを除外
-      '**/.vercel/**',      // Vercelのビルドファイルを除外
+      '**/.next/**',
+      '**/out/**',
+      '**/.vercel/**',
     ],
   },
 

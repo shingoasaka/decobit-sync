@@ -2,11 +2,31 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
+    branches: [ "main" ]
 
 jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: '9.12.3'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm run typecheck
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -15,33 +35,37 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "20"
 
       - uses: pnpm/action-setup@v2
         with:
           version: '9.12.3'
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - uses: actions/cache@v3
-        name: Setup pnpm cache
+      - name: Run lint
+        run: pnpm run lint
+
+  # --------------------------
+  # Format Check Job
+  # --------------------------
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          node-version: "20"
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: '9.12.3'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Type check
-        run: pnpm run typecheck
-
-      - name: Run lint
-        run: NODE_OPTIONS="--experimental-vm-modules --no-warnings" pnpm run lint
-
-      - name: Check formatting
+      - name: Format check
         run: pnpm run format:check

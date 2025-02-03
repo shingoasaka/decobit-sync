@@ -2,42 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "../../prisma/prisma.service";
 import { firstValueFrom } from "rxjs";
-
-interface ActionLogItem {
-  actionDateTime: Date;
-  clickDateTime: Date;
-  clientId: number;
-  clientName: string;
-  contentId: number;
-  contentName: string;
-  partnerId: number;
-  partnerName: string;
-  groupId: number;
-  groupName: string;
-  siteId: number;
-  siteName: string;
-  actionCareer: string;
-  actionOs: string;
-  actionUserAgent: string;
-  actionIpAddress: string;
-  actionReferrer: string;
-  queryString: string;
-  clickPartnerInfo: string;
-  clientInfo: string;
-  sessionId: string;
-  actionId: string;
-  contentBannerNum: string;
-  clientClickCost: number;
-  partnerClickCost: number;
-  clientCommissionCost: number;
-  partnerCommissionCost: number;
-  clientActionCost: number;
-  partnerActionCost: number;
-  actionType: number;
-  status: string;
-  amount: number;
-  comment: string;
-}
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class ActionLogsService {
@@ -47,88 +12,98 @@ export class ActionLogsService {
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
-    // ログを取得
-    const logs = await this.fetchLogs();
-    if (!logs.length) {
-      return 0;
-    }
+    // 1分前～現在の日時を日本語形式に変換し、APIへ送信
+    const start = new Date(Date.now() - 60_000);
+    const end = new Date();
+    const startStr = formatDateTimeJapanese(start);
+    const endStr = formatDateTimeJapanese(end);
 
-    // バルクインサート (重複はスキップ)
-    await this.prisma.actionLog.createMany({
-      data: logs.map((item: ActionLogItem) => ({
-        actionDateTime: item.actionDateTime,
-        clickDateTime: item.clickDateTime,
-        clientId: item.clientId,
-        clientName: item.clientName,
-        contentId: item.contentId,
-        contentName: item.contentName,
-        partnerId: item.partnerId,
-        partnerName: item.partnerName,
-        groupId: item.groupId,
-        groupName: item.groupName,
-        siteId: item.siteId,
-        siteName: item.siteName,
-        actionCareer: item.actionCareer,
-        actionOs: item.actionOs,
-        actionUserAgent: item.actionUserAgent,
-        actionIpAddress: item.actionIpAddress,
-        actionReferrer: item.actionReferrer,
-        queryString: item.queryString,
-        clickPartnerInfo: item.clickPartnerInfo,
-        clientInfo: item.clientInfo,
-        sessionId: item.sessionId,
-        actionId: item.actionId,
-        contentBannerNum: item.contentBannerNum,
-        clientClickCost: item.clientClickCost,
-        partnerClickCost: item.partnerClickCost,
-        clientCommissionCost: item.clientCommissionCost,
-        partnerCommissionCost: item.partnerCommissionCost,
-        clientActionCost: item.clientActionCost,
-        partnerActionCost: item.partnerActionCost,
-        actionType: item.actionType,
-        status: item.status,
-        amount: item.amount,
-        comment: item.comment,
-      })),
-      skipDuplicates: true,
-    });
-
-    return logs.length;
-  }
-
-  private async fetchLogs(): Promise<ActionLogItem[]> {
     const url = "https://api09.catsasp.net/log/action/listtime";
     const headers = { apiKey: process.env.AFAD_API_KEY };
-    const { startStr, endStr } = this.getTimeRange();
-
     const body = new URLSearchParams({
       actionDateTime: `${startStr} - ${endStr}`,
     });
 
-    // HttpService は Observable を返すため、firstValueFrom で Promise に変換
+    // API呼び出し
     const resp = await firstValueFrom(this.http.post(url, body, { headers }));
+    const data = resp.data;
+    const logs = data?.params?.logs || [];
 
-    return resp.data?.params?.logs || [];
-  }
+    if (logs.length === 0) {
+      return 0;
+    }
 
-  //  直近 1 分間 (now - 1分 ~ now) の時間範囲を計算
-  private getTimeRange() {
-    const now = new Date();
-    const oneMinuteAgo = new Date(now.getTime() - 60_000);
-    return {
-      startStr: formatDateTime(oneMinuteAgo),
-      endStr: formatDateTime(now),
-    };
+    for (const item of logs) {
+      await this.prisma.actionLog.create({
+        data: {
+          actionDateTime: item.actionDateTime
+            ? new Date(item.actionDateTime)
+            : null,
+          clickDateTime: item.clickDateTime
+            ? new Date(item.clickDateTime)
+            : null,
+
+          clientId: item.clientId ?? null,
+          clientName: item.clientName ?? null,
+
+          contentId: item.contentId ? parseInt(item.contentId, 10) : null,
+          contentName: item.contentName ?? null,
+
+          partnerId: item.partnerId ? parseInt(item.partnerId, 10) : null,
+          partnerName: item.partnerName ?? null,
+          groupId: item.groupId ? parseInt(item.groupId, 10) : null,
+          groupName: item.groupName ?? null,
+          siteId: item.siteId ? parseInt(item.siteId, 10) : null,
+          siteName: item.siteName ?? null,
+
+          actionCareer: item.actionCareer,
+          actionOs: item.actionOs,
+          actionUserAgent: item.actionUserAgent,
+          actionIpAddress: item.actionIpAddress,
+          actionReferrer: item.actionReferrer,
+          queryString: item.queryString,
+          clickPartnerInfo: item.clickPartnerInfo,
+          clientInfo: item.clientInfo,
+          sessionId: item.sessionId,
+          actionId: item.actionId,
+          contentBannerNum: item.contentBannerNum,
+
+          clientClickCost: item.clientClickCost
+            ? new Prisma.Decimal(parseFloat(item.clientClickCost))
+            : null,
+          partnerClickCost: item.partnerClickCost
+            ? new Prisma.Decimal(parseFloat(item.partnerClickCost))
+            : null,
+          clientCommissionCost: item.clientCommissionCost
+            ? new Prisma.Decimal(parseFloat(item.clientCommissionCost))
+            : null,
+          partnerCommissionCost: item.partnerCommissionCost
+            ? new Prisma.Decimal(parseFloat(item.partnerCommissionCost))
+            : null,
+          clientActionCost: item.clientActionCost
+            ? new Prisma.Decimal(parseFloat(item.clientActionCost))
+            : null,
+          partnerActionCost: item.partnerActionCost
+            ? new Prisma.Decimal(parseFloat(item.partnerActionCost))
+            : null,
+
+          actionType: item.actionType ? parseInt(item.actionType, 10) : null,
+          status: item.status,
+          amount: item.amount ? parseInt(item.amount, 10) : null,
+          comment: item.comment,
+        },
+      });
+    }
+
+    return logs.length;
   }
 }
 
-// 日時を "YYYY-MM-DD HH:mm" の形式に変換
-
-function formatDateTime(d: Date): string {
+function formatDateTimeJapanese(d: Date): string {
   const yyyy = d.getFullYear();
   const MM = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${MM}-${dd} ${hh}:${mm}`;
+  return `${yyyy}年${MM}月${dd}日 ${hh}時${mm}分`;
 }
