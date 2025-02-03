@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22.13.1"
+          node-version: "22"
 
       - uses: pnpm/action-setup@v2
         with:
@@ -41,7 +41,7 @@ jobs:
         run: pnpm run typecheck
 
       - name: Run lint
-        run: pnpm run lint
+        run: NODE_OPTIONS="--experimental-vm-modules --no-warnings" pnpm run lint
 
       - name: Check formatting
         run: pnpm run format:check
