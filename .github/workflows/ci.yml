@@ -47,9 +47,6 @@ jobs:
       - name: Run lint
         run: pnpm run lint
 
-  # --------------------------
-  # Format Check Job
-  # --------------------------
   format-check:
     runs-on: ubuntu-latest
     steps:

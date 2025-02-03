@@ -34,12 +34,12 @@ model ActionLog {
   actionId              String?
   contentBannerNum      String?
 
-  clientClickCost       Decimal? @db.Decimal(10,2)
-  partnerClickCost      Decimal? @db.Decimal(10,2)
-  clientCommissionCost  Decimal? @db.Decimal(10,2)
-  partnerCommissionCost Decimal? @db.Decimal(10,2)
-  clientActionCost      Decimal? @db.Decimal(10,2)
-  partnerActionCost     Decimal? @db.Decimal(10,2)
+  clientClickCost       Int?
+  partnerClickCost      Int?
+  clientCommissionCost  Int?
+  partnerCommissionCost Int?
+  clientActionCost      Int?
+  partnerActionCost     Int?
 
   actionType        Int?
   tierCommissionCost Decimal? @db.Decimal(10,2)
@@ -82,12 +82,12 @@ model ClickLog {
   actionId         String?
   contentBannerNum String?
 
-  clientClickCost       Decimal? @db.Decimal(10,2)
-  partnerClickCost      Decimal? @db.Decimal(10,2)
-  clientCommissionCost  Decimal? @db.Decimal(10,2)
-  partnerCommissionCost Decimal? @db.Decimal(10,2)
-  clientActionCost      Decimal? @db.Decimal(10,2)
-  partnerActionCost     Decimal? @db.Decimal(10,2)
+  clientClickCost       Int?
+  partnerClickCost      Int?
+  clientCommissionCost  Int?
+  partnerCommissionCost Int?
+  clientActionCost      Int?
+  partnerActionCost     Int?
 
   actionType Int?
 
