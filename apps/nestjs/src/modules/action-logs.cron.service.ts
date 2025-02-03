@@ -11,8 +11,10 @@ export class ActionLogsCronService {
   async syncActionLogs() {
     try {
       const count = await this.actionLogsService.fetchAndInsertLogs();
+      // TODO:ログを出力,あとで消す
       this.logger.log(`Synced ${count} action logs`);
     } catch (error) {
+      // TODO:ログを出力,あとで消す
       this.logger.error("Failed to sync action logs:", error);
     }
   }

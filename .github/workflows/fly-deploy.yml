@@ -41,15 +41,13 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Build
         run: pnpm build
 
       - name: Install Fly CLI
-        run: |
-          curl -L https://fly.io/install.sh | sh
-          sudo ln -s ~/.fly/bin/fly /usr/local/bin/fly
+        uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy to Fly.io
         env:
