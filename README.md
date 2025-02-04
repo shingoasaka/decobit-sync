@@ -1,31 +1,62 @@
-# shadcn/ui monorepo template
+# プロジェクトセットアップガイド
 
-This template is for creating a monorepo with shadcn/ui.
+## 開発環境のセットアップ
 
-## Usage
-
-```bash
-pnpm dlx shadcn@latest init
-```
-
-## Adding components
-
-To add components to your app, run the following command at the root of your `web` app:
+### 1. 依存関係のインストール
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+pnpm install --frozen-lockfile
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+### 2. データベースの準備
 
-## Tailwind
+Docker Composeを使用してPostgresを起動します：
 
-Your `tailwind.config.ts` and `globals.css` are already set up to use the components from the `ui` package.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/ui/button";
+```bash
+docker-compose up -d
 ```
+
+### 3. 環境変数の設定
+
+1. `.env` を作成
+2. 必要な環境変数を設定
+   ```
+   DATABASE_URL=""
+   ```
+
+### 4. 開発サーバーの起動
+
+```bash
+pnpm dev
+```
+
+サーバーが起動すると、以下のURLでアクセスできます：
+- http://localhost:3000
+- http://localhost:8080
+
+## データベースマイグレーション
+
+### マイグレーションの作成と適用
+
+1. `packages/prisma/schema.prisma` を編集
+
+2. マイグレーションを実行：
+   ```bash
+   cd packages/
+   pnpm prisma migrate dev --name "add-something"
+   ```
+
+3. Prisma Clientの再生成（必要な場合）：
+   ```bash
+   pnpm prisma generate
+   ```
+
+### データベース管理
+
+Prisma Studioを使用してデータベースを視覚的に確認できます：
+
+```bash
+pnpm prisma studio
+```
+
+ブラウザで http://localhost:5555 が開き、テーブルの内容を確認・編集できます。
