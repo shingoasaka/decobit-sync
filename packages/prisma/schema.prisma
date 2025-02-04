@@ -7,7 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model ActionLog {
+model MetronActionLog {
   id Int @id @default(autoincrement())
   actionDateTime DateTime?
   clickDateTime DateTime?
@@ -51,7 +51,7 @@ model ActionLog {
   updatedAt DateTime @updatedAt
 }
 
-model ClickLog {
+model MetronClickLog {
   id             Int      @id @default(autoincrement())
 
   actionDateTime DateTime?

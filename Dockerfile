@@ -1,5 +1,5 @@
 # ---- Stage 1: builder ----
-    FROM node:20-slim AS builder
+    FROM node:22-slim AS builder
     RUN apt-get update -y && apt-get install -y openssl git && \
         npm install -g pnpm@9.12.3
     WORKDIR /app
@@ -24,7 +24,7 @@
         cd ../..
     
     # 本番用の軽量コンテナを作成
-    FROM node:20-slim
+    FROM node:22-slim
     RUN apt-get update -y && apt-get install -y openssl && \
         npm install -g pnpm@9.12.3
     WORKDIR /app

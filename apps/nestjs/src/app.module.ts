@@ -2,8 +2,8 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller";
 import { PrismaModule } from "./prisma/prisma.module";
-import { ActionLogsModule } from "./modules/action-logs/action-logs.modules";
-import { ClickLogsModule } from "./modules/click-logs/click-logs.module";
+import { MetronActionLogsModule } from "./modules/metron-action-logs/action-logs.modules";
+import { MetronClickLogsModule } from "./modules/metron-click-logs/click-logs.module";
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -11,8 +11,8 @@ import { ClickLogsModule } from "./modules/click-logs/click-logs.module";
       envFilePath: [".env"],
     }),
     PrismaModule,
-    ActionLogsModule,
-    ClickLogsModule,
+    MetronActionLogsModule,
+    MetronClickLogsModule,
   ],
   controllers: [AppController],
   providers: [],
