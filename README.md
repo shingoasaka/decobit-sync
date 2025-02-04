@@ -31,6 +31,7 @@ pnpm dev
 ```
 
 サーバーが起動すると、以下のURLでアクセスできます：
+
 - http://localhost:3000
 - http://localhost:8080
 
@@ -41,6 +42,7 @@ pnpm dev
 1. `packages/prisma/schema.prisma` を編集
 
 2. マイグレーションを実行：
+
    ```bash
    cd packages/
    pnpm prisma migrate dev --name "add-something"
