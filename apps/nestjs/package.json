@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
-    "@types/node": "^20.x",
+    "@types/node": "^22.x",
     "eslint": "^9.x",
     "eslint-config-prettier": "^9.x",
     "prisma": "^6.3.0",

@@ -1,11 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { ClickLogsService } from "./click-logs.service";
+import { MetronClickLogsService } from "./click-logs.service";
 
 @Injectable()
-export class ClickLogsCronService {
-  private readonly logger = new Logger(ClickLogsCronService.name);
-  constructor(private readonly clickLogsService: ClickLogsService) {}
+export class MetronClickLogsCronService {
+  private readonly logger = new Logger(MetronClickLogsCronService.name);
+  constructor(private readonly clickLogsService: MetronClickLogsService) {}
 
   // 毎分実行
   @Cron(CronExpression.EVERY_MINUTE)

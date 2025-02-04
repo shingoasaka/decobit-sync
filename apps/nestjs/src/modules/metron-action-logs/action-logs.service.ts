@@ -4,7 +4,7 @@ import { PrismaService } from "../../prisma/prisma.service";
 import { firstValueFrom } from "rxjs";
 
 @Injectable()
-export class ActionLogsService {
+export class MetronActionLogsService {
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
@@ -31,7 +31,7 @@ export class ActionLogsService {
     }
 
     for (const item of logs) {
-      await this.prisma.actionLog.create({
+      await this.prisma.metronActionLog.create({
         data: {
           actionDateTime: item.actionDateTime
             ? new Date(item.actionDateTime)
