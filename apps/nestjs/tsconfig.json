@@ -13,5 +13,5 @@
     "types": ["node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "tests/", "playwright.config.ts", "playwright-report"]
+  "exclude": ["node_modules", "dist"]
 }
