@@ -24,6 +24,9 @@ export const config = [
       '**/.next/**',
       '**/out/**',
       '**/.vercel/**',
+      'apps/nestjs/tests/**',
+      'apps/nestjs/playwright.config.ts',
+      'apps/nestjs/playwright-report/**'
     ],
   },
 
