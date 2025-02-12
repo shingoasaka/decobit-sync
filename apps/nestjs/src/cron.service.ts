@@ -12,6 +12,8 @@ export class CronService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async syncLogs() {
+    // TODO: ログを出力,あとで消す
+    console.log("CronService is running...");
     await this.syncLogType(this.clickLogsService);
     await this.syncLogType(this.actionLogsService);
   }
