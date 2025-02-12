@@ -1,20 +1,16 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { AppController } from "./app.controller";
+import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./prisma/prisma.module";
-import { MetronActionLogsModule } from "./modules/metron-action-logs/action-logs.modules";
-import { MetronClickLogsModule } from "./modules/metron-click-logs/click-logs.module";
+import * as Logs from "./modules/logs";
+import { CronService } from "./cron.service";
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: [".env"],
-    }),
+    ScheduleModule.forRoot(),
     PrismaModule,
-    MetronActionLogsModule,
-    MetronClickLogsModule,
+    // TODO: ログ、あとで消す
+    Logs.ClickLogsModule,
+    Logs.ActionLogsModule,
   ],
-  controllers: [AppController],
-  providers: [],
+  providers: [CronService],
 })
 export class AppModule {}

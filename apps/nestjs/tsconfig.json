@@ -10,7 +10,11 @@
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": "./",
+    "paths": {
+      "@prismaService": ["src/prisma/prisma.service"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

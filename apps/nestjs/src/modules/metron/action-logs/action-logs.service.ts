@@ -1,26 +1,25 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { PrismaService } from "../../prisma/prisma.service";
+import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
 
 @Injectable()
-export class MetronClickLogsService {
+export class MetronActionLogsService {
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
-    const url = "https://api09.catsasp.net/log/click/listspan";
-    const headers = { apiKey: process.env.AFAD_API_KEY };
-
     const start = new Date(Date.now() - 60_000);
     const end = new Date();
-    const startStr = formatDateTime(start);
-    const endStr = formatDateTime(end);
+    const startStr = formatDateTimeJapanese(start);
+    const endStr = formatDateTimeJapanese(end);
 
+    const url = "https://api09.catsasp.net/log/action/listtime";
+    const headers = { apiKey: process.env.AFAD_API_KEY };
     const body = new URLSearchParams({
-      clickDateTime: `${startStr} - ${endStr}`,
+      actionDateTime: `${startStr} - ${endStr}`,
     });
 
     const resp = await firstValueFrom(this.http.post(url, body, { headers }));
@@ -32,7 +31,7 @@ export class MetronClickLogsService {
     }
 
     for (const item of logs) {
-      await this.prisma.metronClickLog.create({
+      await this.prisma.metronActionLog.create({
         data: {
           actionDateTime: item.actionDateTime
             ? new Date(item.actionDateTime)
@@ -40,33 +39,31 @@ export class MetronClickLogsService {
           clickDateTime: item.clickDateTime
             ? new Date(item.clickDateTime)
             : null,
-          admitDateTime: item.admitDateTime
-            ? new Date(item.admitDateTime)
-            : null,
 
-          clientId: item.clientId ? parseInt(item.clientId, 10) : null,
-          contentId: item.contentId ? parseInt(item.contentId, 10) : null,
-          partnerId: item.partnerId ? parseInt(item.partnerId, 10) : null,
-          groupId: item.groupId ? parseInt(item.groupId, 10) : null,
-          siteId: item.siteId ? parseInt(item.siteId, 10) : null,
-
+          clientId: item.clientId ?? null,
           clientName: item.clientName ?? null,
+
+          contentId: item.contentId ? parseInt(item.contentId, 10) : null,
           contentName: item.contentName ?? null,
+
+          partnerId: item.partnerId ? parseInt(item.partnerId, 10) : null,
           partnerName: item.partnerName ?? null,
+          groupId: item.groupId ? parseInt(item.groupId, 10) : null,
           groupName: item.groupName ?? null,
+          siteId: item.siteId ? parseInt(item.siteId, 10) : null,
           siteName: item.siteName ?? null,
-          actionCareer: item.actionCareer ?? null,
-          actionOs: item.actionOs ?? null,
-          actionUserAgent: item.actionUserAgent ?? null,
-          actionIpAddress: item.actionIpAddress ?? null,
-          actionReferrer: item.actionReferrer ?? null,
-          queryString: item.queryString ?? null,
-          clickPartnerInfo: item.clickPartnerInfo ?? null,
-          clientInfo: item.clientInfo ?? null,
-          sessionId: item.sessionId ?? null,
-          actionId: item.actionId ?? null,
-          contentBannerNum: item.contentBannerNum ?? null,
-          comment: item.comment ?? null,
+
+          actionCareer: item.actionCareer,
+          actionOs: item.actionOs,
+          actionUserAgent: item.actionUserAgent,
+          actionIpAddress: item.actionIpAddress,
+          actionReferrer: item.actionReferrer,
+          queryString: item.queryString,
+          clickPartnerInfo: item.clickPartnerInfo,
+          clientInfo: item.clientInfo,
+          sessionId: item.sessionId,
+          actionId: item.actionId,
+          contentBannerNum: item.contentBannerNum,
 
           clientClickCost: item.clientClickCost
             ? parseInt(item.clientClickCost, 10)
@@ -93,20 +90,22 @@ export class MetronClickLogsService {
             : null,
 
           actionType: item.actionType ? parseInt(item.actionType, 10) : null,
+          status: item.status,
           amount: item.amount ? parseInt(item.amount, 10) : null,
-          status: item.status ?? null,
+          comment: item.comment,
         },
       });
     }
+
     return logs.length;
   }
 }
 
-function formatDateTime(d: Date): string {
+function formatDateTimeJapanese(d: Date): string {
   const yyyy = d.getFullYear();
   const MM = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${MM}-${dd} ${hh}:${mm}`;
+  return `${yyyy}年${MM}月${dd}日 ${hh}時${mm}分`;
 }
