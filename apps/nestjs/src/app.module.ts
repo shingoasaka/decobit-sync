@@ -1,9 +1,13 @@
 import { Module } from "@nestjs/common";
+import { HttpModule } from "@nestjs/axios";
 import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller";
 import { PrismaModule } from "./prisma/prisma.module";
-import { MetronActionLogsModule } from "./modules/metron-action-logs/action-logs.modules";
-import { MetronClickLogsModule } from "./modules/metron-click-logs/click-logs.module";
+import { CronService } from "./cron.service";
+import { ScheduleModule } from "@nestjs/schedule";
+import { MetronClickLogsService } from "./modules/metron/click-logs/click-logs.service";
+import { MetronActionLogsService } from "./modules/metron/action-logs/action-logs.service";
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -11,10 +15,10 @@ import { MetronClickLogsModule } from "./modules/metron-click-logs/click-logs.mo
       envFilePath: [".env"],
     }),
     PrismaModule,
-    MetronActionLogsModule,
-    MetronClickLogsModule,
+    HttpModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [CronService, MetronClickLogsService, MetronActionLogsService],
 })
 export class AppModule {}
