@@ -41,16 +41,14 @@ pnpm dev
 
 1. `packages/prisma/schema.prisma` を編集
 
-2. マイグレーションを実行：
-
+2. マイグレーションを作成する前に、スキーマを適用：
    ```bash
    cd packages/
-   pnpm prisma migrate dev --name "add-something"
+   pnpm prisma db push
    ```
-
-3. Prisma Clientの再生成（必要な場合）：
+3. スキーマが確定したらマイグレーションを作成：
    ```bash
-   pnpm prisma generate
+   pnpm prisma migrate dev --name "add-something"
    ```
 
 ### データベース管理
