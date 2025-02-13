@@ -1,2 +1,2 @@
-export { ClickLogsModule } from "./click-logs.module";
-export { ActionLogsModule } from "./action-logs.module";
+export { MetronClickLogsService } from "../metron/click-logs/click-logs.service";
+export { MetronActionLogsService } from "../metron/action-logs/action-logs.service";
