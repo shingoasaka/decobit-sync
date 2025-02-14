@@ -8,20 +8,20 @@ datasource db {
 }
 
 model MetronActionLog {
-  id Int @id @default(autoincrement())
-  actionDateTime DateTime?
-  clickDateTime DateTime?
-  adminDateTime DateTime?
-  clientId String?
-  clientName String?
-  contentId Int?
-  contentName String?
-  partnerId Int?
-  partnerName String?
-  groupId Int?
-  groupName String?
-  siteId Int?
-  siteName String?
+  id                    Int       @id @default(autoincrement())
+  actionDateTime        DateTime?
+  clickDateTime         DateTime?
+  adminDateTime         DateTime?
+  clientId              String?
+  clientName            String?
+  contentId             Int?
+  contentName           String?
+  partnerId             Int?
+  partnerName           String?
+  groupId               Int?
+  groupName             String?
+  siteId                Int?
+  siteName              String?
   actionCareer          String?
   actionOs              String?
   actionUserAgent       String?
@@ -33,88 +33,111 @@ model MetronActionLog {
   sessionId             String?
   actionId              String?
   contentBannerNum      String?
-
   clientClickCost       Int?
   partnerClickCost      Int?
   clientCommissionCost  Int?
   partnerCommissionCost Int?
   clientActionCost      Int?
   partnerActionCost     Int?
-
-  actionType        Int?
-  tierCommissionCost Decimal? @db.Decimal(10,2)
-  status            String?
-  amount            Int?
-  comment           String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  actionType            Int?
+  tierCommissionCost    Decimal?  @db.Decimal(10, 2)
+  status                String?
+  amount                Int?
+  comment               String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model MetronClickLog {
-  id             Int      @id @default(autoincrement())
-
-  actionDateTime DateTime?
-  clickDateTime  DateTime?
-  admitDateTime  DateTime?
-
-  clientId   Int?
-  clientName String?
-  contentId  Int?
-  contentName String?
-  partnerId  Int?
-  partnerName String?
-  groupId    Int?
-  groupName  String?
-  siteId     Int?
-  siteName   String?
-
-  actionCareer    String?
-  actionOs        String?
-  actionUserAgent String?
-  actionIpAddress String?
-  actionReferrer  String?
-  queryString     String?
-
-  clickPartnerInfo String?
-  clientInfo       String?
-  sessionId        String?
-  actionId         String?
-  contentBannerNum String?
-
+  id                    Int       @id @default(autoincrement())
+  actionDateTime        DateTime?
+  clickDateTime         DateTime?
+  admitDateTime         DateTime?
+  clientId              Int?
+  clientName            String?
+  contentId             Int?
+  contentName           String?
+  partnerId             Int?
+  partnerName           String?
+  groupId               Int?
+  groupName             String?
+  siteId                Int?
+  siteName              String?
+  actionCareer          String?
+  actionOs              String?
+  actionUserAgent       String?
+  actionIpAddress       String?
+  actionReferrer        String?
+  queryString           String?
+  clickPartnerInfo      String?
+  clientInfo            String?
+  sessionId             String?
+  actionId              String?
+  contentBannerNum      String?
   clientClickCost       Int?
   partnerClickCost      Int?
   clientCommissionCost  Int?
   partnerCommissionCost Int?
   clientActionCost      Int?
   partnerActionCost     Int?
-
-  actionType Int?
-
-  status String?
-  amount Int?
-  comment String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  actionType            Int?
+  status                String?
+  amount                Int?
+  comment               String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
-model HanikamuActionLog{
-  id Int @id @default(autoincrement())
-  actionId Int? 
-  clickDateTime DateTime?
-  actionDateTime DateTime?
+model HanikamuActionLog {
+  id               Int       @id @default(autoincrement())
+  actionId         Int?
+  clickDateTime    DateTime?
+  actionDateTime   DateTime?
   approvalDateTime DateTime?
-  adName String?
-  adCategory String?
-  campaignName String?
-  landingPageName String?
-  lpUrl String?
-  deviceType String?
-  osType String?
-  status String?
-  referrerUrl String?
-  trackingParams String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  adName           String?
+  adCategory       String?
+  campaignName     String?
+  landingPageName  String?
+  lpUrl            String?
+  deviceType       String?
+  osType           String?
+  status           String?
+  referrerUrl      String?
+  trackingParams   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model RentracksActionLog {
+  id               Int       @id @default(autoincrement())
+  clickDateTime    DateTime?
+  salesDateTime    DateTime?
+  salesNumber      Int?
+  advertiserName   String?
+  productName      String?
+  salesAmount      Int?
+  rewardAmount     Int?
+  status           String?
+  actionDeadline   DateTime?
+  approvalDateTime DateTime?
+  remarks          String?
+  adSiteId         Int?
+  adSiteName       String?
+  deviceType       String?
+  referrerUrl      String?
+  deviceIinfo      String?
+  reasonRrefusal   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+model RentracksClickLog {
+  id               Int       @id @default(autoincrement())
+  remarks String?
+  click Int?
+  selesNumber Int?
+  ocRate Float?
+  approvedNnumber Int?
+  approvedRewardAmount Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }

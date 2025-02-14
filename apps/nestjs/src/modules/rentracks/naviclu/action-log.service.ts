@@ -1,68 +1,63 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser } from "playwright";
-import { TryActionLogRepository } from "./action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
-import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
+import { NavicluActionLogRepository } from "./action-log.repository";
+import { LogService } from "src/modules/logs/types";
 
 @Injectable()
-export class TryActionLogService implements LogService {
+export class NavicluActionLogService implements LogService {
   constructor(
-    private readonly repository: TryActionLogRepository,
+    private readonly repository: NavicluActionLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
     try {
-      // ブラウザを起動 (ヘッドレスモード)
       browser = await chromium.launch({ headless: true });
 
-      // 新しいブラウザコンテキストを作成
       const context = await browser.newContext();
       const page = await context.newPage();
 
-      await page.goto("https://www.82comb.net/partner/login");
-      console.log("TRY_USERNAME from process.env:", process.env.TRY_USERNAME);
+      await page.goto("https://manage.rentracks.jp/manage/login");
       await page.fill(
-        'input[name="c_login_name"]',
-        process.env.TRY_USERNAME ?? "",
+        'input[name="idMailaddress"]',
+        process.env.RENTRACKS_USERNAME ?? "",
       );
       await page.fill(
-        'input[name="c_login_password"]',
-        process.env.TRY_PASSWORD ?? "",
+        'input[name="idLoginPassword"]',
+        process.env.RENTRACKS_PASSWORD ?? "",
       );
 
-      await Promise.all([page.click('input[name="clientlogin"]')]);
+      await page.getByRole("button", { name: "SIGN IN" }).click();
 
-      await page.click("//a[@href='/partner/conversion/tracking']");
-      await page.waitForTimeout(2000);
-
-      await page.locator("#select_site").selectOption("1176");
+      await page.locator('#hnavInner').getByRole('listitem').filter({ hasText: /^注文リスト$/ }).getByRole('link').click();
       await page.waitForTimeout(1000);
 
-      await page.locator('input[name="start_date"]').click();
-      await page.getByRole("cell", { name: "7", exact: true }).first().click();
-      await page.locator('input[name="end_date"]').click();
-      await page.getByRole("cell", { name: "7", exact: true }).nth(2).click();
+      await page.getByRole("textbox", { name: "すべての広告主" }).click();
+      await page
+        .getByRole("treeitem", {
+          name: "株式会社エイチームライフデザイン(ナビクル車査定)",
+        })
+        .click();
 
-      await page.locator("label").filter({ hasText: "成果発生日" }).click();
+      await page.locator("#idTermSelect").selectOption("20250214");
+      await page.getByRole("button", { name: "再表示" }).click();
 
       const downloadPromise = page.waitForEvent("download");
-      await page
-        .getByRole("button", { name: "  上記条件でCSVダウンロード" })
-        .click();
+      await page.getByRole("button", { name: "ダウンロード" }).click();
       const download = await downloadPromise;
 
       const downloadPath = await download.path();
       if (!downloadPath) {
         return 0;
       }
-
       return await this.processCsvAndSave(downloadPath);
     } catch (error) {
+      console.error("Error fetching Rentracks logs:", error);
       return 0;
     } finally {
       if (browser) {
@@ -81,7 +76,6 @@ export class TryActionLogService implements LogService {
     });
 
     await this.repository.save(records);
-
     return records.length;
   }
 }
