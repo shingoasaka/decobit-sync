@@ -34,7 +34,12 @@ export class NavicluActionLogService implements LogService {
 
       await page.getByRole("button", { name: "SIGN IN" }).click();
 
-      await page.locator('#hnavInner').getByRole('listitem').filter({ hasText: /^注文リスト$/ }).getByRole('link').click();
+      await page
+        .locator("#hnavInner")
+        .getByRole("listitem")
+        .filter({ hasText: /^注文リスト$/ })
+        .getByRole("link")
+        .click();
       await page.waitForTimeout(1000);
 
       await page.getByRole("textbox", { name: "すべての広告主" }).click();
