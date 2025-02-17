@@ -1,11 +1,8 @@
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 
-/**
- * 今日の日付をYYYY-MM-DD形式で取得
- */
 export function getToday(): string {
   return format(new Date(), "yyyyMMdd");
 }
-export function getTodayDateOnly(): number {
-  return parseInt(format(new Date(), "d"), 10); // 0埋めなしの `日` 部分を取得
+export function getTodayDateOnly(): string {
+  return format(new Date(), "d"); // `d` を指定すると 0埋めなしの値が取得できる
 }
