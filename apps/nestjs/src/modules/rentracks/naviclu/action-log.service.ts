@@ -26,16 +26,35 @@ export class NavicluActionLogService implements LogService {
       const page = await context.newPage();
 
       await page.goto("https://manage.rentracks.jp/manage/login");
-      await page.fill('input[name="idMailaddress"]', process.env.RENTRACKS_USERNAME ?? "");
-      await page.fill('input[name="idLoginPassword"]', process.env.RENTRACKS_PASSWORD ?? "");
+      await page.fill(
+        'input[name="idMailaddress"]',
+        process.env.RENTRACKS_USERNAME ?? "",
+      );
+      await page.fill(
+        'input[name="idLoginPassword"]',
+        process.env.RENTRACKS_PASSWORD ?? "",
+      );
       await page.getByRole("button", { name: "SIGN IN" }).click();
 
-      await page.locator('div').filter({ hasText: /^注文リスト$/ }).getByRole('link').click();
-      await page.locator("#hnavInner").getByRole("listitem").filter({ hasText: /^注文リスト$/ }).getByRole("link").click();
+      await page
+        .locator("div")
+        .filter({ hasText: /^注文リスト$/ })
+        .getByRole("link")
+        .click();
+      await page
+        .locator("#hnavInner")
+        .getByRole("listitem")
+        .filter({ hasText: /^注文リスト$/ })
+        .getByRole("link")
+        .click();
       await page.waitForTimeout(1000);
 
       await page.getByRole("textbox", { name: "すべての広告主" }).click();
-      await page.getByRole("treeitem", { name: "株式会社エイチームライフデザイン(ナビクル車査定)" }).click();
+      await page
+        .getByRole("treeitem", {
+          name: "株式会社エイチームライフデザイン(ナビクル車査定)",
+        })
+        .click();
 
       const today = getToday();
       await page.locator("#idTermSelect").selectOption(today);

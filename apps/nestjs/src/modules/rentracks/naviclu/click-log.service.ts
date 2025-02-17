@@ -26,14 +26,27 @@ export class NavicluClickLogService implements LogService {
       const page = await context.newPage();
 
       await page.goto("https://manage.rentracks.jp/manage/login");
-      await page.fill('input[name="idMailaddress"]', process.env.RENTRACKS_USERNAME ?? "");
-      await page.fill('input[name="idLoginPassword"]', process.env.RENTRACKS_PASSWORD ?? "");
+      await page.fill(
+        'input[name="idMailaddress"]',
+        process.env.RENTRACKS_USERNAME ?? "",
+      );
+      await page.fill(
+        'input[name="idLoginPassword"]',
+        process.env.RENTRACKS_PASSWORD ?? "",
+      );
       await page.getByRole("button", { name: "SIGN IN" }).click();
 
       await page.click('a:has-text("アクセス統計")');
-      await page.locator("#hnavInner").getByRole("link", { name: "アクセス統計（備考別）" }).click();
+      await page
+        .locator("#hnavInner")
+        .getByRole("link", { name: "アクセス統計（備考別）" })
+        .click();
       await page.getByRole("combobox", { name: "すべての広告主" }).click();
-      await page.getByRole("treeitem", { name: "株式会社エイチームライフデザイン(ナビクル車査定)" }).click();
+      await page
+        .getByRole("treeitem", {
+          name: "株式会社エイチームライフデザイン(ナビクル車査定)",
+        })
+        .click();
       await page.waitForTimeout(1000);
 
       const today = getToday();
