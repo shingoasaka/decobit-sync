@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "WebantennaActionLog" ALTER COLUMN "user_id" SET DATA TYPE BIGINT,
+ALTER COLUMN "session_id" SET DATA TYPE BIGINT;
