@@ -68,7 +68,7 @@ export class MonkeyClickLogService implements LogService {
   private async initializeBrowser(): Promise<Browser> {
     try {
       return await chromium.launch({
-        headless: false,
+        headless: true,
         timeout: 30000, // タイムアウト設定の追加
       });
     } catch (error) {

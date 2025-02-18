@@ -1,11 +1,7 @@
 export { MetronClickLogsService } from "../metron/click-logs.service";
 export { MetronActionLogsService } from "../metron/action-logs.service";
 export { TryActionLogService } from "../hanikamu/try/action-logs.service";
-export { HanaSakuActionLogService } from "../monkey/hanasaku/action-logs.service";
-export { HibikiActionLogService } from "../monkey/hibiki/action-logs.service";
-export { ShibuyaHoumuActionLogService } from "../monkey/shibuya-houmu/action-logs.service";
-export { SuzukiShihouActionLogService } from "../monkey/suzuki-shihou/action-logs.service";
-export { YourAceActionLogService } from "../monkey/your-ace/action-logs.service";
+export { MonkeyActionLogService } from "../monkey/action-logs.service";
 export { MonkeyClickLogService } from "../monkey/click-logs.service";
 export { NavicluActionLogService } from "../rentracks/naviclu/action-log.service";
 export { NavicluClickLogService } from "../rentracks/naviclu/click-log.service";

@@ -1,13 +1,26 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
-import { MonkeyActionLogRepository } from "../action-logs.repository";
+import { MonkeyActionLogRepository } from "./action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
 
-const SELECTORS = {
+interface MonkeySelectors {
+  LOGIN: {
+    ID: string;
+    PASSWORD: string;
+    SUBMIT: string;
+  };
+  REPORT: {
+    ACTION_TAB: string;
+    DOWNLOAD: string;
+    NO_DATA: string;
+  };
+}
+
+const SELECTORS: MonkeySelectors = {
   LOGIN: {
     ID: 'input[type="text"].ef',
     PASSWORD: 'input[type="password"].ef',
@@ -16,10 +29,6 @@ const SELECTORS = {
   REPORT: {
     ACTION_TAB:
       'li[data-v-1e3b336f] div[data-v-1e3b336f] a[href="#/logs"].has-text-white',
-    SEARCH:
-      "button[data-v-9dae462e].button.is-success-black.is-rounded.is-small",
-    SEARCH_INPUT:
-      "input[data-v-9dae462e][type='text'][name='campaignName'].input.is-small",
     DOWNLOAD: "button[data-v-2e9de55a].button.is-small",
     NO_DATA: ".log-not-found",
   },
@@ -30,7 +39,7 @@ const WAIT_TIME = {
 } as const;
 
 @Injectable()
-export class YourAceActionLogService implements LogService {
+export class MonkeyActionLogService implements LogService {
   constructor(
     private readonly repository: MonkeyActionLogRepository,
     private readonly prisma: PrismaService,
@@ -79,14 +88,6 @@ export class YourAceActionLogService implements LogService {
     try {
       await (await page.waitForSelector(SELECTORS.REPORT.ACTION_TAB)).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
-      await (await page.waitForSelector(SELECTORS.REPORT.SEARCH)).click();
-      await page.waitForTimeout(WAIT_TIME.SHORT);
-      await page.fill(SELECTORS.REPORT.SEARCH_INPUT, "ユア・エース");
-      await page.waitForTimeout(WAIT_TIME.SHORT);
-      await (
-        await page.waitForSelector(SELECTORS.REPORT.SEARCH_INPUT)
-      ).press("Enter");
-      await page.waitForTimeout(WAIT_TIME.SHORT);
 
       // 検索結果の有無を確認
       const noDataElement = await page.$(SELECTORS.REPORT.NO_DATA);
@@ -131,9 +132,6 @@ export class YourAceActionLogService implements LogService {
       columns: true,
       skip_empty_lines: true,
     });
-
-    // デバッグ用にレコードの内容を確認
-    console.log("Parsed records:", JSON.stringify(records, null, 2));
 
     await this.repository.save(records);
 
