@@ -5,3 +5,5 @@ export { NavicluActionLogService } from "../rentracks/naviclu/action-log.service
 export { NavicluClickLogService } from "../rentracks/naviclu/click-log.service";
 export {MensclearActionLogService} from "../quoriza/mensclear/action-log.service";
 export {StlasshActionLogService} from "../quoriza/stlassh/action-log.service"
+export { WebantennaActionLogService } from "../webantenna/mens-tbc-and-tbc/action-logs.service";
+export { WebantennaClickLogService } from "../webantenna/mens-tbc-and-tbc/click-logs.service";

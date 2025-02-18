@@ -130,16 +130,196 @@ model RentracksActionLog {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }
+
 model RentracksClickLog {
-  id               Int       @id @default(autoincrement())
-  remarks String?
-  click Int?
-  selesNumber Int?
-  ocRate Float?
-  approvedNnumber Int?
+  id                   Int      @id @default(autoincrement())
+  remarks              String?
+  click                Int?
+  selesNumber          Int?
+  ocRate               Float?
+  approvedNnumber      Int?
   approvedRewardAmount Int?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  adName               String?
+  adCategory           String?
+  campaignName         String?
+  landingPageName      String?
+  lpUrl                String?
+  deviceType           String?
+  osType               String?
+  status               String?
+  referrerUrl          String?
+  trackingParams       String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model WebantennaActionLog {
+  id                         Int       @id @default(autoincrement())
+  device_type                String?
+  user_id                    BigInt?
+  session_id                 BigInt?
+  clicked                    DateTime?
+  ad_authority               String?
+  utm_sourc_identifier       String?
+  utm_source                 String?
+  ad_identifier              String?
+  campaign_name              String?
+  ad_group_name              String?
+  creative_name              String?
+  creative_utm_name          String?
+  ad_title                   String?
+  ad_url                     String?
+  cv_date                    DateTime?
+  cv_name                    String?
+  cv_identifier_id           Int?
+  course_name                String?
+  course_name_detail         String?
+  first_clicked              DateTime?
+  first_clicked_identifier   String?
+  first_utm_source           String?
+  first_ad_identifier        String?
+  first_campaign_name        String?
+  first_ad_group_name        String?
+  first_creative_name        String?
+  first_creative_utm_name    String?
+  first_ad_title             String?
+  first_ad_url               String?
+  second_clicked             DateTime?
+  second_clicked_identifier  String?
+  second_utm_source          String?
+  second_ad_identifier       String?
+  second_campaign_name       String?
+  second_ad_group_name       String?
+  second_creative_name       String?
+  second_creative_utm_name   String?
+  second_ad_title            String?
+  second_ad_url              String?
+  third_clicked              DateTime?
+  third_clicked_identifier   String?
+  third_utm_source           String?
+  third_ad_identifier        String?
+  third_campaign_name        String?
+  third_ad_group_name        String?
+  third_creative_name        String?
+  third_creative_utm_name    String?
+  third_ad_title             String?
+  third_ad_url               String?
+  fourth_clicked             DateTime?
+  fourth_clicked_identifier  String?
+  fourth_utm_source          String?
+  fourth_ad_identifier       String?
+  fourth_campaign_name       String?
+  fourth_ad_group_name       String?
+  fourth_creative_name       String?
+  fourth_creative_utm_name   String?
+  fourth_ad_title            String?
+  fourth_ad_url              String?
+  fifth_clicked              DateTime?
+  fifth_clicked_identifier   String?
+  fifth_utm_source           String?
+  fifth_ad_identifier        String?
+  fifth_campaign_name        String?
+  fifth_ad_group_name        String?
+  fifth_creative_name        String?
+  fifth_creative_utm_name    String?
+  fifth_ad_title             String?
+  fifth_ad_url               String?
+  sixth_clicked              DateTime?
+  sixth_clicked_identifier   String?
+  sixth_utm_source           String?
+  sixth_ad_identifier        String?
+  sixth_campaign_name        String?
+  sixth_ad_group_name        String?
+  sixth_creative_name        String?
+  sixth_creative_utm_name    String?
+  sixth_ad_title             String?
+  sixth_ad_url               String?
+  seventh_clicked            DateTime?
+  seventh_clicked_identifier String?
+  seventh_utm_source         String?
+  seventh_ad_identifier      String?
+  seventh_campaign_name      String?
+  seventh_ad_group_name      String?
+  seventh_creative_name      String?
+  seventh_creative_utm_name  String?
+  seventh_ad_title           String?
+  seventh_ad_url             String?
+  eighth_clicked             DateTime?
+  eighth_clicked_identifier  String?
+  eighth_utm_source          String?
+  eighth_ad_identifier       String?
+  eighth_campaign_name       String?
+  eighth_ad_group_name       String?
+  eighth_creative_name       String?
+  eighth_creative_utm_name   String?
+  eighth_ad_title            String?
+  eighth_ad_url              String?
+  ninth_clicked              DateTime?
+  ninth_clicked_identifier   String?
+  ninth_utm_source           String?
+  ninth_ad_identifier        String?
+  ninth_campaign_name        String?
+  ninth_ad_group_name        String?
+  ninth_creative_name        String?
+  ninth_creative_utm_name    String?
+  ninth_ad_title             String?
+  ninth_ad_url               String?
+  tenth_clicked              DateTime?
+  tenth_clicked_identifier   String?
+  tenth_utm_source           String?
+  tenth_ad_identifier        String?
+  tenth_campaign_name        String?
+  tenth_ad_group_name        String?
+  tenth_creative_name        String?
+  tenth_creative_utm_name    String?
+  tenth_ad_title             String?
+  tenth_ad_url               String?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+}
+
+model WebantennaClickLog {
+  id                            Int       @id @default(autoincrement())
+  ad_authority                  String?
+  channel                       String?
+  ad_identifier                 String?
+  campaign_name                 String?
+  ad_durations                  DateTime?
+  click                         Int?
+  ec_registration_cv            Int?
+  ec_direct_registration        Int?
+  ec_revisit_registration       Int?
+  ec_registration_cvr           Int?
+  ec_purchase_cv                Int?
+  ec_direct_purchase_cv         Int?
+  ec_revisit_purchase_cv        Int?
+  ec_purchase_cvr               Int?
+  web_reservation_cv            Int?
+  web_direct_reservation_cv     Int?
+  web_revisit_reservation_cv    Int?
+  web_reservation_cvr           Float?
+  epiler_web_reservation_cv     Int?
+  epiler_direct_reservation_cv  Int?
+  epiler_revisit_reservation_cv Int?
+  epiler_web_reservation_cvr    Float?
+  test1_cv                      Int?
+  test1_direct_cv               Int?
+  test1_revisit_cv              Int?
+  test1_cvr                     Float?
+  test2_cv                      Int?
+  test2_direct_cv               Int?
+  test2_revisit_cv              Int?
+  test2_cvr                     Float?
+  test3_cv                      Int?
+  test3_direct_cv               Int?
+  test3_revisit_cv              Int?
+  test3_cvr                     Float?
+  recruitment_cv                Int?
+  recruitment_direct_cv         Int?
+  recruitment_revisit_cv        Int?
+  recruitment_cvr               Float?
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
 }
 
 model QuorizaActionLog{
