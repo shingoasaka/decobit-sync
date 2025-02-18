@@ -1,27 +1,4 @@
 -- CreateTable
-CREATE TABLE "HanikamuActionLog" (
-    "id" SERIAL NOT NULL,
-    "actionId" INTEGER,
-    "clickDateTime" TIMESTAMP(3),
-    "actionDateTime" TIMESTAMP(3),
-    "approvalDateTime" TIMESTAMP(3),
-    "adName" TEXT,
-    "adCategory" TEXT,
-    "campaignName" TEXT,
-    "landingPageName" TEXT,
-    "lpUrl" TEXT,
-    "deviceType" TEXT,
-    "osType" TEXT,
-    "status" TEXT,
-    "referrerUrl" TEXT,
-    "trackingParams" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "HanikamuActionLog_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "WebantennaActionLog" (
     "id" SERIAL NOT NULL,
     "device_type" TEXT,
