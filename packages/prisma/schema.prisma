@@ -141,3 +141,24 @@ model RentracksClickLog {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }
+
+model QuorizaActionLog{
+  id               Int       @id @default(autoincrement())
+  actionId Int?
+  actionIdentifier Int?
+  clickDateTime DateTime?
+  actionDateTime DateTime?
+  approvalDateTime DateTime?
+  adName String?
+  adCategory String?
+  campaignName String?
+  landingPageName String?
+  lpUrl String?
+  deviceType String?
+  osType String?
+  approvalStatus String?
+  referrerUrl String?
+  trackingParams String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
