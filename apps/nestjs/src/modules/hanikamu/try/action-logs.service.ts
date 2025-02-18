@@ -6,6 +6,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
+// import { getTodayDateOnly } from "src/libs/date-utils";
 
 @Injectable()
 export class TryActionLogService implements LogService {
@@ -27,11 +28,11 @@ export class TryActionLogService implements LogService {
       await page.goto("https://www.82comb.net/partner/login");
       await page.fill(
         'input[name="c_login_name"]',
-        process.env.TRY_USERNAME ?? "",
+        process.env.HANIKAMU_USERNAME ?? "",
       );
       await page.fill(
         'input[name="c_login_password"]',
-        process.env.TRY_PASSWORD ?? "",
+        process.env.HANIKAMU_PASSWORD ?? "",
       );
 
       await Promise.all([page.click('input[name="clientlogin"]')]);
@@ -42,10 +43,13 @@ export class TryActionLogService implements LogService {
       await page.locator("#select_site").selectOption("1176");
       await page.waitForTimeout(1000);
 
+      // const today = getTodayDateOnly();
+      // console.log(today)
+      // TODO: 日にちを8日に設定,あとでtodayに変更
       await page.locator('input[name="start_date"]').click();
-      await page.getByRole("cell", { name: "7", exact: true }).first().click();
+      await page.getByRole("cell", { name: "8", exact: true }).first().click();
       await page.locator('input[name="end_date"]').click();
-      await page.getByRole("cell", { name: "7", exact: true }).nth(2).click();
+      await page.getByRole("cell", { name: "8", exact: true }).nth(2).click();
 
       await page.locator("label").filter({ hasText: "成果発生日" }).click();
 
