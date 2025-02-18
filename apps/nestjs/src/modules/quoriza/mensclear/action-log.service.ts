@@ -24,8 +24,12 @@ export class MensclearActionLogService implements LogService {
 
       // ログイン処理
       await page.goto("https://quoriza.net/partner/login");
-      await page.getByRole("textbox", { name: "Enter loginname" }).fill(process.env.MENSCLEAR_USERNAME ?? "");
-      await page.getByRole("textbox", { name: "Enter password" }).fill(process.env.MENSCLEAR_PASSWORD ?? "");
+      await page
+        .getByRole("textbox", { name: "Enter loginname" })
+        .fill(process.env.MENSCLEAR_USERNAME ?? "");
+      await page
+        .getByRole("textbox", { name: "Enter password" })
+        .fill(process.env.MENSCLEAR_PASSWORD ?? "");
       await page.getByRole("button", { name: "LOGIN" }).click();
 
       // メインページへ遷移
@@ -41,7 +45,9 @@ export class MensclearActionLogService implements LogService {
 
       // CSVダウンロード
       const downloadPromise = page.waitForEvent("download");
-      await page.getByRole("button", { name: "  上記条件でCSVダウンロード" }).click();
+      await page
+        .getByRole("button", { name: "  上記条件でCSVダウンロード" })
+        .click();
       const download = await downloadPromise;
 
       const downloadPath = await download.path();

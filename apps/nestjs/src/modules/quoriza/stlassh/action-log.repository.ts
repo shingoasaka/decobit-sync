@@ -9,8 +9,12 @@ export class StlasshActionLogRepository {
     for (const item of conversionData) {
       await this.prisma.quorizaActionLog.create({
         data: {
-          actionId: item["成果ID"] ? parseInt(item["成果ID"].replace("R", ""), 10) : null,
-          actionIdentifier: item["成果識別番号"] ? parseInt(item["成果識別番号"], 10) : null,
+          actionId: item["成果ID"]
+            ? parseInt(item["成果ID"].replace("R", ""), 10)
+            : null,
+          actionIdentifier: item["成果識別番号"]
+            ? parseInt(item["成果識別番号"], 10)
+            : null,
           clickDateTime: new Date(item["クリック日"]),
           actionDateTime: new Date(item["成果発生日"]),
           approvalDateTime:
@@ -25,8 +29,15 @@ export class StlasshActionLogRepository {
           deviceType: item["デバイス"] || null,
           osType: item["OS情報"] || null,
           approvalStatus: item["承認状態"] || null,
-          referrerUrl: item["リファラ"] && item["リファラ"].trim() !== "" ? item["リファラ"] : null,
-          trackingParams: item["トラッキングパラメータ"] && item["トラッキングパラメータ"].trim() !== "" ? item["トラッキングパラメータ"] : null,
+          referrerUrl:
+            item["リファラ"] && item["リファラ"].trim() !== ""
+              ? item["リファラ"]
+              : null,
+          trackingParams:
+            item["トラッキングパラメータ"] &&
+            item["トラッキングパラメータ"].trim() !== ""
+              ? item["トラッキングパラメータ"]
+              : null,
         },
       });
     }
