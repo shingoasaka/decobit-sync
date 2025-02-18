@@ -1,58 +1,49 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser } from "playwright";
-import { TryActionLogRepository } from "./action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-// import { getTodayDateOnly } from "src/libs/date-utils";
+import { StlasshActionLogRepository } from "./action-log.repository";
 
 @Injectable()
-export class TryActionLogService implements LogService {
+export class StlasshActionLogService implements LogService {
   constructor(
-    private readonly repository: TryActionLogRepository,
+    private readonly repository: StlasshActionLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
     try {
-      // ブラウザを起動 (ヘッドレスモード)
       browser = await chromium.launch({ headless: true });
 
-      // 新しいブラウザコンテキストを作成
       const context = await browser.newContext();
       const page = await context.newPage();
 
-      await page.goto("https://www.82comb.net/partner/login");
-      await page.fill(
-        'input[name="c_login_name"]',
-        process.env.HANIKAMU_USERNAME ?? "",
-      );
-      await page.fill(
-        'input[name="c_login_password"]',
-        process.env.HANIKAMU_PASSWORD ?? "",
-      );
+      // ログイン処理
+      await page.goto("https://quoriza.net/partner/login");
+      await page
+        .getByRole("textbox", { name: "Enter loginname" })
+        .fill(process.env.STLASSH_USERNAME ?? "");
+      await page
+        .getByRole("textbox", { name: "Enter password" })
+        .fill(process.env.STLASSH_PASSWORD ?? "");
+      await page.getByRole("button", { name: "LOGIN" }).click();
 
-      await Promise.all([page.click('input[name="clientlogin"]')]);
-
-      await page.click("//a[@href='/partner/conversion/tracking']");
+      // メインページへ遷移
       await page.waitForTimeout(2000);
+      await page.goto("https://quoriza.net/partner/main");
 
-      await page.locator("#select_site").selectOption("1176");
-      await page.waitForTimeout(1000);
+      // コンバージョンページへ遷移
+      await page.click("//a[@href='/partner/conversion/tracking']");
 
-      // const today = getTodayDateOnly();
-      // console.log(today)
-      // TODO: 日にちを8日に設定,あとでtodayに変更
-      await page.locator('input[name="start_date"]').click();
-      await page.getByRole("cell", { name: "8", exact: true }).first().click();
-      await page.locator('input[name="end_date"]').click();
-      await page.getByRole("cell", { name: "8", exact: true }).nth(2).click();
-
+      // 日付フィルタ適用（「今日」ボタンをクリック）
+      await page.getByRole("link", { name: "今日" }).click();
       await page.locator("label").filter({ hasText: "成果発生日" }).click();
 
+      // CSVダウンロード
       const downloadPromise = page.waitForEvent("download");
       await page
         .getByRole("button", { name: "  上記条件でCSVダウンロード" })
@@ -66,6 +57,7 @@ export class TryActionLogService implements LogService {
 
       return await this.processCsvAndSave(downloadPath);
     } catch (error) {
+      console.error("Error during fetchAndInsertLogs:", error);
       return 0;
     } finally {
       if (browser) {
