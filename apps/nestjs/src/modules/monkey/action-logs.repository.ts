@@ -1,6 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@prisma/client";
 
 // 入力データの型定義
 interface RawMonkeyActionData {
@@ -93,9 +92,6 @@ export class MonkeyActionLogRepository {
       return result.count;
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        this.logger.error(`Prisma error code: ${error.code}`);
-      }
       throw error;
     }
   }
