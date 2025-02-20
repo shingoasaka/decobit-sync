@@ -113,9 +113,6 @@ export class SampleAffiliateActionLogRepository {
       return result.count;
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        this.logger.error(`Prisma error code: ${error.code}`);
-      }
       throw error;
     }
   }
