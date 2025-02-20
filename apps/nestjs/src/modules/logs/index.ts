@@ -9,3 +9,5 @@ export { MensclearActionLogService } from "../quoriza/mensclear/action-log.servi
 export { StlasshActionLogService } from "../quoriza/stlassh/action-log.service";
 export { WebantennaActionLogService } from "../webantenna/mens-tbc-and-tbc/action-logs.service";
 export { WebantennaClickLogService } from "../webantenna/mens-tbc-and-tbc/click-logs.service";
+export { SampleAffiliateActionLogService } from "../sampleAffiliate/action-logs.service";
+export { SampleAffiliateClickLogService } from "../sampleAffiliate/click-logs.service";

@@ -367,3 +367,35 @@ model MonkeyClickLog {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model SampleAffiliateActionLog {
+  id Int @id @default(autoincrement())
+  adName String?
+  impCount Int?
+  accessCount Int?
+  ctr Float?
+  actionCount Int?
+  actionAmount Int?
+  confirmedActionCount Int?
+  confirmedActionAmount Int?
+  cvr Float?
+  rewardAmount Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SampleAffiliateClickLog {
+  id Int @id @default(autoincrement())
+  mediaName String?
+  impCount Int?
+  accessCount Int?
+  ctr Float?
+  actionCount Int?
+  actionAmount Int?
+  confirmedActionCount Int?
+  confirmedActionAmount Int?
+  cvr Float?
+  rewardAmount Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
