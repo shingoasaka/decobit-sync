@@ -8,3 +8,5 @@ export { WebantennaClickLogRepository } from "../webantenna/mens-tbc-and-tbc/cli
 // 今後追加されるレポジトリもここでエクスポート
 export { MonkeyActionLogRepository } from "../monkey/action-logs.repository";
 export { MonkeyClickLogRepository } from "../monkey/click-logs.repository";
+export { SampleAffiliateActionLogRepository } from "../sampleAffiliate/action-logs.repository";
+export { SampleAffiliateClickLogRepository } from "../sampleAffiliate/click-logs.repository";
