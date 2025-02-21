@@ -401,7 +401,7 @@ model SampleAffiliateClickLog {
 }
 
 model CatsActionLog {
-  id                    Int      @id @default(autoincrement())
+  id                   Int      @id @default(autoincrement())
   actionDate           DateTime?
   clickDate            DateTime?
   midClickDate         DateTime?
@@ -436,7 +436,7 @@ model CatsActionLog {
 }
 
 model CatsClickLog {
-  id                    Int      @id @default(autoincrement())
+  id                   Int      @id @default(autoincrement())
   clickDate            DateTime?
   mediaName            String?
   mediaCategory1       String?
@@ -461,4 +461,47 @@ model CatsClickLog {
   status               String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
+}
+
+model FinebirdActionLog {
+  id             Int      @id @default(autoincrement())
+  approvalDate   DateTime?
+  clickDate      DateTime?
+  orderDate      DateTime?
+  adId           Int?
+  adName         String?
+  siteName       String?
+  urlName        String?
+  urlNumber      Int?
+  osType         String?
+  referrer       String?
+  rewardAmount   Int?
+  status         String?
+  clData1        String?
+  clData2        String?
+  clData3        String?
+  clData4        String?
+  clData5        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model FinebirdClickLog {
+  id                    Int      @id @default(autoincrement())
+  siteName              String? 
+  siteUrl               String? 
+  adName                String? 
+  adId                  Int?    
+  clickData             Int?    
+  actionCvr             Float?  
+  approvalCvr           Float?  
+  acquisitionCount      Int?    
+  approvalCount         Int?    
+  rejectedCount         Int?    
+  rewardAmount          Int?    
+  clickCost             Int?    
+  clickRewardAmount     Int?    
+  totalRewardAmount     Int?    
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }

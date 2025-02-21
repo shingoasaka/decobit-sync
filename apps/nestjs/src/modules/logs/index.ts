@@ -13,3 +13,5 @@ export { SampleAffiliateActionLogService } from "../sampleAffiliate/action-logs.
 export { SampleAffiliateClickLogService } from "../sampleAffiliate/click-logs.service";
 export { CatsActionLogService } from "../cats/action-logs.service";
 export { CatsClickLogService } from "../cats/click-logs.service";
+export { FinebirdActionLogService } from "../finebird/action-logs.service";
+export { FinebirdClickLogService } from "../finebird/click-logs.service";

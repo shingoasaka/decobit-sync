@@ -12,3 +12,5 @@ export { SampleAffiliateActionLogRepository } from "../sampleAffiliate/action-lo
 export { SampleAffiliateClickLogRepository } from "../sampleAffiliate/click-logs.repository";
 export { CatsActionLogRepository } from "../cats/action-logs.repository";
 export { CatsClickLogRepository } from "../cats/click-logs.repository";
+export { FinebirdActionLogRepository } from "../finebird/action-logs.repository";
+export { FinebirdClickLogRepository } from "../finebird/click-logs.repository";
