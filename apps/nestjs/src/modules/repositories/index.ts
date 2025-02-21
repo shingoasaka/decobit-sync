@@ -10,3 +10,5 @@ export { MonkeyActionLogRepository } from "../monkey/action-logs.repository";
 export { MonkeyClickLogRepository } from "../monkey/click-logs.repository";
 export { SampleAffiliateActionLogRepository } from "../sampleAffiliate/action-logs.repository";
 export { SampleAffiliateClickLogRepository } from "../sampleAffiliate/click-logs.repository";
+export { CatsActionLogRepository } from "../cats/action-logs.repository";
+export { CatsClickLogRepository } from "../cats/click-logs.repository";

@@ -11,3 +11,5 @@ export { WebantennaActionLogService } from "../webantenna/mens-tbc-and-tbc/actio
 export { WebantennaClickLogService } from "../webantenna/mens-tbc-and-tbc/click-logs.service";
 export { SampleAffiliateActionLogService } from "../sampleAffiliate/action-logs.service";
 export { SampleAffiliateClickLogService } from "../sampleAffiliate/click-logs.service";
+export { CatsActionLogService } from "../cats/action-logs.service";
+export { CatsClickLogService } from "../cats/click-logs.service";
