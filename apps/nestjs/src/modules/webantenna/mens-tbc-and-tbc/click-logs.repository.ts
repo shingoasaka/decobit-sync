@@ -30,52 +30,50 @@ export class WebantennaClickLogRepository {
 
       await this.prisma.webantennaClickLog.create({
         data: {
-          ad_authority: item["権限"] || null,
+          adAuthority: item["権限"] || null,
           channel: item["媒体"] || null,
-          ad_identifier: item["広告枠"] || null,
-          campaign_name: item["キャンペーン名"] || null,
-          ad_durations: toDate(item["掲載期間"]) || null,
+          adIdentifier: item["広告枠"] || null,
+          campaignName: item["キャンペーン名"] || null,
+          adDurations: toDate(item["掲載期間"]) || null,
           click: toNumber(item["クリック数"]) || null,
-          ec_registration_cv: toNumber(item["02.EC会員登録(CV)"]) || null,
-          ec_direct_registration: toNumber(item["02.EC会員登録(直接)"]) || null,
-          ec_revisit_registration:
+          ecRegistrationCv: toNumber(item["02.EC会員登録(CV)"]) || null,
+          ecDirectRegistration: toNumber(item["02.EC会員登録(直接)"]) || null,
+          ecRevisitRegistration:
             toNumber(item["02.EC会員登録(再来訪)"]) || null,
-          ec_registration_cvr: toNumber(item["02.EC会員登録(CVR[%])"]) || null,
-          ec_purchase_cv: toNumber(item["03.EC購入(CV)"]) || null,
-          ec_direct_purchase_cv: toNumber(item["03.EC購入(直接)"]) || null,
-          ec_revisit_purchase_cv: toNumber(item["03.EC購入(再来訪)"]) || null,
-          ec_purchase_cvr: toNumber(item["03.EC購入(CVR[%])"]) || null,
-          web_reservation_cv: toNumber(item["WEB予約完了(CV)"]) || null,
-          web_direct_reservation_cv:
-            toNumber(item["WEB予約完了(直接)"]) || null,
-          web_revisit_reservation_cv:
+          ecRegistrationCvr: toNumber(item["02.EC会員登録(CVR[%])"]) || null,
+          ecPurchaseCv: toNumber(item["03.EC購入(CV)"]) || null,
+          ecDirectPurchaseCv: toNumber(item["03.EC購入(直接)"]) || null,
+          ecRevisitPurchaseCv: toNumber(item["03.EC購入(再来訪)"]) || null,
+          ecPurchaseCvr: toNumber(item["03.EC購入(CVR[%])"]) || null,
+          webReservationCv: toNumber(item["WEB予約完了(CV)"]) || null,
+          webDirectReservationCv: toNumber(item["WEB予約完了(直接)"]) || null,
+          webRevisitReservationCv:
             toNumber(item["WEB予約完了(再来訪)"]) || null,
-          web_reservation_cvr: toFloat(item["WEB予約完了(CVR[%])"]) || null,
-          epiler_web_reservation_cv:
+          webReservationCvr: toFloat(item["WEB予約完了(CVR[%])"]) || null,
+          epilerWebReservationCv:
             toNumber(item["エピレWEB予約完了(CV)"]) || null,
-          epiler_direct_reservation_cv:
+          epilerDirectReservationCv:
             toNumber(item["エピレWEB予約完了(直接)"]) || null,
-          epiler_revisit_reservation_cv:
+          epilerRevisitReservationCv:
             toNumber(item["エピレWEB予約完了(再来訪)"]) || null,
-          epiler_web_reservation_cvr:
+          epilerWebReservationCvr:
             toFloat(item["エピレWEB予約完了(CVR[%])"]) || null,
-          test1_cv: toNumber(item["テスト1(CV)"]) || null,
-          test1_direct_cv: toNumber(item["テスト1(直接)"]) || null,
-          test1_revisit_cv: toNumber(item["テスト1(再来訪)"]) || null,
-          test1_cvr: toFloat(item["テスト1(CVR[%])"]) || null,
-          test2_cv: toNumber(item["テスト2(CV)"]) || null,
-          test2_direct_cv: toNumber(item["テスト2(直接)"]) || null,
-          test2_revisit_cv: toNumber(item["テスト2(再来訪)"]) || null,
-          test2_cvr: toFloat(item["テスト2(CVR[%])"]) || null,
-          test3_cv: toNumber(item["テスト3(CV)"]) || null,
-          test3_direct_cv: toNumber(item["テスト3(直接)"]) || null,
-          test3_revisit_cv: toNumber(item["テスト3(再来訪)"]) || null,
-          test3_cvr: toFloat(item["テスト3(CVR[%])"]) || null,
-          recruitment_cv: toNumber(item["採用申込完了(CV)"]) || null,
-          recruitment_direct_cv: toNumber(item["採用申込完了(直接)"]) || null,
-          recruitment_revisit_cv:
-            toNumber(item["採用申込完了(再来訪)"]) || null,
-          recruitment_cvr: toFloat(item["採用申込完了(CVR[%])"]) || null,
+          test1Cv: toNumber(item["テスト1(CV)"]) || null,
+          test1DirectCv: toNumber(item["テスト1(直接)"]) || null,
+          test1RevisitCv: toNumber(item["テスト1(再来訪)"]) || null,
+          test1Cvr: toFloat(item["テスト1(CVR[%])"]) || null,
+          test2Cv: toNumber(item["テスト2(CV)"]) || null,
+          test2DirectCv: toNumber(item["テスト2(直接)"]) || null,
+          test2RevisitCv: toNumber(item["テスト2(再来訪)"]) || null,
+          test2Cvr: toFloat(item["テスト2(CVR[%])"]) || null,
+          test3Cv: toNumber(item["テスト3(CV)"]) || null,
+          test3DirectCv: toNumber(item["テスト3(直接)"]) || null,
+          test3RevisitCv: toNumber(item["テスト3(再来訪)"]) || null,
+          test3Cvr: toFloat(item["テスト3(CVR[%])"]) || null,
+          recruitmentCv: toNumber(item["採用申込完了(CV)"]) || null,
+          recruitmentDirectCv: toNumber(item["採用申込完了(直接)"]) || null,
+          recruitmentRevisitCv: toNumber(item["採用申込完了(再来訪)"]) || null,
+          recruitmentCvr: toFloat(item["採用申込完了(CVR[%])"]) || null,
         },
       });
     }
