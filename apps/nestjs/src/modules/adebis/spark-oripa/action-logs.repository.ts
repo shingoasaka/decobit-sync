@@ -286,14 +286,44 @@ export class SparkOripaActionLogRepository {
   async save(conversionData: RawSparkOripaData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));
+      let successCount = 0;
 
-      const result = await this.prisma.adebisActionLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // トランザクション内で一括処理を実行
+      await this.prisma.$transaction(async (prisma) => {
+        for (const data of formattedData) {
+          // cvDateとuserIdが両方存在する場合のみupsertを実行
+          if (data.cvDate && data.userId) {
+            await prisma.adebisActionLog.upsert({
+              where: {
+                cvDate_userId: {
+                  cvDate: data.cvDate,
+                  userId: data.userId,
+                },
+              },
+              create: {
+                ...data,
+              },
+              update: {
+                ...data,
+              },
+            });
+            successCount++;
+          } else {
+            // ユニーク制約に必要なデータが不足している場合はスキップ
+            this.logger.warn(
+              `Skipped record due to missing cvDate or userId: ${JSON.stringify(
+                {
+                  cvDate: data.cvDate,
+                  userId: data.userId,
+                },
+              )}`,
+            );
+          }
+        }
       });
 
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
+      this.logger.log(`Successfully processed ${successCount} records`);
+      return successCount;
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
       throw error;

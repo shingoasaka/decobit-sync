@@ -141,14 +141,44 @@ export class SparkOripaClickLogRepository {
   async save(conversionData: RawSparkOripaData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));
+      let successCount = 0;
 
-      const result = await this.prisma.adebisClickLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // トランザクション内で一括処理を実行
+      await this.prisma.$transaction(async (prisma) => {
+        for (const data of formattedData) {
+          // 必要なユニーク制約のフィールドが存在する場合のみupsertを実行
+          if (data.adId && data.mediaType && data.adgroup1) {
+            await prisma.adebisClickLog.upsert({
+              where: {
+                adId_mediaType_adgroup1: {
+                  adId: data.adId,
+                  mediaType: data.mediaType,
+                  adgroup1: data.adgroup1,
+                },
+              },
+              create: {
+                ...data,
+              },
+              update: {
+                ...data,
+              },
+            });
+            successCount++;
+          } else {
+            // ユニーク制約に必要なデータが不足している場合はスキップ
+            this.logger.warn(
+              `Skipped record due to missing required fields: ${JSON.stringify({
+                adId: data.adId,
+                mediaType: data.mediaType,
+                adgroup1: data.adgroup1,
+              })}`,
+            );
+          }
+        }
       });
 
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
+      this.logger.log(`Successfully processed ${successCount} records`);
+      return successCount;
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
       throw error;
