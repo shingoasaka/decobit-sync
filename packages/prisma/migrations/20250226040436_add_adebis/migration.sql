@@ -105,3 +105,9 @@ CREATE TABLE "AdebisClickLog" (
 
     CONSTRAINT "AdebisClickLog_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AdebisActionLog_cvDate_userId_key" ON "AdebisActionLog"("cvDate", "userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "AdebisClickLog_adId_mediaType_adgroup1_key" ON "AdebisClickLog"("adId", "mediaType", "adgroup1");
