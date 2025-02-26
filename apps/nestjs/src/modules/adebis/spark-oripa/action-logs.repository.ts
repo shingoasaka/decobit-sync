@@ -289,7 +289,7 @@ export class SparkOripaActionLogRepository {
       let successCount = 0;
 
       // トランザクション内で並列処理を実行
-      await this.prisma.$transaction(async (prisma) => {
+      await this.prisma.$transaction(async (prisma: Prisma.TransactionClient) => {
         const upsertPromises = formattedData
           .filter((data) => data.cvDate && data.userId)
           .map((data) =>
