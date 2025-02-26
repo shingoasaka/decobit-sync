@@ -288,16 +288,16 @@ export class SparkOripaActionLogRepository {
       const formattedData = conversionData.map((item) => this.formatData(item));
       let successCount = 0;
 
-      // トランザクション内で一括処理を実行
+      // トランザクション内で並列処理を実行
       await this.prisma.$transaction(async (prisma) => {
-        for (const data of formattedData) {
-          // cvDateとuserIdが両方存在する場合のみupsertを実行
-          if (data.cvDate && data.userId) {
-            await prisma.adebisActionLog.upsert({
+        const upsertPromises = formattedData
+          .filter((data) => data.cvDate && data.userId)
+          .map((data) =>
+            prisma.adebisActionLog.upsert({
               where: {
                 cvDate_userId: {
-                  cvDate: data.cvDate,
-                  userId: data.userId,
+                  cvDate: data.cvDate as Date,
+                  userId: data.userId as string,
                 },
               },
               create: {
@@ -306,10 +306,13 @@ export class SparkOripaActionLogRepository {
               update: {
                 ...data,
               },
-            });
-            successCount++;
-          } else {
-            // ユニーク制約に必要なデータが不足している場合はスキップ
+            }),
+          );
+
+        // 無効なデータのログ出力
+        formattedData
+          .filter((data) => !data.cvDate || !data.userId)
+          .forEach((data) => {
             this.logger.warn(
               `Skipped record due to missing cvDate or userId: ${JSON.stringify(
                 {
@@ -318,8 +321,11 @@ export class SparkOripaActionLogRepository {
                 },
               )}`,
             );
-          }
-        }
+          });
+
+        // 並列でupsert操作を実行
+        const results = await Promise.all(upsertPromises);
+        successCount = results.length;
       });
 
       this.logger.log(`Successfully processed ${successCount} records`);

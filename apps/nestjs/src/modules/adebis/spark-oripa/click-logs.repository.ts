@@ -143,17 +143,17 @@ export class SparkOripaClickLogRepository {
       const formattedData = conversionData.map((item) => this.formatData(item));
       let successCount = 0;
 
-      // トランザクション内で一括処理を実行
+      // トランザクション内で並列処理を実行
       await this.prisma.$transaction(async (prisma) => {
-        for (const data of formattedData) {
-          // 必要なユニーク制約のフィールドが存在する場合のみupsertを実行
-          if (data.adId && data.mediaType && data.adgroup1) {
-            await prisma.adebisClickLog.upsert({
+        const upsertPromises = formattedData
+          .filter((data) => data.adId && data.mediaType && data.adgroup1)
+          .map((data) =>
+            prisma.adebisClickLog.upsert({
               where: {
                 adId_mediaType_adgroup1: {
-                  adId: data.adId,
-                  mediaType: data.mediaType,
-                  adgroup1: data.adgroup1,
+                  adId: data.adId as string,
+                  mediaType: data.mediaType as string,
+                  adgroup1: data.adgroup1 as string,
                 },
               },
               create: {
@@ -162,10 +162,13 @@ export class SparkOripaClickLogRepository {
               update: {
                 ...data,
               },
-            });
-            successCount++;
-          } else {
-            // ユニーク制約に必要なデータが不足している場合はスキップ
+            }),
+          );
+
+        // 無効なデータのログ出力
+        formattedData
+          .filter((data) => !(data.adId && data.mediaType && data.adgroup1))
+          .forEach((data) => {
             this.logger.warn(
               `Skipped record due to missing required fields: ${JSON.stringify({
                 adId: data.adId,
@@ -173,8 +176,11 @@ export class SparkOripaClickLogRepository {
                 adgroup1: data.adgroup1,
               })}`,
             );
-          }
-        }
+          });
+
+        // 並列でupsert操作を実行
+        const results = await Promise.all(upsertPromises);
+        successCount = results.length;
       });
 
       this.logger.log(`Successfully processed ${successCount} records`);
