@@ -505,3 +505,109 @@ model FinebirdClickLog {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }
+
+model AdebisActionLog {
+  id                        Int      @id @default(autoincrement())
+  cvName                    String?
+  cvDate                    DateTime?
+  userId                    String?
+  userName                  String?
+  salesAmount               String?
+  item1                     String?
+  item2                     Int?
+  item3                     String?
+  deviceType                String?
+  latencyPeriod             DateTime?
+  latencyPeriodSeconds      Int?
+  contactCount              Int?
+  directConversionDate      DateTime?
+  directMediaCategory       String?
+  directAdgroup             String?
+  directAdName              String?
+  directAdId                Int?
+  indirectConversion2Date   DateTime?
+  indirectMediaCategory2    String?
+  indirectAdgroup2          String?
+  indirectAdName2           String?
+  indirectAdId2             String?
+  indirectConversion3Date   DateTime?
+  indirectMediaCategory3    String?
+  indirectAdgroup3          String?
+  indirectAdName3           String?
+  indirectAdId3             String?
+  indirectConversion4Date   DateTime?
+  indirectMediaCategory4    String?
+  indirectAdgroup4          String?
+  indirectAdName4           String?
+  indirectAdId4             String?
+  indirectConversion5Date   DateTime?
+  indirectMediaCategory5    String?
+  indirectAdgroup5          String?
+  indirectAdName5           String?
+  indirectAdId5             String?
+  indirectConversion6Date   DateTime?
+  indirectMediaCategory6    String?
+  indirectAdgroup6          String?
+  indirectAdName6           String?
+  indirectAdId6             String?
+  indirectConversion7Date   DateTime?
+  indirectMediaCategory7    String?
+  indirectAdgroup7          String?
+  indirectAdName7           String?
+  indirectAdId7             String?
+  indirectConversion8Date   DateTime?
+  indirectMediaCategory8    String?
+  indirectAdgroup8          String?
+  indirectAdName8           String?
+  indirectAdId8             String?
+  indirectConversion9Date   DateTime?
+  indirectMediaCategory9    String?
+  indirectAdgroup9          String?
+  indirectAdName9           String?
+  indirectAdId9             String?
+  indirectConversion10Date  DateTime?
+  indirectMediaCategory10   String?
+  indirectAdgroup10         String?
+  indirectAdName10          String?
+  indirectAdId10            String?
+  firstConversionDate       DateTime?
+  firstMediaType            String?
+  firstAdName               String?
+  firstAdId                 String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([cvDate, userId])
+}
+
+model AdebisClickLog {
+  id                      Int      @id @default(autoincrement())
+  mediaType               String?
+  adgroup1                String?
+  adgroup2                String?
+  adId                    String?
+  adName                  String?
+  impressionCount         Int?
+  clickData               Int?
+  cvPaymentCount          Int?
+  cvrPaymentCount         Int?
+  cvTotal                 Int?
+  cvrTotal                Int?
+  indirectConversion2     Int?
+  indirectConversion3     Int?
+  indirectConversion4     Int?
+  indirectConversion5     Int?
+  indirectConversion6     Int?
+  indirectConversionTotal Int?
+  firstContact            Int?
+  reallocatedCv           Float?
+  salesAmount             String?
+  adCost                  String?
+  cpa                     String?
+  tcpa                    String?
+  roas                    Int?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@unique([adId, mediaType, adgroup1])
+}

@@ -15,3 +15,5 @@ export { CatsActionLogService } from "../cats/action-logs.service";
 export { CatsClickLogService } from "../cats/click-logs.service";
 export { FinebirdActionLogService } from "../finebird/action-logs.service";
 export { FinebirdClickLogService } from "../finebird/click-logs.service";
+export { SparkOripaActionLogService } from "../adebis/spark-oripa/action-logs.service";
+export { SparkOripaClickLogService } from "../adebis/spark-oripa/click-logs.service";

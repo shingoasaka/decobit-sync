@@ -14,3 +14,5 @@ export { CatsActionLogRepository } from "../cats/action-logs.repository";
 export { CatsClickLogRepository } from "../cats/click-logs.repository";
 export { FinebirdActionLogRepository } from "../finebird/action-logs.repository";
 export { FinebirdClickLogRepository } from "../finebird/click-logs.repository";
+export { SparkOripaActionLogRepository } from "../adebis/spark-oripa/action-logs.repository";
+export { SparkOripaClickLogRepository } from "../adebis/spark-oripa/click-logs.repository";
