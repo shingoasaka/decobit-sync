@@ -289,44 +289,46 @@ export class SparkOripaActionLogRepository {
       let successCount = 0;
 
       // トランザクション内で並列処理を実行
-      await this.prisma.$transaction(async (prisma) => {
-        const upsertPromises = formattedData
-          .filter((data) => data.cvDate && data.userId)
-          .map((data) =>
-            prisma.adebisActionLog.upsert({
-              where: {
-                cvDate_userId: {
-                  cvDate: data.cvDate as Date,
-                  userId: data.userId as string,
+      await this.prisma.$transaction(
+        async (prisma: Prisma.TransactionClient) => {
+          const upsertPromises = formattedData
+            .filter((data) => data.cvDate && data.userId)
+            .map((data) =>
+              prisma.adebisActionLog.upsert({
+                where: {
+                  cvDate_userId: {
+                    cvDate: data.cvDate as Date,
+                    userId: data.userId as string,
+                  },
                 },
-              },
-              create: {
-                ...data,
-              },
-              update: {
-                ...data,
-              },
-            }),
-          );
-
-        // 無効なデータのログ出力
-        formattedData
-          .filter((data) => !data.cvDate || !data.userId)
-          .forEach((data) => {
-            this.logger.warn(
-              `Skipped record due to missing cvDate or userId: ${JSON.stringify(
-                {
-                  cvDate: data.cvDate,
-                  userId: data.userId,
+                create: {
+                  ...data,
                 },
-              )}`,
+                update: {
+                  ...data,
+                },
+              }),
             );
-          });
 
-        // 並列でupsert操作を実行
-        const results = await Promise.all(upsertPromises);
-        successCount = results.length;
-      });
+          // 無効なデータのログ出力
+          formattedData
+            .filter((data) => !data.cvDate || !data.userId)
+            .forEach((data) => {
+              this.logger.warn(
+                `Skipped record due to missing cvDate or userId: ${JSON.stringify(
+                  {
+                    cvDate: data.cvDate,
+                    userId: data.userId,
+                  },
+                )}`,
+              );
+            });
+
+          // 並列でupsert操作を実行
+          const results = await Promise.all(upsertPromises);
+          successCount = results.length;
+        },
+      );
 
       this.logger.log(`Successfully processed ${successCount} records`);
       return successCount;

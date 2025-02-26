@@ -144,44 +144,48 @@ export class SparkOripaClickLogRepository {
       let successCount = 0;
 
       // トランザクション内で並列処理を実行
-      await this.prisma.$transaction(async (prisma) => {
-        const upsertPromises = formattedData
-          .filter((data) => data.adId && data.mediaType && data.adgroup1)
-          .map((data) =>
-            prisma.adebisClickLog.upsert({
-              where: {
-                adId_mediaType_adgroup1: {
-                  adId: data.adId as string,
-                  mediaType: data.mediaType as string,
-                  adgroup1: data.adgroup1 as string,
+      await this.prisma.$transaction(
+        async (prisma: Prisma.TransactionClient) => {
+          const upsertPromises = formattedData
+            .filter((data) => data.adId && data.mediaType && data.adgroup1)
+            .map((data) =>
+              prisma.adebisClickLog.upsert({
+                where: {
+                  adId_mediaType_adgroup1: {
+                    adId: data.adId as string,
+                    mediaType: data.mediaType as string,
+                    adgroup1: data.adgroup1 as string,
+                  },
                 },
-              },
-              create: {
-                ...data,
-              },
-              update: {
-                ...data,
-              },
-            }),
-          );
-
-        // 無効なデータのログ出力
-        formattedData
-          .filter((data) => !(data.adId && data.mediaType && data.adgroup1))
-          .forEach((data) => {
-            this.logger.warn(
-              `Skipped record due to missing required fields: ${JSON.stringify({
-                adId: data.adId,
-                mediaType: data.mediaType,
-                adgroup1: data.adgroup1,
-              })}`,
+                create: {
+                  ...data,
+                },
+                update: {
+                  ...data,
+                },
+              }),
             );
-          });
 
-        // 並列でupsert操作を実行
-        const results = await Promise.all(upsertPromises);
-        successCount = results.length;
-      });
+          // 無効なデータのログ出力
+          formattedData
+            .filter((data) => !(data.adId && data.mediaType && data.adgroup1))
+            .forEach((data) => {
+              this.logger.warn(
+                `Skipped record due to missing required fields: ${JSON.stringify(
+                  {
+                    adId: data.adId,
+                    mediaType: data.mediaType,
+                    adgroup1: data.adgroup1,
+                  },
+                )}`,
+              );
+            });
+
+          // 並列でupsert操作を実行
+          const results = await Promise.all(upsertPromises);
+          successCount = results.length;
+        },
+      );
 
       this.logger.log(`Successfully processed ${successCount} records`);
       return successCount;
