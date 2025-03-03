@@ -5,12 +5,12 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-import { StlasshActionLogRepository } from "./action-log.repository";
+import { QuorizaActionLogRepository } from "../action-log.repository";
 
 @Injectable()
 export class StlasshActionLogService implements LogService {
   constructor(
-    private readonly repository: StlasshActionLogRepository,
+    private readonly repository: QuorizaActionLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 

@@ -3,7 +3,7 @@ import { PrismaService } from "@prismaService";
 import { Prisma } from "@prisma/client";
 
 // 入力データの型定義
-interface RawSparkOripaData {
+interface RawAdebisData {
   [key: string]: string | null | undefined;
   媒体種別?: string;
   広告グループ1?: string;
@@ -33,7 +33,7 @@ interface RawSparkOripaData {
 }
 
 // 変換後のデータの型定義
-interface FormattedSparkOripaData {
+interface FormattedAdebisData {
   mediaType: string | null;
   adgroup1: string | null;
   adgroup2: string | null;
@@ -61,8 +61,8 @@ interface FormattedSparkOripaData {
 }
 
 @Injectable()
-export class SparkOripaClickLogRepository {
-  private readonly logger = new Logger(SparkOripaClickLogRepository.name);
+export class AdebisClickLogRepository {
+  private readonly logger = new Logger(AdebisClickLogRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -100,13 +100,13 @@ export class SparkOripaClickLogRepository {
     return key.replace(/^.*?/, "");
   }
 
-  private getValue(item: RawSparkOripaData, key: string): string | null {
+  private getValue(item: RawAdebisData, key: string): string | null {
     const normalizedKey = this.normalizeKey(key);
     return item[key] || item[normalizedKey] || null;
   }
 
-  private formatData(item: RawSparkOripaData): FormattedSparkOripaData {
-    const data: FormattedSparkOripaData = {
+  private formatData(item: RawAdebisData): FormattedAdebisData {
+    const data: FormattedAdebisData = {
       mediaType: this.getValue(item, "媒体種別"),
       adgroup1: this.getValue(item, "広告グループ1"),
       adgroup2: this.getValue(item, "広告グループ2"),
@@ -138,7 +138,7 @@ export class SparkOripaClickLogRepository {
     return data;
   }
 
-  async save(conversionData: RawSparkOripaData[]): Promise<number> {
+  async save(conversionData: RawAdebisData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));
       let successCount = 0;

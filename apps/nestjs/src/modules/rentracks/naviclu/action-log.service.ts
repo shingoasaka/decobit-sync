@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { PrismaService } from "@prismaService";
 import { LogService } from "src/modules/logs/types";
-import { NavicluActionLogRepository } from "./action-log.repository";
+import { RentracksActionLogRepository } from "../action-log.repository";
 import dotenv from "dotenv";
 import { getToday } from "src/libs/date-utils";
 
@@ -14,7 +14,7 @@ dotenv.config();
 @Injectable()
 export class NavicluActionLogService implements LogService {
   constructor(
-    private readonly repository: NavicluActionLogRepository,
+    private readonly repository: RentracksActionLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 
