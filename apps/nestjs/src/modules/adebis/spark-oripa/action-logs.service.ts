@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-import { SparkOripaActionLogRepository } from "./action-logs.repository";
+import { AdebisActionLogRepository } from "../action-logs.repository";
 
 interface SparkOripaSelectors {
   LOGIN: {
@@ -46,7 +46,7 @@ const WAIT_TIME = {
 @Injectable()
 export class SparkOripaActionLogService implements LogService {
   constructor(
-    private readonly repository: SparkOripaActionLogRepository,
+    private readonly repository: AdebisActionLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 

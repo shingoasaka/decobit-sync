@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser } from "playwright";
-import { MensclearActionLogRepository } from "./action-log.repository";
+import { QuorizaActionLogRepository } from "../action-log.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
@@ -10,7 +10,7 @@ import { PrismaService } from "@prismaService";
 @Injectable()
 export class MensclearActionLogService implements LogService {
   constructor(
-    private readonly repository: MensclearActionLogRepository,
+    private readonly repository: QuorizaActionLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 

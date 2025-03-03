@@ -4,7 +4,7 @@ import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
 
 @Injectable()
-export class MetronClickLogsService {
+export class MetronClickLogService {
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,

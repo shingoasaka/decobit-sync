@@ -3,7 +3,7 @@ import { PrismaService } from "@prismaService";
 import { Prisma } from "@prisma/client";
 
 // 入力データの型定義
-interface RawSparkOripaData {
+interface RawAdebisData {
   [key: string]: string | null | undefined;
   CV名?: string;
   CV時間?: string;
@@ -74,7 +74,7 @@ interface RawSparkOripaData {
 }
 
 // 変換後のデータの型定義
-interface FormattedSparkOripaData {
+interface FormattedAdebisData {
   cvName: string | null;
   cvDate: Date | null;
   userId: string | null;
@@ -144,8 +144,8 @@ interface FormattedSparkOripaData {
 }
 
 @Injectable()
-export class SparkOripaActionLogRepository {
-  private readonly logger = new Logger(SparkOripaActionLogRepository.name);
+export class AdebisActionLogRepository {
+  private readonly logger = new Logger(AdebisActionLogRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -183,13 +183,13 @@ export class SparkOripaActionLogRepository {
     return key.replace(/^.*?/, "");
   }
 
-  private getValue(item: RawSparkOripaData, key: string): string | null {
+  private getValue(item: RawAdebisData, key: string): string | null {
     const normalizedKey = this.normalizeKey(key);
     return item[key] || item[normalizedKey] || null;
   }
 
-  private formatData(item: RawSparkOripaData): FormattedSparkOripaData {
-    const data: FormattedSparkOripaData = {
+  private formatData(item: RawAdebisData): FormattedAdebisData {
+    const data: FormattedAdebisData = {
       cvName: this.getValue(item, "CV名"),
       cvDate: this.toDate(this.getValue(item, "CV時間")),
       userId: this.getValue(item, "ユーザーID"),
@@ -283,7 +283,7 @@ export class SparkOripaActionLogRepository {
     return data;
   }
 
-  async save(conversionData: RawSparkOripaData[]): Promise<number> {
+  async save(conversionData: RawAdebisData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));
       let successCount = 0;

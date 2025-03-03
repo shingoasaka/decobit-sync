@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser } from "playwright";
-import { TryActionLogRepository } from "./action-logs.repository";
+import { HanikamuActionLogRepository } from "../action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
@@ -11,7 +11,7 @@ import { PrismaService } from "@prismaService";
 @Injectable()
 export class TryActionLogService implements LogService {
   constructor(
-    private readonly repository: TryActionLogRepository,
+    private readonly repository: HanikamuActionLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 

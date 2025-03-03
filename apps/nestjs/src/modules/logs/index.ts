@@ -1,5 +1,5 @@
-export { MetronClickLogsService } from "../metron/click-logs.service";
-export { MetronActionLogsService } from "../metron/action-logs.service";
+export { MetronClickLogService } from "../metron/click-logs.service";
+export { MetronActionLogService } from "../metron/action-logs.service";
 export { TryActionLogService } from "../hanikamu/try/action-logs.service";
 export { MonkeyActionLogService } from "../monkey/action-logs.service";
 export { MonkeyClickLogService } from "../monkey/click-logs.service";
