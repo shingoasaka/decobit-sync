@@ -23,16 +23,20 @@ export class TryClickLogService implements LogService {
 
       // ログイン処理
       await page.goto("https://www.82comb.net/partner/login");
-      await page.getByRole("textbox", { name: "Enter loginname" }).fill(process.env.HANIKAMU_USERNAME ?? "");
-      await page.getByRole("textbox", { name: "Enter password" }).fill(process.env.HANIKAMU_PASSWORD ?? "");
+      await page
+        .getByRole("textbox", { name: "Enter loginname" })
+        .fill(process.env.HANIKAMU_USERNAME ?? "");
+      await page
+        .getByRole("textbox", { name: "Enter password" })
+        .fill(process.env.HANIKAMU_PASSWORD ?? "");
       await page.getByRole("button", { name: "LOGIN" }).click();
-      
+
       await page.waitForTimeout(2000);
       await page.getByRole("link", { name: " Reports" }).click();
       await page.getByRole("link", { name: "LP別" }).click();
       await page.goto("https://www.82comb.net/partner/report/lp");
       await page.getByLabel("広告選択").selectOption("1176");
-      
+
       // 日付フィルタ適用
       await page.locator("#search input[name='start_date']").click();
       await page.getByRole("cell", { name: "10" }).nth(3).click();
@@ -41,7 +45,9 @@ export class TryClickLogService implements LogService {
 
       // CSVダウンロード
       const downloadPromise = page.waitForEvent("download");
-      await page.getByRole("button", { name: "  上記条件でCSVダウンロード" }).click();
+      await page
+        .getByRole("button", { name: "  上記条件でCSVダウンロード" })
+        .click();
       const download = await downloadPromise;
 
       const downloadPath = await download.path();
@@ -68,7 +74,7 @@ export class TryClickLogService implements LogService {
       columns: true,
       skip_empty_lines: true,
     });
-    console.log(records)
+    console.log(records);
 
     await this.repository.save(records);
     return records.length;
