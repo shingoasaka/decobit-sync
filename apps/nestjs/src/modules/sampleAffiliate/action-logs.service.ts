@@ -22,10 +22,14 @@ export class SampleAffiliateActionLogService {
 
       // ✅ ログイン処理
       await page.goto("https://spectrum-sm.com/contents.php?c=user_login");
-      await page.locator('input[name="mail"]').fill(process.env.SAMPLE_AFFILIATE_ID ?? "");
-      await page.locator('input[name="pass"]').fill(process.env.SAMPLE_AFFILIATE_PASSWORD ?? "");
+      await page
+        .locator('input[name="mail"]')
+        .fill(process.env.SAMPLE_AFFILIATE_ID ?? "");
+      await page
+        .locator('input[name="pass"]')
+        .fill(process.env.SAMPLE_AFFILIATE_PASSWORD ?? "");
       await page.getByRole("button", { name: "ログイン" }).click();
-      
+
       await page.waitForTimeout(2000);
       await page.getByRole("link", { name: "成果管理" }).click();
       await page.getByRole("radio", { name: "今日" }).first().check();
@@ -33,10 +37,14 @@ export class SampleAffiliateActionLogService {
       await page.getByRole("button", { name: "検索する" }).click();
 
       // ✅ CSVダウンロード画面に遷移
-      await page.getByRole('link', { name: '検索結果をCSVダウンロード' }).click();
+      await page
+        .getByRole("link", { name: "検索結果をCSVダウンロード" })
+        .click();
 
       // ✅ iframe のロードを明示的に待つ
-      await page.waitForSelector('iframe[name^="TB_iframeContent"]', { timeout: 10000 });
+      await page.waitForSelector('iframe[name^="TB_iframeContent"]', {
+        timeout: 10000,
+      });
 
       // ✅ iframe を取得（`name` が変化する問題を `name^="TB_iframeContent"` で解決）
       const iframeLocator = page.locator('iframe[name^="TB_iframeContent"]');
@@ -46,7 +54,9 @@ export class SampleAffiliateActionLogService {
 
       // ✅ ダウンロードボタンをクリック
       const downloadPromise = page.waitForEvent("download");
-      await iframeContent.getByRole('button', { name: 'CSVファイルをダウンロード' }).click();
+      await iframeContent
+        .getByRole("button", { name: "CSVファイルをダウンロード" })
+        .click();
       const download = await downloadPromise;
 
       // ✅ ファイルの保存パスを取得

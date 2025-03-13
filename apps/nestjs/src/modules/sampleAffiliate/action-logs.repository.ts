@@ -76,7 +76,7 @@ export class SampleAffiliateActionLogRepository {
       mediaName: this.getValue(item, "メディア"),
       adName: this.getValue(item, "広告"),
       adMaterial: this.getValue(item, "広告素材"),
-      actionDetails: this.getValue(item, "成果内容") ?? "", 
+      actionDetails: this.getValue(item, "成果内容") ?? "",
       actionAmount: this.toInt(this.getValue(item, "成果報酬額[円]")),
       approvalStatus: this.getValue(item, "承認状態"),
       referrerUrl: this.getValue(item, "リファラ"),
