@@ -239,6 +239,21 @@ model HanikamuActionLog {
   updatedAt        DateTime  @updatedAt
 }
 
+model HanikamuClickLog{
+  id               Int       @id @default(autoincrement())
+  landingPage      String?
+  linkUrl          String?
+  click            Int?
+  actionData       Int?
+  cvr              Float?
+  approvedCount    Int?
+  approvalRate     Float?
+  unapprovedCount  Int?
+  rejectionsCount  Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
 model MetronActionLog {
   id                    Int       @id @default(autoincrement())
   actionDateTime        DateTime?
