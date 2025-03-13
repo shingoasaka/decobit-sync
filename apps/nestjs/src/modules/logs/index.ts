@@ -3,6 +3,7 @@ export { CatsClickLogService } from "../cats/click-logs.service";
 export { FinebirdActionLogService } from "../finebird/action-logs.service";
 export { FinebirdClickLogService } from "../finebird/click-logs.service";
 export { MensclearActionLogService } from "../quoriza/mensclear/action-log.service";
+export { MensclearClickLogService } from "../quoriza/mensclear/click-logs.service";
 export { MetronActionLogService } from "../metron/action-logs.service";
 export { MetronClickLogService } from "../metron/click-logs.service";
 export { MonkeyActionLogService } from "../monkey/action-logs.service";
@@ -14,6 +15,7 @@ export { SampleAffiliateClickLogService } from "../sampleAffiliate/click-logs.se
 export { SparkOripaActionLogService } from "../adebis/spark-oripa/action-logs.service";
 export { SparkOripaClickLogService } from "../adebis/spark-oripa/click-logs.service";
 export { StlasshActionLogService } from "../quoriza/stlassh/action-log.service";
+export { StlasshClickLogService } from "../quoriza/stlassh/click-log.service";
 export { TryActionLogService } from "../hanikamu/try/action-logs.service";
 export { TryClickLogService } from "../hanikamu/try/click-logs.service";
 export { WebantennaActionLogService } from "../webantenna/mens-tbc-and-tbc/action-logs.service";

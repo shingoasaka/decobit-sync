@@ -381,6 +381,20 @@ model QuorizaActionLog {
   updatedAt         DateTime  @updatedAt
 }
 
+model QuorizaClickLog{
+  id                Int       @id @default(autoincrement())
+  adCategory        String?
+  click             Int? 
+  actionData        Int?
+  cvr               Float?
+  approvedCount     Int?
+  approvalRate      Float?
+  unapprovedCount   Int?
+  rejectionsCount   Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
 model RentracksActionLog {
   id               Int       @id @default(autoincrement())
   clickDateTime    DateTime?
