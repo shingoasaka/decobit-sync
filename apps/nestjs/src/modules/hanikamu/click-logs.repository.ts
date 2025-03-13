@@ -14,7 +14,7 @@ interface HanikamuRawData {
 }
 
 interface HanikamuFormattedData {
-  landingPage: string | null;
+  landingPageName: string | null;
   linkUrl: string | null;
   click: number | null;
   actionData: number | null;
@@ -31,7 +31,7 @@ export class HanikamuClickLogRepository {
 
   private formatData(item: HanikamuRawData): HanikamuFormattedData {
     return {
-      landingPage: item["ランディングページ"] || null,
+      landingPageName: item["ランディングページ"] || null,
       linkUrl: item["リンク先URL"] || null,
       click: item["Click数"] ? parseInt(item["Click数"], 10) : null,
       actionData: item["発生数"] ? parseInt(item["発生数"], 10) : null,

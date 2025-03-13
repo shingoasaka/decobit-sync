@@ -241,7 +241,7 @@ model HanikamuActionLog {
 
 model HanikamuClickLog{
   id               Int       @id @default(autoincrement())
-  landingPage      String?
+  landingPageName  String?
   linkUrl          String?
   click            Int?
   actionData       Int?
