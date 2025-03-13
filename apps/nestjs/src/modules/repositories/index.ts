@@ -5,6 +5,7 @@ export { CatsClickLogRepository } from "../cats/click-logs.repository";
 export { FinebirdActionLogRepository } from "../finebird/action-logs.repository";
 export { FinebirdClickLogRepository } from "../finebird/click-logs.repository";
 export { HanikamuActionLogRepository } from "../hanikamu/action-logs.repository";
+export { HanikamuClickLogRepository } from "../hanikamu/click-logs.repository";
 export { MonkeyActionLogRepository } from "../monkey/action-logs.repository";
 export { MonkeyClickLogRepository } from "../monkey/click-logs.repository";
 export { QuorizaActionLogRepository } from "../quoriza/action-log.repository";
