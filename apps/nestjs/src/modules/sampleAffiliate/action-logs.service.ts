@@ -67,7 +67,6 @@ export class SampleAffiliateActionLogService {
 
       return await this.processCsvAndSave(downloadPath);
     } catch (error) {
-      console.error("Error during fetchAndInsertLogs:", error);
       return 0;
     } finally {
       if (browser) {

@@ -8,75 +8,75 @@ datasource db {
 }
 
 model AdebisActionLog {
-  id                       Int       @id @default(autoincrement())
-  cvName                   String?
-  cvDate                   DateTime?
-  userId                   String?
-  userName                 String?
-  salesAmount              String?
-  item1                    String?
-  item2                    Int?
-  item3                    String?
-  deviceType               String?
-  latencyPeriod            DateTime?
-  latencyPeriodSeconds     Int?
-  contactCount             Int?
-  directConversionDate     DateTime?
-  directMediaCategory      String?
-  directAdgroup            String?
-  directAdName             String?
-  directAdId               Int?
-  indirectConversion2Date  DateTime?
-  indirectMediaCategory2   String?
-  indirectAdgroup2         String?
-  indirectAdName2          String?
-  indirectAdId2            String?
-  indirectConversion3Date  DateTime?
-  indirectMediaCategory3   String?
-  indirectAdgroup3         String?
-  indirectAdName3          String?
-  indirectAdId3            String?
-  indirectConversion4Date  DateTime?
-  indirectMediaCategory4   String?
-  indirectAdgroup4         String?
-  indirectAdName4          String?
-  indirectAdId4            String?
-  indirectConversion5Date  DateTime?
-  indirectMediaCategory5   String?
-  indirectAdgroup5         String?
-  indirectAdName5          String?
-  indirectAdId5            String?
-  indirectConversion6Date  DateTime?
-  indirectMediaCategory6   String?
-  indirectAdgroup6         String?
-  indirectAdName6          String?
-  indirectAdId6            String?
-  indirectConversion7Date  DateTime?
-  indirectMediaCategory7   String?
-  indirectAdgroup7         String?
-  indirectAdName7          String?
-  indirectAdId7            String?
-  indirectConversion8Date  DateTime?
-  indirectMediaCategory8   String?
-  indirectAdgroup8         String?
-  indirectAdName8          String?
-  indirectAdId8            String?
-  indirectConversion9Date  DateTime?
-  indirectMediaCategory9   String?
-  indirectAdgroup9         String?
-  indirectAdName9          String?
-  indirectAdId9            String?
-  indirectConversion10Date DateTime?
-  indirectMediaCategory10  String?
-  indirectAdgroup10        String?
-  indirectAdName10         String?
-  indirectAdId10           String?
-  firstConversionDate      DateTime?
-  firstMediaType           String?
-  firstAdName              String?
-  firstAdId                String?
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  id                        Int      @id @default(autoincrement())
+  cvName                    String?
+  cvDate                    DateTime?
+  userId                    String?
+  userName                  String?
+  salesAmount               String?
+  item1                     String?
+  item2                     Int?
+  item3                     String?
+  deviceType                String?
+  latencyPeriod             DateTime?
+  latencyPeriodSeconds      Int?
+  contactCount              Int?
+  directConversionDate      DateTime?
+  directMediaCategory       String?
+  directAdgroup             String?
+  directAdName              String?
+  directAdId                Int?
+  indirectConversion2Date   DateTime?
+  indirectMediaCategory2    String?
+  indirectAdgroup2          String?
+  indirectAdName2           String?
+  indirectAdId2             String?
+  indirectConversion3Date   DateTime?
+  indirectMediaCategory3    String?
+  indirectAdgroup3          String?
+  indirectAdName3           String?
+  indirectAdId3             String?
+  indirectConversion4Date   DateTime?
+  indirectMediaCategory4    String?
+  indirectAdgroup4          String?
+  indirectAdName4           String?
+  indirectAdId4             String?
+  indirectConversion5Date   DateTime?
+  indirectMediaCategory5    String?
+  indirectAdgroup5          String?
+  indirectAdName5           String?
+  indirectAdId5             String?
+  indirectConversion6Date   DateTime?
+  indirectMediaCategory6    String?
+  indirectAdgroup6          String?
+  indirectAdName6           String?
+  indirectAdId6             String?
+  indirectConversion7Date   DateTime?
+  indirectMediaCategory7    String?
+  indirectAdgroup7          String?
+  indirectAdName7           String?
+  indirectAdId7             String?
+  indirectConversion8Date   DateTime?
+  indirectMediaCategory8    String?
+  indirectAdgroup8          String?
+  indirectAdName8           String?
+  indirectAdId8             String?
+  indirectConversion9Date   DateTime?
+  indirectMediaCategory9    String?
+  indirectAdgroup9          String?
+  indirectAdName9           String?
+  indirectAdId9             String?
+  indirectConversion10Date  DateTime?
+  indirectMediaCategory10   String?
+  indirectAdgroup10         String?
+  indirectAdName10          String?
+  indirectAdId10            String?
+  firstConversionDate       DateTime?
+  firstMediaType            String?
+  firstAdName               String?
+  firstAdId                 String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 
   @@unique([cvDate, userId])
 }
@@ -107,116 +107,116 @@ model AdebisClickLog {
   cpa                     String?
   tcpa                    String?
   roas                    Int?
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   @@unique([adId, mediaType, adgroup1])
 }
 
 model CatsActionLog {
-  id                  Int       @id @default(autoincrement())
-  actionDate          DateTime?
-  clickDate           DateTime?
-  midClickDate        DateTime?
-  mediaName           String?
-  mediaCategory1      String?
-  mediaCategory2      String?
-  advertiserName      String?
-  adName              String?
-  adgroupName         String?
-  conversionPointName String?
-  trackingUserId      String?
-  salesAmount         Int?
-  rewardAmount        Int?
-  redirectAdUrlName   String?
-  useRotation         String?
-  carrier             String?
-  osType              String?
-  userAgentClick      String?
-  userAgentAction     String?
-  userIpClick         String?
-  userIpAction        String?
-  referrerClickUrl    String?
-  clData1             String?
-  catsReportId        String?
-  midClData1          String?
-  actionInfo1         String?
-  sessionId           String?
-  userId              String?
-  midClickCount       Int?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                   Int      @id @default(autoincrement())
+  actionDate           DateTime?
+  clickDate            DateTime?
+  midClickDate         DateTime?
+  mediaName            String?
+  mediaCategory1       String?
+  mediaCategory2       String?
+  advertiserName       String?
+  adName               String?
+  adgroupName          String?
+  conversionPointName  String?
+  trackingUserId       String?
+  salesAmount          Int?
+  rewardAmount         Int?
+  redirectAdUrlName    String?
+  useRotation          String?
+  carrier              String?
+  osType               String?
+  userAgentClick       String?
+  userAgentAction      String?
+  userIpClick          String?
+  userIpAction         String?
+  referrerClickUrl     String?
+  clData1              String?
+  catsReportId         String?
+  midClData1           String?
+  actionInfo1          String?
+  sessionId            String?
+  userId               String?
+  midClickCount        Int?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model CatsClickLog {
-  id                Int       @id @default(autoincrement())
-  clickDate         DateTime?
-  mediaName         String?
-  mediaCategory1    String?
-  mediaCategory2    String?
-  advertiserName    String?
-  adName            String?
-  adgroupName       String?
-  redirectAdUrlName String?
-  useRotation       String?
-  carrier           String?
-  osType            String?
-  userAgent         String?
-  ipAddress         String?
-  referrer          String?
-  clData1           String?
-  facebookClId      String?
-  tiktokClId        String?
-  catsReportId      String?
-  sessionId         String?
-  userId            String?
-  trackingUserId    String?
-  status            String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                   Int      @id @default(autoincrement())
+  clickDate            DateTime?
+  mediaName            String?
+  mediaCategory1       String?
+  mediaCategory2       String?
+  advertiserName       String?
+  adName               String?
+  adgroupName          String?
+  redirectAdUrlName    String?
+  useRotation          String?
+  carrier              String?
+  osType               String?
+  userAgent            String?
+  ipAddress            String?
+  referrer             String?
+  clData1              String?
+  facebookClId         String?
+  tiktokClId           String?
+  catsReportId         String?
+  sessionId            String?
+  userId               String?
+  trackingUserId       String?
+  status               String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model FinebirdActionLog {
-  id           Int       @id @default(autoincrement())
-  approvalDate DateTime?
-  clickDate    DateTime?
-  orderDate    DateTime?
-  adId         Int?
-  adName       String?
-  siteName     String?
-  urlName      String?
-  urlNumber    Int?
-  osType       String?
-  referrer     String?
-  rewardAmount Int?
-  status       String?
-  clData1      String?
-  clData2      String?
-  clData3      String?
-  clData4      String?
-  clData5      String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id             Int      @id @default(autoincrement())
+  approvalDate   DateTime?
+  clickDate      DateTime?
+  orderDate      DateTime?
+  adId           Int?
+  adName         String?
+  siteName       String?
+  urlName        String?
+  urlNumber      Int?
+  osType         String?
+  referrer       String?
+  rewardAmount   Int?
+  status         String?
+  clData1        String?
+  clData2        String?
+  clData3        String?
+  clData4        String?
+  clData5        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model FinebirdClickLog {
-  id                Int      @id @default(autoincrement())
-  siteName          String?
-  siteUrl           String?
-  adName            String?
-  adId              Int?
-  clickData         Int?
-  actionCvr         Float?
-  approvalCvr       Float?
-  acquisitionCount  Int?
-  approvalCount     Int?
-  rejectedCount     Int?
-  rewardAmount      Int?
-  clickCost         Int?
-  clickRewardAmount Int?
-  totalRewardAmount Int?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  siteName              String? 
+  siteUrl               String? 
+  adName                String? 
+  adId                  Int?    
+  clickData             Int?    
+  actionCvr             Float?  
+  approvalCvr           Float?  
+  acquisitionCount      Int?    
+  approvalCount         Int?    
+  rejectedCount         Int?    
+  rewardAmount          Int?    
+  clickCost             Int?    
+  clickRewardAmount     Int?    
+  totalRewardAmount     Int?    
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model HanikamuActionLog {
@@ -240,18 +240,18 @@ model HanikamuActionLog {
 }
 
 model HanikamuClickLog {
-  id              Int      @id @default(autoincrement())
-  landingPage     String?
-  linkUrl         String?
-  click           Int?
-  actionData      Int?
-  cvr             Float?
-  approvedCount   Int?
-  approvalRate    Float?
-  unapprovedCount Int?
-  rejectionsCount Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               Int       @id @default(autoincrement())
+  landingPageName  String?
+  linkUrl          String?
+  click            Int?
+  actionData       Int?
+  cvr              Float?
+  approvedCount    Int?
+  approvalRate     Float?
+  unapprovedCount  Int?
+  rejectionsCount  Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
 model MetronActionLog {
@@ -336,63 +336,63 @@ model MetronClickLog {
 }
 
 model MonkeyActionLog {
-  id                 Int       @id @default(autoincrement())
-  clickDate          DateTime?
-  actionDate         DateTime?
-  projectName        String?
-  orderId            Int?
-  tagName            String?
+  id                　Int       @id @default(autoincrement())
+  clickDate         　DateTime?
+  actionDate        　DateTime?
+  projectName       　String?
+  orderId           　Int?
+  tagName           　String?
   actionRewardAmount Int?
-  referrerUrl        String?
-  deviceInfo         String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  referrerUrl       　String?
+  deviceInfo        　String?
+  createdAt         　DateTime  @default(now())
+  updatedAt         　DateTime  @updatedAt
 }
 
 model MonkeyClickLog {
-  id           Int      @id @default(autoincrement())
-  tagName      String?
-  clickData    String?
-  cvData       String?
-  cvrData      Float?
-  rewardAmount Int?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model QuorizaActionLog {
   id               Int       @id @default(autoincrement())
-  actionId         Int?
-  actionIdentifier Int?
-  clickDateTime    DateTime?
-  actionDateTime   DateTime?
-  approvalDateTime DateTime?
-  adName           String?
-  adCategory       String?
-  campaignName     String?
-  landingPageName  String?
-  lpUrl            String?
-  deviceType       String?
-  osType           String?
-  approvalStatus   String?
-  referrerUrl      String?
-  trackingParams   String?
+  tagName          String?
+  clickData        String?
+  cvData           String?
+  cvrData          Float?
+  rewardAmount     Int?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }
 
+model QuorizaActionLog {
+  id                Int       @id @default(autoincrement())
+  actionId          Int?
+  actionIdentifier  Int?
+  clickDateTime     DateTime?
+  actionDateTime    DateTime?
+  approvalDateTime  DateTime?
+  adName            String?
+  adCategory        String?
+  campaignName      String?
+  landingPageName   String?
+  lpUrl             String?
+  deviceType        String?
+  osType            String?
+  approvalStatus    String?
+  referrerUrl       String?
+  trackingParams    String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
 model QuorizaClickLog {
-  id              Int      @id @default(autoincrement())
-  adCategory      String?
-  click           Int?
-  actionData      Int?
-  cvr             Float?
-  approvedCount   Int?
-  approvalRate    Float?
-  unapprovedCount Int?
-  rejectionsCount Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                Int       @id @default(autoincrement())
+  adCategory        String?
+  click             Int? 
+  actionData        Int?
+  cvr               Float?
+  approvedCount     Int?
+  approvalRate      Float?
+  unapprovedCount   Int?
+  rejectionsCount   Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model RentracksActionLog {
@@ -474,195 +474,170 @@ model SampleAffiliateClickLog {
 }
 
 model WebantennaActionLog {
-  id                       Int       @id @default(autoincrement())
-  deviceType               String?
-  userId                   BigInt?
-  sessionId                BigInt?
-  clicked                  DateTime?
-  adAuthority              String?
-  utmSourceIdentifier      String?
-  utmSource                String?
-  adIdentifier             String?
-  campaignName             String?
-  adGroupName              String?
-  creativeName             String?
-  creativeUtmName          String?
-  adTitle                  String?
-  adUrl                    String?
-  cvDate                   DateTime?
-  cvName                   String?
-  cvIdentifierId           Int?
-  courseName               String?
-  courseNameDetail         String?
-  firstClicked             DateTime?
-  firstClickedIdentifier   String?
-  firstUtmSource           String?
-  firstAdIdentifier        String?
-  firstCampaignName        String?
-  firstAdGroupName         String?
-  firstCreativeName        String?
-  firstCreativeUtmName     String?
-  firstAdTitle             String?
-  firstAdUrl               String?
-  secondClicked            DateTime?
-  secondClickedIdentifier  String?
-  secondUtmSource          String?
-  secondAdIdentifier       String?
-  secondCampaignName       String?
-  secondAdGroupName        String?
-  secondCreativeName       String?
-  secondCreativeUtmName    String?
-  secondAdTitle            String?
-  secondAdUrl              String?
-  thirdClicked             DateTime?
-  thirdClickedIdentifier   String?
-  thirdUtmSource           String?
-  thirdAdIdentifier        String?
-  thirdCampaignName        String?
-  thirdAdGroupName         String?
-  thirdCreativeName        String?
-  thirdCreativeUtmName     String?
-  thirdAdTitle             String?
-  thirdAdUrl               String?
-  fourthClicked            DateTime?
-  fourthClickedIdentifier  String?
-  fourthUtmSource          String?
-  fourthAdIdentifier       String?
-  fourthCampaignName       String?
-  fourthAdGroupName        String?
-  fourthCreativeName       String?
-  fourthCreativeUtmName    String?
-  fourthAdTitle            String?
-  fourthAdUrl              String?
-  fifthClicked             DateTime?
-  fifthClickedIdentifier   String?
-  fifthUtmSource           String?
-  fifthAdIdentifier        String?
-  fifthCampaignName        String?
-  fifthAdGroupName         String?
-  fifthCreativeName        String?
-  fifthCreativeUtmName     String?
-  fifthAdTitle             String?
-  fifthAdUrl               String?
-  sixthClicked             DateTime?
-  sixthClickedIdentifier   String?
-  sixthUtmSource           String?
-  sixthAdIdentifier        String?
-  sixthCampaignName        String?
-  sixthAdGroupName         String?
-  sixthCreativeName        String?
-  sixthCreativeUtmName     String?
-  sixthAdTitle             String?
-  sixthAdUrl               String?
-  seventhClicked           DateTime?
-  seventhClickedIdentifier String?
-  seventhUtmSource         String?
-  seventhAdIdentifier      String?
-  seventhCampaignName      String?
-  seventhAdGroupName       String?
-  seventhCreativeName      String?
-  seventhCreativeUtmName   String?
-  seventhAdTitle           String?
-  seventhAdUrl             String?
-  eighthClicked            DateTime?
-  eighthClickedIdentifier  String?
-  eighthUtmSource          String?
-  eighthAdIdentifier       String?
-  eighthCampaignName       String?
-  eighthAdGroupName        String?
-  eighthCreativeName       String?
-  eighthCreativeUtmName    String?
-  eighthAdTitle            String?
-  eighthAdUrl              String?
-  ninthClicked             DateTime?
-  ninthClickedIdentifier   String?
-  ninthUtmSource           String?
-  ninthAdIdentifier        String?
-  ninthCampaignName        String?
-  ninthAdGroupName         String?
-  ninthCreativeName        String?
-  ninthCreativeUtmName     String?
-  ninthAdTitle             String?
-  ninthAdUrl               String?
-  tenthClicked             DateTime?
-  tenthClickedIdentifier   String?
-  tenthUtmSource           String?
-  tenthAdIdentifier        String?
-  tenthCampaignName        String?
-  tenthAdGroupName         String?
-  tenthCreativeName        String?
-  tenthCreativeUtmName     String?
-  tenthAdTitle             String?
-  tenthAdUrl               String?
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
-}
-
-model WebantennaClickLog {
   id                         Int       @id @default(autoincrement())
+  deviceType                 String?
+  userId                     BigInt?
+  sessionId                  BigInt?
+  clicked                    DateTime?
   adAuthority                String?
-  channel                    String?
+  utmSourceIdentifier        String?
+  utmSource                  String?
   adIdentifier               String?
   campaignName               String?
-  adDurations                DateTime?
-  click                      Int?
-  ecRegistrationCv           Int?
-  ecDirectRegistration       Int?
-  ecRevisitRegistration      Int?
-  ecRegistrationCvr          Int?
-  ecPurchaseCv               Int?
-  ecDirectPurchaseCv         Int?
-  ecRevisitPurchaseCv        Int?
-  ecPurchaseCvr              Int?
-  webReservationCv           Int?
-  webDirectReservationCv     Int?
-  webRevisitReservationCv    Int?
-  webReservationCvr          Float?
-  epilerWebReservationCv     Int?
-  epilerDirectReservationCv  Int?
-  epilerRevisitReservationCv Int?
-  epilerWebReservationCvr    Float?
-  test1Cv                    Int?
-  test1DirectCv              Int?
-  test1RevisitCv             Int?
-  test1Cvr                   Float?
-  test2Cv                    Int?
-  test2DirectCv              Int?
-  test2RevisitCv             Int?
-  test2Cvr                   Float?
-  test3Cv                    Int?
-  test3DirectCv              Int?
-  test3RevisitCv             Int?
-  test3Cvr                   Float?
-  recruitmentCv              Int?
-  recruitmentDirectCv        Int?
-  recruitmentRevisitCv       Int?
-  recruitmentCvr             Float?
+  adGroupName                String?
+  creativeName               String?
+  creativeUtmName            String?
+  adTitle                    String?
+  adUrl                      String?
+  cvDate                     DateTime?
+  cvName                     String?
+  cvIdentifierId             Int?
+  courseName                 String?
+  courseNameDetail           String?
+  firstClicked               DateTime?
+  firstClickedIdentifier     String?
+  firstUtmSource             String?
+  firstAdIdentifier          String?
+  firstCampaignName          String?
+  firstAdGroupName           String?
+  firstCreativeName          String?
+  firstCreativeUtmName       String?
+  firstAdTitle               String?
+  firstAdUrl                 String?
+  secondClicked              DateTime?
+  secondClickedIdentifier    String?
+  secondUtmSource            String?
+  secondAdIdentifier         String?
+  secondCampaignName         String?
+  secondAdGroupName          String?
+  secondCreativeName         String?
+  secondCreativeUtmName      String?
+  secondAdTitle              String?
+  secondAdUrl                String?
+  thirdClicked               DateTime?
+  thirdClickedIdentifier     String?
+  thirdUtmSource             String?
+  thirdAdIdentifier          String?
+  thirdCampaignName          String?
+  thirdAdGroupName           String?
+  thirdCreativeName          String?
+  thirdCreativeUtmName       String?
+  thirdAdTitle               String?
+  thirdAdUrl                 String?
+  fourthClicked              DateTime?
+  fourthClickedIdentifier    String?
+  fourthUtmSource            String?
+  fourthAdIdentifier         String?
+  fourthCampaignName         String?
+  fourthAdGroupName          String?
+  fourthCreativeName         String?
+  fourthCreativeUtmName      String?
+  fourthAdTitle              String?
+  fourthAdUrl                String?
+  fifthClicked               DateTime?
+  fifthClickedIdentifier     String?
+  fifthUtmSource             String?
+  fifthAdIdentifier          String?
+  fifthCampaignName          String?
+  fifthAdGroupName           String?
+  fifthCreativeName          String?
+  fifthCreativeUtmName       String?
+  fifthAdTitle               String?
+  fifthAdUrl                 String?
+  sixthClicked               DateTime?
+  sixthClickedIdentifier     String?
+  sixthUtmSource             String?
+  sixthAdIdentifier          String?
+  sixthCampaignName          String?
+  sixthAdGroupName           String?
+  sixthCreativeName          String?
+  sixthCreativeUtmName       String?
+  sixthAdTitle               String?
+  sixthAdUrl                 String?
+  seventhClicked             DateTime?
+  seventhClickedIdentifier   String?
+  seventhUtmSource           String?
+  seventhAdIdentifier        String?
+  seventhCampaignName        String?
+  seventhAdGroupName         String?
+  seventhCreativeName        String?
+  seventhCreativeUtmName     String?
+  seventhAdTitle             String?
+  seventhAdUrl               String?
+  eighthClicked              DateTime?
+  eighthClickedIdentifier    String?
+  eighthUtmSource            String?
+  eighthAdIdentifier         String?
+  eighthCampaignName         String?
+  eighthAdGroupName          String?
+  eighthCreativeName         String?
+  eighthCreativeUtmName      String?
+  eighthAdTitle              String?
+  eighthAdUrl                String?
+  ninthClicked               DateTime?
+  ninthClickedIdentifier     String?
+  ninthUtmSource             String?
+  ninthAdIdentifier          String?
+  ninthCampaignName          String?
+  ninthAdGroupName           String?
+  ninthCreativeName          String?
+  ninthCreativeUtmName       String?
+  ninthAdTitle               String?
+  ninthAdUrl                 String?
+  tenthClicked               DateTime?
+  tenthClickedIdentifier     String?
+  tenthUtmSource             String?
+  tenthAdIdentifier          String?
+  tenthCampaignName          String?
+  tenthAdGroupName           String?
+  tenthCreativeName          String?
+  tenthCreativeUtmName       String?
+  tenthAdTitle               String?
+  tenthAdUrl                 String?
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
 }
 
-model TiktokReport {
-  id                   Int     @id @default(autoincrement())
-  advertiserId         BigInt?
-  adId                 BigInt?
-  statTimeDay          String?
-  budget               Int?
-  spend                Int?
-  impressions          Int?
-  clicks               Int?
-  videoPlayActions     Int?
-  videoWatched2s       Int?
-  videoWatched6s       Int?
-  videoViewsP100       Int?
-  reach                Int?
-  conversion           Int?
-  campaignId           BigInt?
-  campaignName         String?
-  adgroupId            BigInt?
-  adgroupName          String?
-  adName               String?
-  adUrl                String?
-  statTimeDayDimension String?
-  adIdDimension        String?
+model WebantennaClickLog {
+  id                            Int       @id @default(autoincrement())
+  adAuthority                   String?
+  channel                       String?
+  adIdentifier                  String?
+  campaignName                  String?
+  adDurations                   DateTime?
+  click                         Int?
+  ecRegistrationCv              Int?
+  ecDirectRegistration           Int?
+  ecRevisitRegistration         Int?
+  ecRegistrationCvr             Int?
+  ecPurchaseCv                  Int?
+  ecDirectPurchaseCv           Int?
+  ecRevisitPurchaseCv          Int?
+  ecPurchaseCvr                Int?
+  webReservationCv              Int?
+  webDirectReservationCv        Int?
+  webRevisitReservationCv       Int?
+  webReservationCvr             Float?
+  epilerWebReservationCv        Int?
+  epilerDirectReservationCv     Int?
+  epilerRevisitReservationCv    Int?
+  epilerWebReservationCvr       Float?
+  test1Cv                       Int?
+  test1DirectCv                 Int?
+  test1RevisitCv               Int?
+  test1Cvr                      Float?
+  test2Cv                       Int?
+  test2DirectCv                 Int?
+  test2RevisitCv               Int?
+  test2Cvr                      Float?
+  test3Cv                       Int?
+  test3DirectCv                 Int?
+  test3RevisitCv               Int?
+  test3Cvr                      Float?
+  recruitmentCv                 Int?
+  recruitmentDirectCv           Int?
+  recruitmentRevisitCv         Int?
+  recruitmentCvr                Float?
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
 }
