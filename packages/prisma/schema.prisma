@@ -366,7 +366,7 @@ model QuorizaActionLog {
   actionIdentifier  Int?
   clickDateTime     DateTime?
   actionDateTime    DateTime?
-  approvalDateTime  DateTime?
+  approval          String?
   adName            String?
   adCategory        String?
   campaignName      String?
