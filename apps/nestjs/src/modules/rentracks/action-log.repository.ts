@@ -37,8 +37,8 @@ interface RentracksFormattedData {
   adSiteName: string | null;
   deviceType: string | null;
   referrerUrl: string | null;
-  deviceIinfo: string | null;
-  reasonRrefusal: string | null;
+  deviceInfo: string | null;
+  reasonRefusal: string | null;
 }
 
 @Injectable()
@@ -72,8 +72,8 @@ export class RentracksActionLogRepository {
       adSiteName: item["サイト名"] || null,
       deviceType: item["デバイス"] || null,
       referrerUrl: item["リファラー"] || null,
-      deviceIinfo: item["ユーザーエージェント"] || null,
-      reasonRrefusal: item["拒否理由"] || null,
+      deviceInfo: item["ユーザーエージェント"] || null,
+      reasonRefusal: item["拒否理由"] || null,
     };
   }
 
