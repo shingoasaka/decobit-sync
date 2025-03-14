@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { QuorizaBaseClickLogService } from "../base/base-click-log.service";
 
 @Injectable()
-export class StlasshClickLogService extends  QuorizaBaseClickLogService {
+export class StlasshClickLogService extends QuorizaBaseClickLogService {
   protected getUsername(): string {
     return process.env.STLASSH_USERNAME ?? "";
   }

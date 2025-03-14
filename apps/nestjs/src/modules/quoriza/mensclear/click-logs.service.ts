@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import {  QuorizaBaseClickLogService } from "../base/base-click-log.service";
+import { QuorizaBaseClickLogService } from "../base/base-click-log.service";
 
 @Injectable()
-export class MensclearClickLogService extends  QuorizaBaseClickLogService {
+export class MensclearClickLogService extends QuorizaBaseClickLogService {
   protected getUsername(): string {
     return process.env.MENSCLEAR_USERNAME ?? "";
   }

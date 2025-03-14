@@ -8,7 +8,7 @@ import { PrismaService } from "@prismaService";
 import { QuorizaClickLogRepository } from "../click-logs.repository";
 
 @Injectable()
-export abstract class  QuorizaBaseClickLogService implements LogService {
+export abstract class QuorizaBaseClickLogService implements LogService {
   constructor(
     protected readonly repository: QuorizaClickLogRepository,
     protected readonly prisma: PrismaService,
