@@ -239,7 +239,7 @@ model HanikamuActionLog {
   updatedAt        DateTime  @updatedAt
 }
 
-model HanikamuClickLog{
+model HanikamuClickLog {
   id               Int       @id @default(autoincrement())
   landingPageName  String?
   linkUrl          String?
@@ -371,7 +371,7 @@ model QuorizaActionLog {
   adCategory        String?
   campaignName      String?
   landingPageName   String?
-  lpUrl            String?
+  lpUrl             String?
   deviceType        String?
   osType            String?
   approvalStatus    String?
@@ -381,7 +381,7 @@ model QuorizaActionLog {
   updatedAt         DateTime  @updatedAt
 }
 
-model QuorizaClickLog{
+model QuorizaClickLog {
   id                Int       @id @default(autoincrement())
   adCategory        String?
   click             Int? 
@@ -442,16 +442,17 @@ model RentracksClickLog {
 
 model SampleAffiliateActionLog {
   id                    Int      @id @default(autoincrement())
+  actionId              String?
+  mediaName             String?
   adName                String?
-  impCount              Int?
-  accessCount           Int?
-  ctr                   Float?
-  actionCount           Int?
+  adMaterial            String?
+  actionDetails         String?
   actionAmount          Int?
-  confirmedActionCount  Int?
-  confirmedActionAmount Int?
-  cvr                   Float?
-  rewardAmount          Int?
+  approvalStatus        String?
+  referrerUrl           String?
+  clickDate             DateTime?
+  actionDate            DateTime?
+  confirmedDate         DateTime?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
