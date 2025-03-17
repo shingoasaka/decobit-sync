@@ -5,20 +5,22 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-import { QuorizaActionLogRepository } from "../action-log.repository";
+import { QuorizaActionLogRepository } from "../action-logs.repository";
 
 @Injectable()
-export class StlasshActionLogService implements LogService {
+export abstract class QuorizaBaseActionLogService implements LogService {
   constructor(
-    private readonly repository: QuorizaActionLogRepository,
-    private readonly prisma: PrismaService,
+    protected readonly repository: QuorizaActionLogRepository,
+    protected readonly prisma: PrismaService,
   ) {}
+
+  protected abstract getUsername(): string;
+  protected abstract getPassword(): string;
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
     try {
       browser = await chromium.launch({ headless: true });
-
       const context = await browser.newContext();
       const page = await context.newPage();
 
@@ -26,10 +28,10 @@ export class StlasshActionLogService implements LogService {
       await page.goto("https://quoriza.net/partner/login");
       await page
         .getByRole("textbox", { name: "Enter loginname" })
-        .fill(process.env.STLASSH_USERNAME ?? "");
+        .fill(this.getUsername());
       await page
         .getByRole("textbox", { name: "Enter password" })
-        .fill(process.env.STLASSH_PASSWORD ?? "");
+        .fill(this.getPassword());
       await page.getByRole("button", { name: "LOGIN" }).click();
 
       // メインページへ遷移

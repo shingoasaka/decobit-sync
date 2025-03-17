@@ -8,11 +8,14 @@ import { PrismaService } from "@prismaService";
 import { QuorizaClickLogRepository } from "../click-logs.repository";
 
 @Injectable()
-export class StlasshClickLogService implements LogService {
+export abstract class QuorizaBaseClickLogService implements LogService {
   constructor(
-    private readonly repository: QuorizaClickLogRepository,
-    private readonly prisma: PrismaService,
+    protected readonly repository: QuorizaClickLogRepository,
+    protected readonly prisma: PrismaService,
   ) {}
+
+  protected abstract getUsername(): string;
+  protected abstract getPassword(): string;
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -25,10 +28,10 @@ export class StlasshClickLogService implements LogService {
       await page.goto("https://quoriza.net/partner/login");
       await page
         .getByRole("textbox", { name: "Enter loginname" })
-        .fill(process.env.STLASSH_USERNAME ?? "");
+        .fill(this.getUsername());
       await page
         .getByRole("textbox", { name: "Enter password" })
-        .fill(process.env.STLASSH_PASSWORD ?? "");
+        .fill(this.getPassword());
       await page.getByRole("button", { name: "LOGIN" }).click();
 
       await page.waitForTimeout(2000);
@@ -69,7 +72,6 @@ export class StlasshClickLogService implements LogService {
       columns: true,
       skip_empty_lines: true,
     });
-    console.log(records);
 
     await this.repository.save(records);
     return records.length;

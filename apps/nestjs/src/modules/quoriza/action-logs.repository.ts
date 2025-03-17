@@ -24,7 +24,7 @@ interface QuorizaFormattedData {
   actionIdentifier: number | null;
   clickDateTime: Date;
   actionDateTime: Date;
-  approvalDateTime: Date | null;
+  approval: string | null;
   adName: string | null;
   adCategory: string | null;
   campaignName: string | null;
@@ -51,10 +51,7 @@ export class QuorizaActionLogRepository {
         : null,
       clickDateTime: new Date(item["クリック日"]),
       actionDateTime: new Date(item["成果発生日"]),
-      approvalDateTime:
-        item["承認確定日"] && item["承認確定日"] !== "0000-00-00 00:00:00"
-          ? new Date(item["承認確定日"])
-          : null,
+      approval: item["承認状態"] || null,
       adName: item["広告"] || null,
       adCategory: item["広告種別"] || null,
       campaignName: item["キャンペーン"] || null,
