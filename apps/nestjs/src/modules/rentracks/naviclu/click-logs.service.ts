@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { PrismaService } from "@prismaService";
 import { LogService } from "src/modules/logs/types";
-import { RentracksClickLogRepository } from "../click-log.repository";
+import { RentracksClickLogRepository } from "../click-logs.repository";
 import dotenv from "dotenv";
 import { getToday } from "src/libs/date-utils";
 
