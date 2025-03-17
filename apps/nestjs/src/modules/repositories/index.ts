@@ -8,7 +8,7 @@ export { HanikamuActionLogRepository } from "../hanikamu/action-logs.repository"
 export { HanikamuClickLogRepository } from "../hanikamu/click-logs.repository";
 export { MonkeyActionLogRepository } from "../monkey/action-logs.repository";
 export { MonkeyClickLogRepository } from "../monkey/click-logs.repository";
-export { QuorizaActionLogRepository } from "../quoriza/action-log.repository";
+export { QuorizaActionLogRepository } from "../quoriza/action-logs.repository";
 export { QuorizaClickLogRepository } from "../quoriza/click-logs.repository";
 export { RentracksActionLogRepository } from "../rentracks/action-log.repository";
 export { RentracksClickLogRepository } from "../rentracks/click-log.repository";

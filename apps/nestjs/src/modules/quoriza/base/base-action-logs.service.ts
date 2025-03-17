@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-import { QuorizaActionLogRepository } from "../action-log.repository";
+import { QuorizaActionLogRepository } from "../action-logs.repository";
 
 @Injectable()
 export abstract class QuorizaBaseActionLogService implements LogService {
