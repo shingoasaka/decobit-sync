@@ -1,5 +1,3 @@
-export { FinebirdActionLogService } from "../asp/finebird/action-logs.service";
-export { FinebirdClickLogService } from "../asp/finebird/click-logs.service";
 export { MensclearActionLogService } from "../asp/quoriza/mensclear/action-logs.service";
 export { MensclearClickLogService } from "../asp/quoriza/mensclear/click-logs.service";
 export { MetronActionLogService } from "../asp/metron/action-logs.service";
