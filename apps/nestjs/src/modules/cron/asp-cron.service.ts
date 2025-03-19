@@ -2,12 +2,16 @@ import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { CatsActionLogService } from "../asp/cats/services/action-logs.service";
 import { CatsClickLogService } from "../asp/cats/services/click-logs.service";
+import { FinebirdActionLogService } from "../asp/finebird/action-logs.service";
+import { FinebirdClickLogService } from "../asp/finebird/click-logs.service";
 
 @Injectable()
 export class AspCronService {
   constructor(
     private readonly catsActionLogService: CatsActionLogService,
     private readonly catsClickLogService: CatsClickLogService,
+    private readonly finebirdActionLogService: FinebirdActionLogService,
+    private readonly finebirdClickLogService: FinebirdClickLogService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -17,6 +21,8 @@ export class AspCronService {
     await this.executeWithErrorHandling("Cats", async () => {
       await this.catsActionLogService.fetchAndInsertLogs();
       await this.catsClickLogService.fetchAndInsertLogs();
+      await this.finebirdActionLogService.fetchAndInsertLogs();
+      await this.finebirdClickLogService.fetchAndInsertLogs();
     });
   }
 

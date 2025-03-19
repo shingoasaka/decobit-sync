@@ -1,7 +1,5 @@
 export { AdebisActionLogRepository } from "../discrepany-check/adebis/action-logs.repository";
 export { AdebisClickLogRepository } from "../discrepany-check/adebis/click-logs.repository";
-export { FinebirdActionLogRepository } from "../asp/finebird/action-logs.repository";
-export { FinebirdClickLogRepository } from "../asp/finebird/click-logs.repository";
 export { HanikamuActionLogRepository } from "../asp/hanikamu/action-logs.repository";
 export { HanikamuClickLogRepository } from "../asp/hanikamu/click-logs.repository";
 export { MonkeyActionLogRepository } from "../asp/monkey/action-logs.repository";
