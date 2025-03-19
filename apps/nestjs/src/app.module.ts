@@ -6,6 +6,8 @@ import * as Logs from "./modules/logs";
 import { CronService } from "./cron.service";
 import { LogsModule } from "./modules/logs/logs.module";
 import { LogService } from "./modules/logs/types";
+import { AspModule } from "./modules/asp/asp.module";
+import { CronModule } from "./modules/cron/cron.module";
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { LogService } from "./modules/logs/types";
     ScheduleModule.forRoot(),
     PrismaModule,
     LogsModule,
+    AspModule,
+    CronModule,
   ],
   providers: [
     CronService,
