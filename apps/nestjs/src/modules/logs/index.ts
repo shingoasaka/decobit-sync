@@ -1,5 +1,3 @@
-export { CatsActionLogService } from "../asp/cats/action-logs.service";
-export { CatsClickLogService } from "../asp/cats/click-logs.service";
 export { FinebirdActionLogService } from "../asp/finebird/action-logs.service";
 export { FinebirdClickLogService } from "../asp/finebird/click-logs.service";
 export { MensclearActionLogService } from "../asp/quoriza/mensclear/action-logs.service";

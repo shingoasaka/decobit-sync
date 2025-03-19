@@ -70,6 +70,9 @@ interface FormattedCatsData {
 
 @Injectable()
 export class CatsActionLogRepository {
+  processCsvAndSave(downloadPath: string): number | PromiseLike<number> {
+    throw new Error("Method not implemented.");
+  }
   private readonly logger = new Logger(CatsActionLogRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
