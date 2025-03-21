@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser } from "playwright";
-import { HanikamuActionLogRepository } from "../action-logs.repository";
+import { HanikamuActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
