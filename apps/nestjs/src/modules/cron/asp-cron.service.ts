@@ -2,8 +2,10 @@ import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { CatsActionLogService } from "../asp/cats/services/action-logs.service";
 import { CatsClickLogService } from "../asp/cats/services/click-logs.service";
-import { FinebirdActionLogService } from "../asp/finebird/action-logs.service";
-import { FinebirdClickLogService } from "../asp/finebird/click-logs.service";
+import { FinebirdActionLogService } from "../asp/finebird/services/action-logs.service";
+import { FinebirdClickLogService } from "../asp/finebird/services/click-logs.service";
+import { TryActionLogService } from "../asp/hanikamu/try/action-logs.service";
+import { TryClickLogService } from "../asp/hanikamu/try/click-logs.service";
 
 @Injectable()
 export class AspCronService {
@@ -12,6 +14,8 @@ export class AspCronService {
     private readonly catsClickLogService: CatsClickLogService,
     private readonly finebirdActionLogService: FinebirdActionLogService,
     private readonly finebirdClickLogService: FinebirdClickLogService,
+    private readonly tryActionLogService: TryActionLogService,
+    private readonly tryClickLogService: TryClickLogService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -19,10 +23,18 @@ export class AspCronService {
     console.log("✅ ASPデータ取得処理開始");
 
     await this.executeWithErrorHandling("Cats", async () => {
-      await this.catsActionLogService.fetchAndInsertLogs();
-      await this.catsClickLogService.fetchAndInsertLogs();
-      await this.finebirdActionLogService.fetchAndInsertLogs();
-      await this.finebirdClickLogService.fetchAndInsertLogs();
+      void (await this.catsActionLogService.fetchAndInsertLogs());
+      void (await this.catsClickLogService.fetchAndInsertLogs());
+    });
+
+    await this.executeWithErrorHandling("Finebird", async () => {
+      void (await this.finebirdActionLogService.fetchAndInsertLogs());
+      void (await this.finebirdClickLogService.fetchAndInsertLogs());
+    });
+
+    await this.executeWithErrorHandling("Hanikamu-Try", async () => {
+      void (await this.tryActionLogService.fetchAndInsertLogs());
+      void (await this.tryClickLogService.fetchAndInsertLogs());
     });
   }
 

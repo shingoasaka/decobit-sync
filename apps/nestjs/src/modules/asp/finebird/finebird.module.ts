@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
-import { FinebirdActionLogService } from "./action-logs.service";
-import { FinebirdClickLogService } from "./click-logs.service";
-import { FinebirdActionLogRepository } from "./action-logs.repository";
-import { FinebirdClickLogRepository } from "./click-logs.repository";
+import { FinebirdActionLogService } from "./services/action-logs.service";
+import { FinebirdClickLogService } from "./services/click-logs.service";
+import { FinebirdActionLogRepository } from "./repositories/action-logs.repository";
+import { FinebirdClickLogRepository } from "./repositories/click-logs.repository";
 import { PrismaService } from "@prismaService";
 
 @Module({
