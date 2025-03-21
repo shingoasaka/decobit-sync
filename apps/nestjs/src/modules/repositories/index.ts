@@ -1,5 +1,5 @@
-export { AdebisActionLogRepository } from "../discrepany-check/adebis/action-logs.repository";
-export { AdebisClickLogRepository } from "../discrepany-check/adebis/click-logs.repository";
+export { AdebisActionLogRepository } from "../asp/adebis/action-logs.repository";
+export { AdebisClickLogRepository } from "../asp/adebis/click-logs.repository";
 export { HanikamuActionLogRepository } from "../asp/hanikamu/action-logs.repository";
 export { HanikamuClickLogRepository } from "../asp/hanikamu/click-logs.repository";
 export { MonkeyActionLogRepository } from "../asp/monkey/action-logs.repository";
@@ -8,7 +8,7 @@ export { QuorizaActionLogRepository } from "../asp/quoriza/action-logs.repositor
 export { QuorizaClickLogRepository } from "../asp/quoriza/click-logs.repository";
 export { RentracksActionLogRepository } from "../asp/rentracks/action-logs.repository";
 export { RentracksClickLogRepository } from "../asp/rentracks/click-logs.repository";
-export { SampleAffiliateActionLogRepository } from "../discrepany-check/sampleAffiliate/action-logs.repository";
-export { SampleAffiliateClickLogRepository } from "../discrepany-check/sampleAffiliate/click-logs.repository";
+export { SampleAffiliateActionLogRepository } from "../asp/sampleAffiliate/action-logs.repository";
+export { SampleAffiliateClickLogRepository } from "../asp/sampleAffiliate/click-logs.repository";
 export { WebantennaActionLogRepository } from "../discrepany-check/webantenna/action-logs.repository";
 export { WebantennaClickLogRepository } from "../discrepany-check/webantenna/click-logs.repository";
