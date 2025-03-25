@@ -2,12 +2,8 @@ export { MensclearActionLogService } from "../asp/quoriza/mensclear/action-logs.
 export { MensclearClickLogService } from "../asp/quoriza/mensclear/click-logs.service";
 export { MetronActionLogService } from "../asp/metron/action-logs.service";
 export { MetronClickLogService } from "../asp/metron/click-logs.service";
-export { MonkeyActionLogService } from "../asp/monkey/action-logs.service";
-export { MonkeyClickLogService } from "../asp/monkey/click-logs.service";
 export { NavicluActionLogService } from "../asp/rentracks/naviclu/action-logs.service";
 export { NavicluClickLogService } from "../asp/rentracks/naviclu/click-logs.service";
-export { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/action-logs.service";
-export { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/click-logs.service";
 export { SparkOripaActionLogService } from "../asp/adebis/spark-oripa/action-logs.service";
 export { SparkOripaClickLogService } from "../asp/adebis/spark-oripa/click-logs.service";
 export { StlasshActionLogService } from "../asp/quoriza/stlassh/action-logs.service";

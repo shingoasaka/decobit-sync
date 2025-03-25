@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
-import { SampleAffiliateClickLogRepository } from "./click-logs.repository";
+import { SampleAffiliateClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";

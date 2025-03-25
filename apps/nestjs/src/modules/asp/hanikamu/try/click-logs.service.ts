@@ -74,7 +74,6 @@ export class TryClickLogService implements LogService {
       columns: true,
       skip_empty_lines: true,
     });
-    console.log(records);
 
     await this.repository.save(records);
     return records.length;

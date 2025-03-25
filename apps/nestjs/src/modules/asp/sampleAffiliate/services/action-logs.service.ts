@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { PrismaService } from "@prismaService";
-import { SampleAffiliateActionLogRepository } from "./action-logs.repository";
+import { SampleAffiliateActionLogRepository } from "../repositories/action-logs.repository";
 
 @Injectable()
 export class SampleAffiliateActionLogService {

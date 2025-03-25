@@ -6,6 +6,10 @@ import { FinebirdActionLogService } from "../asp/finebird/services/action-logs.s
 import { FinebirdClickLogService } from "../asp/finebird/services/click-logs.service";
 import { TryActionLogService } from "../asp/hanikamu/try/action-logs.service";
 import { TryClickLogService } from "../asp/hanikamu/try/click-logs.service";
+import { MonkeyActionLogService } from "../asp/monkey/services/action-logs.service";
+import { MonkeyClickLogService } from "../asp/monkey/services/click-logs.service";
+import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services/action-logs.service";
+import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
 
 @Injectable()
 export class AspCronService {
@@ -16,6 +20,10 @@ export class AspCronService {
     private readonly finebirdClickLogService: FinebirdClickLogService,
     private readonly tryActionLogService: TryActionLogService,
     private readonly tryClickLogService: TryClickLogService,
+    private readonly monkeyActionLogService: MonkeyActionLogService,
+    private readonly monkeyClickLogService: MonkeyClickLogService,
+    private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
+    private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -35,6 +43,16 @@ export class AspCronService {
     await this.executeWithErrorHandling("Hanikamu-Try", async () => {
       void (await this.tryActionLogService.fetchAndInsertLogs());
       void (await this.tryClickLogService.fetchAndInsertLogs());
+    });
+
+    await this.executeWithErrorHandling("Monkey", async () => {
+      void (await this.monkeyActionLogService.fetchAndInsertLogs());
+      void (await this.monkeyClickLogService.fetchAndInsertLogs());
+    });
+
+    await this.executeWithErrorHandling("SampleAffiliate", async () => {
+      void (await this.sampleAffiliateActionLogService.fetchAndInsertLogs());
+      void (await this.sampleAffiliateClickLogService.fetchAndInsertLogs());
     });
   }
 
