@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-import { WebantennaClickLogRepository } from "../click-logs.repository";
+import { WebantennaClickLogRepository } from "../repositories/click-logs.repository";
 
 @Injectable()
 export class WebantennaClickLogService implements LogService {

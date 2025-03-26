@@ -4,5 +4,3 @@ export { QuorizaActionLogRepository } from "../asp/quoriza/action-logs.repositor
 export { QuorizaClickLogRepository } from "../asp/quoriza/click-logs.repository";
 export { RentracksActionLogRepository } from "../asp/rentracks/action-logs.repository";
 export { RentracksClickLogRepository } from "../asp/rentracks/click-logs.repository";
-export { WebantennaActionLogRepository } from "../discrepany-check/webantenna/action-logs.repository";
-export { WebantennaClickLogRepository } from "../discrepany-check/webantenna/click-logs.repository";
