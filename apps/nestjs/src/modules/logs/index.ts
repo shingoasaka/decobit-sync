@@ -8,5 +8,3 @@ export { SparkOripaActionLogService } from "../asp/adebis/spark-oripa/action-log
 export { SparkOripaClickLogService } from "../asp/adebis/spark-oripa/click-logs.service";
 export { StlasshActionLogService } from "../asp/quoriza/stlassh/action-logs.service";
 export { StlasshClickLogService } from "../asp/quoriza/stlassh/click-logs.service";
-export { WebantennaActionLogService } from "../discrepany-check/webantenna/mens-tbc-and-tbc/action-logs.service";
-export { WebantennaClickLogService } from "../discrepany-check/webantenna/mens-tbc-and-tbc/click-logs.service";
