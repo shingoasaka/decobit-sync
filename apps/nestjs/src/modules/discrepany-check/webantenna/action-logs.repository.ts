@@ -41,7 +41,7 @@ export class WebantennaActionLogRepository {
           adUrl: item["リンク先URL/入口ページ"] || null,
           cvDate: toDate(item["CV時刻"]) || null,
           cvName: item["CV名"] || null,
-          cvIdentifierId: parseInt(item["受付No."], 10) || null,
+          cvIdentifierId: item["受付No."] || null,
           courseName: item["コース名"] || null,
           courseNameDetail: item["コース名詳細"] || null,
           firstClicked: toDate(item["[1回目]流入時刻"]) || null,

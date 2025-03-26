@@ -491,7 +491,7 @@ model WebantennaActionLog {
   adUrl                      String?
   cvDate                     DateTime?
   cvName                     String?
-  cvIdentifierId             Int?
+  cvIdentifierId             String?
   courseName                 String?
   courseNameDetail           String?
   firstClicked               DateTime?
