@@ -60,12 +60,12 @@ export class AspCronService {
         const c = await this.monkeyClickLogService.fetchAndInsertLogs();
         console.log(`✅ Monkey: Action=${a}, Click=${c}`);
       }),
-      
+
       this.executeWithErrorHandling("metorn", async () => {
         const a = await this.MetronActionLogService.fetchAndInsertLogs();
         const c = await this.MetronClickLogService.fetchAndInsertLogs();
         console.log(`✅ metorn-try: Action=${a}, Click=${c}`);
-      });
+      }),
 
       this.executeWithErrorHandling("SampleAffiliate", async () => {
         const a =
