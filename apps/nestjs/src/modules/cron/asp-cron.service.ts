@@ -57,8 +57,9 @@ export class AspCronService {
       void (await this.sampleAffiliateClickLogService.fetchAndInsertLogs());
     });
 
-    await this.executeWithErrorHandling("metorn-try", async () => {
-      void (await this.TbcActionLogService.fetchAndInsertLogs());
+    this.executeWithErrorHandling("metorn-try", async () => {
+      const a = await this.TbcActionLogService.fetchAndInsertLogs();
+      console.log(`✅ metorn-try: Action=${a}`);
     });
   }
 
