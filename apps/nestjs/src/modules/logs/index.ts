@@ -1,6 +1,5 @@
 export { MensclearActionLogService } from "../asp/quoriza/mensclear/action-logs.service";
 export { MensclearClickLogService } from "../asp/quoriza/mensclear/click-logs.service";
-export { MetronActionLogService } from "../asp/metron/action-logs.service";
 export { MetronClickLogService } from "../asp/metron/click-logs.service";
 export { NavicluActionLogService } from "../asp/rentracks/naviclu/action-logs.service";
 export { NavicluClickLogService } from "../asp/rentracks/naviclu/click-logs.service";

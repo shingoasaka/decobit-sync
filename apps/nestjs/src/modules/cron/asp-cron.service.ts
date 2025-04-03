@@ -10,10 +10,12 @@ import { MonkeyActionLogService } from "../asp/monkey/services/action-logs.servi
 import { MonkeyClickLogService } from "../asp/monkey/services/click-logs.service";
 import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services/action-logs.service";
 import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
+import { TbcActionLogService } from "../asp/metron/tbc/action-logs.service";
 
 @Injectable()
 export class AspCronService {
   constructor(
+    private readonly TbcActionLogService: TbcActionLogService,
     private readonly catsActionLogService: CatsActionLogService,
     private readonly catsClickLogService: CatsClickLogService,
     private readonly finebirdActionLogService: FinebirdActionLogService,
@@ -53,6 +55,10 @@ export class AspCronService {
     await this.executeWithErrorHandling("SampleAffiliate", async () => {
       void (await this.sampleAffiliateActionLogService.fetchAndInsertLogs());
       void (await this.sampleAffiliateClickLogService.fetchAndInsertLogs());
+    });
+
+    await this.executeWithErrorHandling("metorn-try", async () => {
+      void (await this.TbcActionLogService.fetchAndInsertLogs());
     });
   }
 
