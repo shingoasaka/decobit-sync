@@ -10,10 +10,14 @@ import { MonkeyActionLogService } from "../asp/monkey/services/action-logs.servi
 import { MonkeyClickLogService } from "../asp/monkey/services/click-logs.service";
 import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services/action-logs.service";
 import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
+import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
+import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
 
 @Injectable()
 export class AspCronService {
   constructor(
+    private readonly MetronActionLogService: MetronActionLogService,
+    private readonly MetronClickLogService: MetronClickLogService,
     private readonly catsActionLogService: CatsActionLogService,
     private readonly catsClickLogService: CatsClickLogService,
     private readonly finebirdActionLogService: FinebirdActionLogService,
@@ -55,6 +59,12 @@ export class AspCronService {
         const a = await this.monkeyActionLogService.fetchAndInsertLogs();
         const c = await this.monkeyClickLogService.fetchAndInsertLogs();
         console.log(`✅ Monkey: Action=${a}, Click=${c}`);
+      }),
+
+      this.executeWithErrorHandling("metorn", async () => {
+        const a = await this.MetronActionLogService.fetchAndInsertLogs();
+        const c = await this.MetronClickLogService.fetchAndInsertLogs();
+        console.log(`✅ metorn-try: Action=${a}, Click=${c}`);
       }),
 
       this.executeWithErrorHandling("SampleAffiliate", async () => {

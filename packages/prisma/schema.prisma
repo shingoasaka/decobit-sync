@@ -259,38 +259,18 @@ model MetronActionLog {
   actionDateTime        DateTime?
   clickDateTime         DateTime?
   adminDateTime         DateTime?
-  clientId              String?
-  clientName            String?
-  contentId             Int?
-  contentName           String?
-  partnerId             Int?
-  partnerName           String?
-  groupId               Int?
-  groupName             String?
-  siteId                Int?
+  adId                  Int?
+  adName                String?
   siteName              String?
-  actionCareer          String?
   actionOs              String?
-  actionUserAgent       String?
-  actionIpAddress       String?
   actionReferrer        String?
-  queryString           String?
-  clickPartnerInfo      String?
-  clientInfo            String?
-  sessionId             String?
-  actionId              String?
-  contentBannerNum      String?
-  clientClickCost       Int?
-  partnerClickCost      Int?
-  clientCommissionCost  Int?
-  partnerCommissionCost Int?
-  clientActionCost      Int?
-  partnerActionCost     Int?
-  actionType            Int?
-  tierCommissionCost    Decimal?  @db.Decimal(10, 2)
+  amount                String?
   status                String?
-  amount                Int?
-  comment               String?
+  clInformation1        String?
+  clInformation2        String?
+  clInformation3        String?
+  clInformation4        String?
+  clInformation5        String?         
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }
