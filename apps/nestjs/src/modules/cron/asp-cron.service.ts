@@ -26,36 +26,50 @@ export class AspCronService {
     private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
   ) {}
 
+  // 1分おきに実行される定期処理（各ASPのログ取得）
   @Cron(CronExpression.EVERY_MINUTE)
   async handleAspDataCollection() {
-    console.log("✅ ASPデータ取得処理開始");
+    console.log("🕐 Cron開始: ASPデータ取得");
 
-    await this.executeWithErrorHandling("Cats", async () => {
-      void (await this.catsActionLogService.fetchAndInsertLogs());
-      void (await this.catsClickLogService.fetchAndInsertLogs());
-    });
+    // 各ASPを並列実行、失敗しても止めないように allSettled
+    await Promise.allSettled([
+      this.executeWithErrorHandling("Cats", async () => {
+        const a = await this.catsActionLogService.fetchAndInsertLogs();
+        const c = await this.catsClickLogService.fetchAndInsertLogs();
+        console.log(`✅ Cats: Action=${a}, Click=${c}`);
+      }),
 
-    await this.executeWithErrorHandling("Finebird", async () => {
-      void (await this.finebirdActionLogService.fetchAndInsertLogs());
-      void (await this.finebirdClickLogService.fetchAndInsertLogs());
-    });
+      this.executeWithErrorHandling("Finebird", async () => {
+        const a = await this.finebirdActionLogService.fetchAndInsertLogs();
+        const c = await this.finebirdClickLogService.fetchAndInsertLogs();
+        console.log(`✅ Finebird: Action=${a}, Click=${c}`);
+      }),
 
-    await this.executeWithErrorHandling("Hanikamu-Try", async () => {
-      void (await this.tryActionLogService.fetchAndInsertLogs());
-      void (await this.tryClickLogService.fetchAndInsertLogs());
-    });
+      this.executeWithErrorHandling("Hanikamu-Try", async () => {
+        const a = await this.tryActionLogService.fetchAndInsertLogs();
+        const c = await this.tryClickLogService.fetchAndInsertLogs();
+        console.log(`✅ Hanikamu-Try: Action=${a}, Click=${c}`);
+      }),
 
-    await this.executeWithErrorHandling("Monkey", async () => {
-      void (await this.monkeyActionLogService.fetchAndInsertLogs());
-      void (await this.monkeyClickLogService.fetchAndInsertLogs());
-    });
+      this.executeWithErrorHandling("Monkey", async () => {
+        const a = await this.monkeyActionLogService.fetchAndInsertLogs();
+        const c = await this.monkeyClickLogService.fetchAndInsertLogs();
+        console.log(`✅ Monkey: Action=${a}, Click=${c}`);
+      }),
 
-    await this.executeWithErrorHandling("SampleAffiliate", async () => {
-      void (await this.sampleAffiliateActionLogService.fetchAndInsertLogs());
-      void (await this.sampleAffiliateClickLogService.fetchAndInsertLogs());
-    });
+      this.executeWithErrorHandling("SampleAffiliate", async () => {
+        const a =
+          await this.sampleAffiliateActionLogService.fetchAndInsertLogs();
+        const c =
+          await this.sampleAffiliateClickLogService.fetchAndInsertLogs();
+        console.log(`✅ SampleAffiliate: Action=${a}, Click=${c}`);
+      }),
+    ]);
+
+    console.log("✅ Cron完了: ASPデータ取得");
   }
 
+  // 個別ASPの処理 + エラーを潰す共通ハンドラ
   private async executeWithErrorHandling(
     aspName: string,
     action: () => Promise<void>,
@@ -64,13 +78,9 @@ export class AspCronService {
       await action();
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error(
-          `❌ ${aspName}データ取得処理でエラーが発生しました: ${error.message}`,
-        );
+        console.error(`❌ ${aspName}: エラー発生 → ${error.message}`);
       } else {
-        console.error(
-          `❌ ${aspName}データ取得処理でエラーが発生しました: 不明なエラー`,
-        );
+        console.error(`❌ ${aspName}: 不明なエラー`);
       }
     }
   }
