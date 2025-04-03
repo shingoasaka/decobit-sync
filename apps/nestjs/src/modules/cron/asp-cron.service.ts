@@ -17,7 +17,7 @@ import { MetronClickLogService } from "../asp/metron/service/click-logs.service"
 export class AspCronService {
   constructor(
     private readonly MetronActionLogService: MetronActionLogService,
-    private readonly MetonClickLogService: MetronClickLogService,
+    private readonly MetronClickLogService: MetronClickLogService,
     private readonly catsActionLogService: CatsActionLogService,
     private readonly catsClickLogService: CatsClickLogService,
     private readonly finebirdActionLogService: FinebirdActionLogService,
@@ -61,7 +61,7 @@ export class AspCronService {
 
     this.executeWithErrorHandling("metorn", async () => {
       const a = await this.MetronActionLogService.fetchAndInsertLogs();
-      const c = await this.MetonClickLogService.fetchAndInsertLogs();
+      const c = await this.MetronClickLogService.fetchAndInsertLogs();
       console.log(`✅ metorn-try: Action=${a}, Click=${c}`);
     });
   }
