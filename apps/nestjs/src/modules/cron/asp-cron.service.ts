@@ -10,12 +10,14 @@ import { MonkeyActionLogService } from "../asp/monkey/services/action-logs.servi
 import { MonkeyClickLogService } from "../asp/monkey/services/click-logs.service";
 import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services/action-logs.service";
 import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
-import { TbcActionLogService } from "../asp/metron/tbc/action-logs.service";
+import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
+import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
 
 @Injectable()
 export class AspCronService {
   constructor(
-    private readonly TbcActionLogService: TbcActionLogService,
+    private readonly MetronActionLogService: MetronActionLogService,
+    private readonly MetonClickLogService: MetronClickLogService,
     private readonly catsActionLogService: CatsActionLogService,
     private readonly catsClickLogService: CatsClickLogService,
     private readonly finebirdActionLogService: FinebirdActionLogService,
@@ -58,8 +60,9 @@ export class AspCronService {
     });
 
     this.executeWithErrorHandling("metorn-try", async () => {
-      const a = await this.TbcActionLogService.fetchAndInsertLogs();
-      console.log(`✅ metorn-try: Action=${a}`);
+      const a = await this.MetronActionLogService.fetchAndInsertLogs();
+      const c = await this.MetonClickLogService.fetchAndInsertLogs();
+      console.log(`✅ metorn-try: Action=${a}, Click=${c}`);
     });
   }
 

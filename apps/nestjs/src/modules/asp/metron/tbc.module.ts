@@ -1,15 +1,10 @@
 import { Module } from "@nestjs/common";
-import { TbcActionLogService } from "./tbc/action-logs.service";
+import { MetronActionLogService } from "./service/action-logs.service";
 import { PrismaService } from "@prismaService";
 import { MetronActionLogRepository } from "./repositories/action-logs-repository";
 
-
 @Module({
-    providers: [
-      TbcActionLogService,
-      MetronActionLogRepository,
-      PrismaService,
-    ],
-    exports: [TbcActionLogService],
-  })
-  export class tbcModule {}
+  providers: [MetronActionLogService, MetronActionLogRepository, PrismaService],
+  exports: [MetronActionLogService],
+})
+export class tbcModule {}

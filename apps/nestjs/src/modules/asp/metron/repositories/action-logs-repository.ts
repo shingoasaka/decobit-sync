@@ -12,18 +12,18 @@ interface MetronRawData {
   リファラ?: string;
   報酬額?: string;
   ステータス?: string;
-  CL付加情報1	?: string;
-  CL付加情報2	?: string;
-  CL付加情報3	?: string;
-  CL付加情報4	?: string;
-  CL付加情報5	?: string;
+  CL付加情報1?: string;
+  CL付加情報2?: string;
+  CL付加情報3?: string;
+  CL付加情報4?: string;
+  CL付加情報5?: string;
 }
 
 interface MetronFormattedData {
-  actionDateTime: Date| null;
-  clickDateTime: Date| null;
+  actionDateTime: Date | null;
+  clickDateTime: Date | null;
   adminDateTime: Date | null;
-  adId:  number| null;
+  adId: number | null;
   adName: string | null;
   siteName: string | null;
   actionOs: string | null;
@@ -37,14 +37,10 @@ interface MetronFormattedData {
   clInformation5: string | null;
 }
 
-
-
-
 @Injectable()
 export class MetronActionLogRepository {
   constructor(private readonly prisma: PrismaService) {}
   private formatData(item: MetronRawData): MetronFormattedData {
-
     return {
       actionDateTime: toValidDate(item["注文日時"]),
       clickDateTime: toValidDate(item["クリック日時"]),
@@ -72,7 +68,6 @@ export class MetronActionLogRepository {
       });
     }
   }
-  
 }
 function toValidDate(value?: string): Date | null {
   if (!value || value === "0000-00-00 00:00:00") return null;
@@ -80,4 +75,3 @@ function toValidDate(value?: string): Date | null {
   const date = new Date(isoLike);
   return isNaN(date.getTime()) ? null : date;
 }
-

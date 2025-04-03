@@ -11,7 +11,7 @@ import { MetronActionLogRepository } from "../repositories/action-logs-repositor
 dotenv.config();
 
 @Injectable()
-export class TbcActionLogService implements LogService {
+export class MetronActionLogService implements LogService {
   constructor(
     private readonly repository: MetronActionLogRepository,
     private readonly prisma: PrismaService,
@@ -26,17 +26,21 @@ export class TbcActionLogService implements LogService {
 
       await page.goto("https://sb.me-tron.net/partner/login");
 
-      await page.locator('input[name="loginId"]').fill(process.env.METRON_USERNAME ?? "");
-      await page.locator('input[name="password"]').fill(process.env.METRON_PASSWORD ?? "");
+      await page
+        .locator('input[name="loginId"]')
+        .fill(process.env.METRON_USERNAME ?? "");
+      await page
+        .locator('input[name="password"]')
+        .fill(process.env.METRON_PASSWORD ?? "");
 
-      await page.getByRole('button', { name: 'パートナー様ログイン' }).click();
+      await page.getByRole("button", { name: "パートナー様ログイン" }).click();
 
-      await page.getByRole('link', { name: ' レポート' }).click();
-      await page.getByRole('link', { name: '獲得ログ' }).click();
-      await page.getByRole('heading', { name: ' 検索条件' }).click();
+      await page.getByRole("link", { name: " レポート" }).click();
+      await page.getByRole("link", { name: "獲得ログ" }).click();
+      await page.getByRole("heading", { name: " 検索条件" }).click();
 
-      await page.getByRole('button', { name: '本日' }).click();
-      await page.getByRole('button', { name: '検索する' }).click();
+      await page.getByRole("button", { name: "本日" }).click();
+      await page.getByRole("button", { name: "検索する" }).click();
 
       const downloadPromise = page.waitForEvent("download");
       await page.getByRole("button", { name: "CSVダウンロード" }).click();
@@ -56,10 +60,10 @@ export class TbcActionLogService implements LogService {
   private async processCsvAndSave(filePath: string): Promise<number> {
     const buffer = fs.readFileSync(filePath);
     const utf8Data = iconv.decode(buffer, "utf-8");
-    
+
     const records = parse(utf8Data, {
-      columns: true, 
-      skip_empty_lines: true 
+      columns: true,
+      skip_empty_lines: true,
     });
 
     await this.repository.save(records);
