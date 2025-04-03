@@ -58,8 +58,10 @@ export class AspCronService {
       }),
 
       this.executeWithErrorHandling("SampleAffiliate", async () => {
-        const a = await this.sampleAffiliateActionLogService.fetchAndInsertLogs();
-        const c = await this.sampleAffiliateClickLogService.fetchAndInsertLogs();
+        const a =
+          await this.sampleAffiliateActionLogService.fetchAndInsertLogs();
+        const c =
+          await this.sampleAffiliateClickLogService.fetchAndInsertLogs();
         console.log(`✅ SampleAffiliate: Action=${a}, Click=${c}`);
       }),
     ]);
