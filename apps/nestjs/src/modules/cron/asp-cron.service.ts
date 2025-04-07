@@ -12,24 +12,24 @@ import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services
 import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
 import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
 import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
-import { NavicluActionLogService } from "../asp/rentracks/services/action-logs.service"
-import { NavicluClickLogService } from "../asp/rentracks/services/click-logs.service"
+import { NavicluActionLogService } from "../asp/rentracks/services/action-logs.service";
+import { NavicluClickLogService } from "../asp/rentracks/services/click-logs.service";
 
 @Injectable()
 export class AspCronService {
   constructor(
-    private readonly MetronActionLogService: MetronActionLogService,
-    private readonly MetronClickLogService: MetronClickLogService,
-    private readonly catsActionLogService: CatsActionLogService,
-    private readonly catsClickLogService: CatsClickLogService,
-    private readonly finebirdActionLogService: FinebirdActionLogService,
-    private readonly finebirdClickLogService: FinebirdClickLogService,
-    private readonly tryActionLogService: TryActionLogService,
-    private readonly tryClickLogService: TryClickLogService,
-    private readonly monkeyActionLogService: MonkeyActionLogService,
-    private readonly monkeyClickLogService: MonkeyClickLogService,
-    private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
-    private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
+    // private readonly MetronActionLogService: MetronActionLogService,
+    // private readonly MetronClickLogService: MetronClickLogService,
+    // private readonly catsActionLogService: CatsActionLogService,
+    // private readonly catsClickLogService: CatsClickLogService,
+    // private readonly finebirdActionLogService: FinebirdActionLogService,
+    // private readonly finebirdClickLogService: FinebirdClickLogService,
+    // private readonly tryActionLogService: TryActionLogService,
+    // private readonly tryClickLogService: TryClickLogService,
+    // private readonly monkeyActionLogService: MonkeyActionLogService,
+    // private readonly monkeyClickLogService: MonkeyClickLogService,
+    // private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
+    // private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
     private readonly NavicluActionLogService: NavicluActionLogService,
     private readonly NavicluClickLogService: NavicluClickLogService,
   ) {}
@@ -41,43 +41,43 @@ export class AspCronService {
 
     // 各ASPを並列実行、失敗しても止めないように allSettled
     await Promise.allSettled([
-      this.executeWithErrorHandling("Cats", async () => {
-        const a = await this.catsActionLogService.fetchAndInsertLogs();
-        const c = await this.catsClickLogService.fetchAndInsertLogs();
-        console.log(`✅ Cats: Action=${a}, Click=${c}`);
-      }),
+      // this.executeWithErrorHandling("Cats", async () => {
+      //   const a = await this.catsActionLogService.fetchAndInsertLogs();
+      //   const c = await this.catsClickLogService.fetchAndInsertLogs();
+      //   console.log(`✅ Cats: Action=${a}, Click=${c}`);
+      // }),
 
-      this.executeWithErrorHandling("Finebird", async () => {
-        const a = await this.finebirdActionLogService.fetchAndInsertLogs();
-        const c = await this.finebirdClickLogService.fetchAndInsertLogs();
-        console.log(`✅ Finebird: Action=${a}, Click=${c}`);
-      }),
+      // this.executeWithErrorHandling("Finebird", async () => {
+      //   const a = await this.finebirdActionLogService.fetchAndInsertLogs();
+      //   const c = await this.finebirdClickLogService.fetchAndInsertLogs();
+      //   console.log(`✅ Finebird: Action=${a}, Click=${c}`);
+      // }),
 
-      this.executeWithErrorHandling("Hanikamu-Try", async () => {
-        const a = await this.tryActionLogService.fetchAndInsertLogs();
-        const c = await this.tryClickLogService.fetchAndInsertLogs();
-        console.log(`✅ Hanikamu-Try: Action=${a}, Click=${c}`);
-      }),
+      // this.executeWithErrorHandling("Hanikamu-Try", async () => {
+      //   const a = await this.tryActionLogService.fetchAndInsertLogs();
+      //   const c = await this.tryClickLogService.fetchAndInsertLogs();
+      //   console.log(`✅ Hanikamu-Try: Action=${a}, Click=${c}`);
+      // }),
 
-      this.executeWithErrorHandling("Monkey", async () => {
-        const a = await this.monkeyActionLogService.fetchAndInsertLogs();
-        const c = await this.monkeyClickLogService.fetchAndInsertLogs();
-        console.log(`✅ Monkey: Action=${a}, Click=${c}`);
-      }),
+      // this.executeWithErrorHandling("Monkey", async () => {
+      //   const a = await this.monkeyActionLogService.fetchAndInsertLogs();
+      //   const c = await this.monkeyClickLogService.fetchAndInsertLogs();
+      //   console.log(`✅ Monkey: Action=${a}, Click=${c}`);
+      // }),
 
-      this.executeWithErrorHandling("metorn", async () => {
-        const a = await this.MetronActionLogService.fetchAndInsertLogs();
-        const c = await this.MetronClickLogService.fetchAndInsertLogs();
-        console.log(`✅ metorn: Action=${a}, Click=${c}`);
-      }),
+      // this.executeWithErrorHandling("metorn", async () => {
+      //   const a = await this.MetronActionLogService.fetchAndInsertLogs();
+      //   const c = await this.MetronClickLogService.fetchAndInsertLogs();
+      //   console.log(`✅ metorn: Action=${a}, Click=${c}`);
+      // }),
 
-      this.executeWithErrorHandling("SampleAffiliate", async () => {
-        const a =
-          await this.sampleAffiliateActionLogService.fetchAndInsertLogs();
-        const c =
-          await this.sampleAffiliateClickLogService.fetchAndInsertLogs();
-        console.log(`✅ SampleAffiliate: Action=${a}, Click=${c}`);
-      }),
+      // this.executeWithErrorHandling("SampleAffiliate", async () => {
+      //   const a =
+      //     await this.sampleAffiliateActionLogService.fetchAndInsertLogs();
+      //   const c =
+      //     await this.sampleAffiliateClickLogService.fetchAndInsertLogs();
+      //   console.log(`✅ SampleAffiliate: Action=${a}, Click=${c}`);
+      // }),
 
       this.executeWithErrorHandling("rentracks", async () => {
         const a = await this.NavicluActionLogService.fetchAndInsertLogs();
