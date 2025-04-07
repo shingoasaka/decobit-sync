@@ -12,6 +12,8 @@ import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services
 import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
 import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
 import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
+import { NavicluActionLogService } from "../asp/rentracks/services/action-logs.service"
+import { NavicluClickLogService } from "../asp/rentracks/services/click-logs.service"
 
 @Injectable()
 export class AspCronService {
@@ -28,6 +30,8 @@ export class AspCronService {
     private readonly monkeyClickLogService: MonkeyClickLogService,
     private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
     private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
+    private readonly NavicluActionLogService: NavicluActionLogService,
+    private readonly NavicluClickLogService: NavicluClickLogService,
   ) {}
 
   // 1分おきに実行される定期処理（各ASPのログ取得）
@@ -73,6 +77,12 @@ export class AspCronService {
         const c =
           await this.sampleAffiliateClickLogService.fetchAndInsertLogs();
         console.log(`✅ SampleAffiliate: Action=${a}, Click=${c}`);
+      }),
+
+      this.executeWithErrorHandling("rentracks", async () => {
+        const a = await this.NavicluActionLogService.fetchAndInsertLogs();
+        const c = await this.NavicluClickLogService.fetchAndInsertLogs();
+        console.log(`✅ rentracks: Action=${a}, Click=${c}`);
       }),
     ]);
 
