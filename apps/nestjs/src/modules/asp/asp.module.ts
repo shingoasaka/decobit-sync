@@ -5,6 +5,7 @@ import { HanikamuModule } from "./hanikamu/hanikamu.module";
 import { MonkeyModule } from "./monkey/monkey.module";
 import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module";
 import { metronModule } from "./metron/metron.module";
+import {AdebisModule} from "./adebis/adebis.module";
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { metronModule } from "./metron/metron.module";
     HanikamuModule,
     MonkeyModule,
     SampleAffiliateModule,
+    AdebisModule,
   ],
   exports: [
     metronModule,
@@ -22,6 +24,7 @@ import { metronModule } from "./metron/metron.module";
     HanikamuModule,
     MonkeyModule,
     SampleAffiliateModule,
+    AdebisModule,
   ],
 })
 export class AspModule {}
