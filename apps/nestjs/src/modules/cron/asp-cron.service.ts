@@ -64,7 +64,7 @@ export class AspCronService {
       this.executeWithErrorHandling("metorn", async () => {
         const a = await this.MetronActionLogService.fetchAndInsertLogs();
         const c = await this.MetronClickLogService.fetchAndInsertLogs();
-        console.log(`✅ metorn-try: Action=${a}, Click=${c}`);
+        console.log(`✅ metorn: Action=${a}, Click=${c}`);
       }),
 
       this.executeWithErrorHandling("SampleAffiliate", async () => {

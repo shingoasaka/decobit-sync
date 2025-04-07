@@ -3,21 +3,20 @@ import { CatsModule } from "./cats/cats.module";
 import { FinebirdModule } from "./finebird/finebird.module";
 import { HanikamuModule } from "./hanikamu/hanikamu.module";
 import { MonkeyModule } from "./monkey/monkey.module";
-import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate";
-import { tbcModule } from "./metron/tbc.module";
+import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module";
+import { metronModule } from "./metron/metron.module";
 
 @Module({
   imports: [
-    tbcModule,
+    metronModule,
     CatsModule,
     FinebirdModule,
     HanikamuModule,
     MonkeyModule,
     SampleAffiliateModule,
-    tbcModule,
   ],
   exports: [
-    tbcModule,
+    metronModule,
     CatsModule,
     FinebirdModule,
     HanikamuModule,
