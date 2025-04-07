@@ -13,7 +13,7 @@ import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/
 import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
 import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
 import { SparkOripaActionLogService } from "../asp/adebis/services/action-logs.service";
-import { SparkOripaClickLogService } from "../asp/adebis/services/click-logs.service"
+import { SparkOripaClickLogService } from "../asp/adebis/services/click-logs.service";
 
 @Injectable()
 export class AspCronService {
