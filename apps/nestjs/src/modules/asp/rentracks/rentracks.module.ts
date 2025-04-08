@@ -3,17 +3,17 @@ import { Module } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { RentracksActionLogRepository } from "./repositories/action-logs.repository";
 import { RentracksClickLogRepository } from "./repositories/click-logs.repository";
-import { NavicluActionLogService } from "./services/action-logs.service";
-import { NavicluClickLogService } from "./services/click-logs.service";
+import { RentracksActionLogService } from "./services/action-logs.service";
+import { RentracksClickLogService } from "./services/click-logs.service";
 
 @Module({
   providers: [
     RentracksActionLogRepository,
     RentracksClickLogRepository,
-    NavicluActionLogService,
-    NavicluClickLogService,
+    RentracksActionLogService,
+    RentracksClickLogService,
     PrismaService,
   ],
-  exports: [NavicluActionLogService, NavicluClickLogService],
+  exports: [RentracksActionLogService, RentracksClickLogService],
 })
 export class RentracksModule {}

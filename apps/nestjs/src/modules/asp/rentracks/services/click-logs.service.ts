@@ -12,7 +12,7 @@ import { getToday } from "src/libs/date-utils";
 dotenv.config();
 
 @Injectable()
-export class NavicluClickLogService implements LogService {
+export class RentracksClickLogService implements LogService {
   constructor(
     private readonly repository: RentracksClickLogRepository,
     private readonly prisma: PrismaService,
