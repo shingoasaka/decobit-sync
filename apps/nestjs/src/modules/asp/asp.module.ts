@@ -5,7 +5,6 @@ import { HanikamuModule } from "./hanikamu/hanikamu.module";
 import { MonkeyModule } from "./monkey/monkey.module";
 import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module";
 import { metronModule } from "./metron/metron.module";
-import { AdebisModule } from "./adebis/adebis.module";
 import { LadModule } from "./lad/lad.module";
 import { RentracksModule } from "./rentracks/rentracks.module";
 
@@ -17,7 +16,6 @@ import { RentracksModule } from "./rentracks/rentracks.module";
     HanikamuModule,
     MonkeyModule,
     SampleAffiliateModule,
-    AdebisModule,
     LadModule,
     RentracksModule,
   ],
@@ -28,7 +26,6 @@ import { RentracksModule } from "./rentracks/rentracks.module";
     HanikamuModule,
     MonkeyModule,
     SampleAffiliateModule,
-    AdebisModule,
     LadModule,
     RentracksModule,
   ],

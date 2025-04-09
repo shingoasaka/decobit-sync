@@ -5,7 +5,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-import { AdebisActionLogRepository } from "../repositories/action-logs.repository";
+import { AdebisClickLogRepository } from "../click-logs.repository";
 
 interface SparkOripaSelectors {
   LOGIN: {
@@ -44,9 +44,9 @@ const WAIT_TIME = {
 } as const;
 
 @Injectable()
-export class SparkOripaActionLogService implements LogService {
+export class SparkOripaClickLogService implements LogService {
   constructor(
-    private readonly repository: AdebisActionLogRepository,
+    private readonly repository: AdebisClickLogRepository,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -95,7 +95,7 @@ export class SparkOripaActionLogService implements LogService {
     await (await page.waitForSelector(SELECTORS.LOGIN.SUBMIT)).click();
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(WAIT_TIME.SHORT);
-    await page.goto("https://bishamon.ebis.ne.jp/cv-attribute");
+    await page.goto("https://bishamon.ebis.ne.jp/details-analysis");
     await page.waitForLoadState("networkidle");
   }
 

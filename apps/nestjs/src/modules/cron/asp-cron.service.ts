@@ -12,8 +12,6 @@ import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services
 import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
 import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
 import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
-import { SparkOripaActionLogService } from "../asp/adebis/services/action-logs.service";
-import { SparkOripaClickLogService } from "../asp/adebis/services/click-logs.service";
 import { LadActionLogService } from "../asp/lad/service/action-logs.service";
 import { LadClickLogService } from "../asp/lad/service/click-logs.service";
 import { RentracksActionLogService } from "../asp/rentracks/services/action-logs.service";
@@ -34,8 +32,6 @@ export class AspCronService {
     private readonly monkeyClickLogService: MonkeyClickLogService,
     private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
     private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
-    private readonly SparkOripaActionLogService: SparkOripaActionLogService,
-    private readonly SparkOripaClickLogService: SparkOripaClickLogService,
     private readonly LadActionLogService: LadActionLogService,
     private readonly LadClickLogService: LadClickLogService,
     private readonly RentracksActionLogService: RentracksActionLogService,
@@ -87,17 +83,12 @@ export class AspCronService {
         console.log(`✅ SampleAffiliate: Action=${a}, Click=${c}`);
       }),
 
-      this.executeWithErrorHandling("adebis", async () => {
-        const a = await this.SparkOripaActionLogService.fetchAndInsertLogs();
-        const c = await this.SparkOripaClickLogService.fetchAndInsertLogs();
-        console.log(`✅ adebis: Action=${a}, Click=${c}`);
-      }),
-
       this.executeWithErrorHandling("lad", async () => {
         const a = await this.LadActionLogService.fetchAndInsertLogs();
         const c = await this.LadClickLogService.fetchAndInsertLogs();
         console.log(`✅ lad: Action=${a}, Click=${c}`);
       }),
+
       this.executeWithErrorHandling("rentracks", async () => {
         const a = await this.RentracksActionLogService.fetchAndInsertLogs();
         const c = await this.RentracksClickLogService.fetchAndInsertLogs();
