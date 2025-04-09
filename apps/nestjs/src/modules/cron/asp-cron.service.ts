@@ -6,36 +6,36 @@ import { FinebirdActionLogService } from "../asp/finebird/services/action-logs.s
 import { FinebirdClickLogService } from "../asp/finebird/services/click-logs.service";
 import { TryActionLogService } from "../asp/hanikamu/try/action-logs.service";
 import { TryClickLogService } from "../asp/hanikamu/try/click-logs.service";
-import { MonkeyActionLogService } from "../asp/monkey/services/action-logs.service";
-import { MonkeyClickLogService } from "../asp/monkey/services/click-logs.service";
-import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services/action-logs.service";
-import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
-import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
-import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
 import { LadActionLogService } from "../asp/lad/service/action-logs.service";
 import { LadClickLogService } from "../asp/lad/service/click-logs.service";
+import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
+import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
+import { MonkeyActionLogService } from "../asp/monkey/services/action-logs.service";
+import { MonkeyClickLogService } from "../asp/monkey/services/click-logs.service";
 import { RentracksActionLogService } from "../asp/rentracks/services/action-logs.service";
 import { RentracksClickLogService } from "../asp/rentracks/services/click-logs.service";
+import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services/action-logs.service";
+import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
 
 @Injectable()
 export class AspCronService {
   constructor(
-    private readonly MetronActionLogService: MetronActionLogService,
-    private readonly MetronClickLogService: MetronClickLogService,
     private readonly catsActionLogService: CatsActionLogService,
     private readonly catsClickLogService: CatsClickLogService,
     private readonly finebirdActionLogService: FinebirdActionLogService,
     private readonly finebirdClickLogService: FinebirdClickLogService,
-    private readonly tryActionLogService: TryActionLogService,
-    private readonly tryClickLogService: TryClickLogService,
-    private readonly monkeyActionLogService: MonkeyActionLogService,
-    private readonly monkeyClickLogService: MonkeyClickLogService,
-    private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
-    private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
     private readonly LadActionLogService: LadActionLogService,
     private readonly LadClickLogService: LadClickLogService,
+    private readonly MetronActionLogService: MetronActionLogService,
+    private readonly MetronClickLogService: MetronClickLogService,
+    private readonly monkeyActionLogService: MonkeyActionLogService,
+    private readonly monkeyClickLogService: MonkeyClickLogService,
     private readonly RentracksActionLogService: RentracksActionLogService,
     private readonly RentracksClickLogService: RentracksClickLogService,
+    private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
+    private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
+    private readonly tryActionLogService: TryActionLogService,
+    private readonly tryClickLogService: TryClickLogService,
   ) {}
 
   // 1分おきに実行される定期処理（各ASPのログ取得）
@@ -63,16 +63,28 @@ export class AspCronService {
         console.log(`✅ Hanikamu-Try: Action=${a}, Click=${c}`);
       }),
 
+      this.executeWithErrorHandling("Lad", async () => {
+        const a = await this.LadActionLogService.fetchAndInsertLogs();
+        const c = await this.LadClickLogService.fetchAndInsertLogs();
+        console.log(`✅ Lad: Action=${a}, Click=${c}`);
+      }),
+
+      this.executeWithErrorHandling("Metron", async () => {
+        const a = await this.MetronActionLogService.fetchAndInsertLogs();
+        const c = await this.MetronClickLogService.fetchAndInsertLogs();
+        console.log(`✅ Metron: Action=${a}, Click=${c}`);
+      }),
+
       this.executeWithErrorHandling("Monkey", async () => {
         const a = await this.monkeyActionLogService.fetchAndInsertLogs();
         const c = await this.monkeyClickLogService.fetchAndInsertLogs();
         console.log(`✅ Monkey: Action=${a}, Click=${c}`);
       }),
 
-      this.executeWithErrorHandling("metorn", async () => {
-        const a = await this.MetronActionLogService.fetchAndInsertLogs();
-        const c = await this.MetronClickLogService.fetchAndInsertLogs();
-        console.log(`✅ metorn: Action=${a}, Click=${c}`);
+      this.executeWithErrorHandling("Rentracks", async () => {
+        const a = await this.RentracksActionLogService.fetchAndInsertLogs();
+        const c = await this.RentracksClickLogService.fetchAndInsertLogs();
+        console.log(`✅ Rentracks: Action=${a}, Click=${c}`);
       }),
 
       this.executeWithErrorHandling("SampleAffiliate", async () => {
@@ -81,18 +93,6 @@ export class AspCronService {
         const c =
           await this.sampleAffiliateClickLogService.fetchAndInsertLogs();
         console.log(`✅ SampleAffiliate: Action=${a}, Click=${c}`);
-      }),
-
-      this.executeWithErrorHandling("lad", async () => {
-        const a = await this.LadActionLogService.fetchAndInsertLogs();
-        const c = await this.LadClickLogService.fetchAndInsertLogs();
-        console.log(`✅ lad: Action=${a}, Click=${c}`);
-      }),
-
-      this.executeWithErrorHandling("rentracks", async () => {
-        const a = await this.RentracksActionLogService.fetchAndInsertLogs();
-        const c = await this.RentracksClickLogService.fetchAndInsertLogs();
-        console.log(`✅ rentracks: Action=${a}, Click=${c}`);
       }),
     ]);
 

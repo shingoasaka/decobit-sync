@@ -7,10 +7,10 @@ import { LadClickLogService } from "./service/click-logs.service";
 
 @Module({
   providers: [
-    LadActionLogService,
-    LadClickLogService,
     LadActionLogRepository,
+    LadActionLogService,
     LadClickLogRepository,
+    LadClickLogService,
     PrismaService,
   ],
   exports: [LadActionLogService, LadClickLogService],
