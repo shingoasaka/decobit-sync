@@ -16,6 +16,8 @@ import { SparkOripaActionLogService } from "../asp/adebis/services/action-logs.s
 import { SparkOripaClickLogService } from "../asp/adebis/services/click-logs.service";
 import { LadActionLogService } from "../asp/lad/service/action-logs.service";
 import { LadClickLogService } from "../asp/lad/service/click-logs.service";
+import { RentracksActionLogService } from "../asp/rentracks/services/action-logs.service";
+import { RentracksClickLogService } from "../asp/rentracks/services/click-logs.service";
 
 @Injectable()
 export class AspCronService {
@@ -36,6 +38,8 @@ export class AspCronService {
     private readonly SparkOripaClickLogService: SparkOripaClickLogService,
     private readonly LadActionLogService: LadActionLogService,
     private readonly LadClickLogService: LadClickLogService,
+    private readonly RentracksActionLogService: RentracksActionLogService,
+    private readonly RentracksClickLogService: RentracksClickLogService,
   ) {}
 
   // 1分おきに実行される定期処理（各ASPのログ取得）
@@ -93,6 +97,11 @@ export class AspCronService {
         const a = await this.LadActionLogService.fetchAndInsertLogs();
         const c = await this.LadClickLogService.fetchAndInsertLogs();
         console.log(`✅ lad: Action=${a}, Click=${c}`);
+
+      this.executeWithErrorHandling("rentracks", async () => {
+        const a = await this.RentracksActionLogService.fetchAndInsertLogs();
+        const c = await this.RentracksClickLogService.fetchAndInsertLogs();
+        console.log(`✅ rentracks: Action=${a}, Click=${c}`);
       }),
     ]);
 

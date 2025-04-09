@@ -7,6 +7,7 @@ import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module
 import { metronModule } from "./metron/metron.module";
 import { AdebisModule } from "./adebis/adebis.module";
 import { LadModule } from "./lad/lad.module";
+import { RentracksModule } from "./rentracks/rentracks.module";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { LadModule } from "./lad/lad.module";
     SampleAffiliateModule,
     AdebisModule,
     LadModule,
+    RentracksModule,
   ],
   exports: [
     metronModule,
@@ -28,6 +30,7 @@ import { LadModule } from "./lad/lad.module";
     SampleAffiliateModule,
     AdebisModule,
     LadModule,
+    RentracksModule,
   ],
 })
 export class AspModule {}
