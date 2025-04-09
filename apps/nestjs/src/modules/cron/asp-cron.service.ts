@@ -97,7 +97,7 @@ export class AspCronService {
         const a = await this.LadActionLogService.fetchAndInsertLogs();
         const c = await this.LadClickLogService.fetchAndInsertLogs();
         console.log(`✅ lad: Action=${a}, Click=${c}`);
-
+      }),
       this.executeWithErrorHandling("rentracks", async () => {
         const a = await this.RentracksActionLogService.fetchAndInsertLogs();
         const c = await this.RentracksClickLogService.fetchAndInsertLogs();
