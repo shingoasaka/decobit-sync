@@ -340,41 +340,6 @@ model MonkeyClickLog {
   updatedAt        DateTime  @updatedAt
 }
 
-model QuorizaActionLog {
-  id                Int       @id @default(autoincrement())
-  actionId          Int?
-  actionIdentifier  Int?
-  clickDateTime     DateTime?
-  actionDateTime    DateTime?
-  approval          String?
-  adName            String?
-  adCategory        String?
-  campaignName      String?
-  landingPageName   String?
-  lpUrl             String?
-  deviceType        String?
-  osType            String?
-  approvalStatus    String?
-  referrerUrl       String?
-  trackingParams    String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-}
-
-model QuorizaClickLog {
-  id                Int       @id @default(autoincrement())
-  adCategory        String?
-  click             Int? 
-  actionData        Int?
-  cvr               Float?
-  approvedCount     Int?
-  approvalRate      Float?
-  unapprovedCount   Int?
-  rejectionsCount   Int?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-}
-
 model RentracksActionLog {
   id               Int       @id @default(autoincrement())
   clickDateTime    DateTime?
