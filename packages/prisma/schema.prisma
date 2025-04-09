@@ -453,6 +453,78 @@ model SampleAffiliateClickLog {
   updatedAt             DateTime @updatedAt
 }
 
+model ladActionLog {
+  id                     Int       @id @default(autoincrement())
+  actionDate             DateTime?
+  clickDate              DateTime?
+  midClickDate           DateTime?
+  mediaName              String?
+  mediaCategory1         String?
+  mediaCategory2         String?
+  advertiserName         String?
+  adName                 String?
+  adgroupName            String?
+  conversionPointName    String?
+  trackingUserId         String?
+  salesAmount            Int?
+  rewardAmount           Int?
+  redirectAdUrlName      String?
+  useRotation            String?
+  carrier                String?
+  osType                 String?
+  userAgentClick         String?
+  userAgentAction        String?
+  userIpClick            String?
+  userIpAction           String?
+  referrerClickUrl       String?
+  lineName               String?
+  lineUserId             String?
+  lineUserName           String?
+  clData1                String?
+  catsReportId           String?
+  midClData1             String?
+  actionInfo1            String?
+  sessionId              String?
+  userId                 String?
+  midClickCount          Int?
+  createdDate            DateTime?
+  updatedDate            DateTime?
+}
+
+model ladClickLog {
+  id                    Int      @id @default(autoincrement())
+  clickDate             DateTime?
+  mediaName             String?
+  mediaCategory1        String?
+  mediaCategory2        String?
+  advertiserName        String?
+  adName                String?
+  adgroupName           String?
+  redirectAdUrlName     String?
+  useRotation           String?
+  carrier               String?
+  osType                String?
+  userAgent             String?
+  ipAdress              String?
+  referrer              String?
+  clData1               String?
+  facebookClId          String?
+  yafooSearchAdClId     String?
+  tiktokClId            String?
+  googleClId            String?
+  googleGbrald          String?
+  googleWbrald          String?
+  xClId                 String?
+  catsReportId          String?
+  sessionId             String?
+  userId                String?
+  trackingUserId        String?
+  status                String?
+  createdDate           DateTime?
+  updatedDate           DateTime?
+}
+
+
 model WebantennaActionLog {
   id                         Int       @id @default(autoincrement())
   deviceType                 String?

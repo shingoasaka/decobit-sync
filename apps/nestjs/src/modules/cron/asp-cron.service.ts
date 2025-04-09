@@ -14,6 +14,8 @@ import { MetronActionLogService } from "../asp/metron/service/action-logs.servic
 import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
 import { SparkOripaActionLogService } from "../asp/adebis/services/action-logs.service";
 import { SparkOripaClickLogService } from "../asp/adebis/services/click-logs.service";
+import { LadActionLogService } from "../asp/lad/service/action-logs.service";
+import { LadClickLogService } from "../asp/lad/service/click-logs.service";
 
 @Injectable()
 export class AspCronService {
@@ -32,6 +34,8 @@ export class AspCronService {
     private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
     private readonly SparkOripaActionLogService: SparkOripaActionLogService,
     private readonly SparkOripaClickLogService: SparkOripaClickLogService,
+    private readonly LadActionLogService: LadActionLogService,
+    private readonly LadClickLogService: LadClickLogService,
   ) {}
 
   // 1分おきに実行される定期処理（各ASPのログ取得）
@@ -83,6 +87,12 @@ export class AspCronService {
         const a = await this.SparkOripaActionLogService.fetchAndInsertLogs();
         const c = await this.SparkOripaClickLogService.fetchAndInsertLogs();
         console.log(`✅ adebis: Action=${a}, Click=${c}`);
+      }),
+
+      this.executeWithErrorHandling("lad", async () => {
+        const a = await this.LadActionLogService.fetchAndInsertLogs();
+        const c = await this.LadClickLogService.fetchAndInsertLogs();
+        console.log(`✅ lad: Action=${a}, Click=${c}`);
       }),
     ]);
 
