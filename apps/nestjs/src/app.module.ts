@@ -2,9 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./prisma/prisma.module";
-import { CronService } from "./cron.service";
 import { LogsModule } from "./modules/logs/logs.module";
-import { LogService } from "./modules/logs/types";
 import { AspModule } from "./modules/asp/asp.module";
 import { DiscrepanyModule } from "./modules/discrepany-check/discrepany.module";
 import { CronModule } from "./modules/cron/cron.module";
@@ -22,12 +20,6 @@ import { CronModule } from "./modules/cron/cron.module";
     DiscrepanyModule,
     CronModule,
   ],
-  providers: [
-    CronService,
-    {
-      provide: "LOG_SERVICES",
-      useFactory: (...services: LogService[]) => services,
-    },
-  ],
+  providers: [],
 })
 export class AppModule {}
