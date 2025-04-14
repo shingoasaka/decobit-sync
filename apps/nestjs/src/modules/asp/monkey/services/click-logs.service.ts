@@ -141,7 +141,7 @@ export class MonkeyClickLogService implements LogService {
         `レポートダウンロード中にエラー: ${
           error instanceof Error ? error.message : error
         }`,
-        "downloadReport"
+        "downloadReport",
       );
     }
   }

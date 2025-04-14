@@ -26,7 +26,7 @@ export class CommonLogService {
     level: LogLevel,
     message: string,
     serviceName: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): Promise<void> {
     try {
       // コンソールに出力
@@ -47,7 +47,7 @@ export class CommonLogService {
     } catch (error) {
       // 万が一ログ自体が失敗してもシステムは止めない
       this.logger.error(
-        `ログ記録中にエラーが発生: ${error instanceof Error ? error.message : "不明なエラー"}`
+        `ログ記録中にエラーが発生: ${error instanceof Error ? error.message : "不明なエラー"}`,
       );
     }
   }
@@ -63,7 +63,7 @@ export class CommonLogService {
     serviceName: string,
     message: string,
     stack?: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): Promise<void> {
     try {
       // コンソールにエラーを出力
@@ -71,16 +71,18 @@ export class CommonLogService {
       if (stack) {
         this.logger.debug(stack);
       }
-      
+
       // 詳細情報（メタデータ）がある場合は出力
       if (metadata && Object.keys(metadata).length > 0) {
-        this.logger.debug(`[${serviceName}] 追加情報: ${JSON.stringify(metadata)}`);
+        this.logger.debug(
+          `[${serviceName}] 追加情報: ${JSON.stringify(metadata)}`,
+        );
       }
     } catch (error) {
       // 万が一ログ自体が失敗してもシステムは止めない
       this.logger.error(
-        `エラーログ記録中にエラーが発生: ${error instanceof Error ? error.message : "不明なエラー"}`
+        `エラーログ記録中にエラーが発生: ${error instanceof Error ? error.message : "不明なエラー"}`,
       );
     }
   }
-} 
+}

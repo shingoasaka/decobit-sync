@@ -45,16 +45,16 @@ export class LadClickLogService implements LogService {
       // CSV生成のクリック
       await page.getByRole("button", { name: " CSV生成" }).click();
       await page.waitForTimeout(10000);
-      
+
       // CSVダウンロードページへ移動
       await page.goto("https://admin038.l-ad.net/admin/clicklog/list");
-      
+
       // ダウンロードの実行（Promise.allパターン使用）
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 60000 }),
-        page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]')
+        page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
       ]);
-      
+
       const downloadPath = await download.path();
       if (!downloadPath) {
         throw new Error("ダウンロードパスが取得できません");

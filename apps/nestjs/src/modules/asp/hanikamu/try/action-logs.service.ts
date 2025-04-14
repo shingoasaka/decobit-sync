@@ -55,7 +55,9 @@ export class TryActionLogService implements LogService {
 
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 60000 }),
-        page.getByRole("button", { name: "  上記条件でCSVダウンロード" }).click()
+        page
+          .getByRole("button", { name: "  上記条件でCSVダウンロード" })
+          .click(),
       ]);
 
       const downloadPath = await download.path();

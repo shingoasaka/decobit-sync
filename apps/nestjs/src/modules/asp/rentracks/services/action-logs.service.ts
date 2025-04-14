@@ -62,7 +62,7 @@ export class RentracksActionLogService implements LogService {
 
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 60000 }),
-        page.getByRole("button", { name: "ダウンロード" }).click()
+        page.getByRole("button", { name: "ダウンロード" }).click(),
       ]);
       const downloadPath = await download.path();
       if (!downloadPath) {

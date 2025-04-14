@@ -55,7 +55,9 @@ export class SampleAffiliateActionLogService {
       // ✅ ダウンロードボタンをクリック
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 60000 }),
-        iframeContent.getByRole("button", { name: "CSVファイルをダウンロード" }).click()
+        iframeContent
+          .getByRole("button", { name: "CSVファイルをダウンロード" })
+          .click(),
       ]);
 
       // ✅ ファイルの保存パスを取得

@@ -87,14 +87,16 @@ export class CatsActionLogService {
     try {
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 60000 }),
-        page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]')
+        page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
       ]);
-      
+
       const downloadPath = await download.path();
       if (!downloadPath) throw new Error("ダウンロードパスが取得できません");
       return downloadPath;
     } catch (error) {
-      throw new Error(`レポートのダウンロードに失敗しました: ${error instanceof Error ? error.message : error}`);
+      throw new Error(
+        `レポートのダウンロードに失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
     }
   }
 

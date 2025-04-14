@@ -142,7 +142,7 @@ export class SampleAffiliateClickLogService implements LogService {
   private async initiateAndHandleDownload(page: Page): Promise<string> {
     // 先にダウンロードリンクをクリックして、ダイアログを表示
     await this.clickDownloadLink(page);
-    
+
     // iframe内のボタンクリックとダウンロードイベントを同時に待つ
     const frameElement = await page.waitForSelector(
       SELECTORS.DOWNLOAD_DIALOG.IFRAME,
@@ -163,7 +163,7 @@ export class SampleAffiliateClickLogService implements LogService {
     // Promise.allを使用してダウンロードイベントとボタンクリックを関連付ける
     const [download] = await Promise.all([
       page.waitForEvent("download", { timeout: 60000 }),
-      confirmButton.click()
+      confirmButton.click(),
     ]);
 
     const downloadPath = await download.path();

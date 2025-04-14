@@ -8,10 +8,6 @@ import { CommonLogService } from "../logs/common-log.service";
 
 @Module({
   imports: [ScheduleModule.forRoot(), AspModule, DiscrepanyModule],
-  providers: [
-    AspCronService, 
-    DiscrepanyCronService,
-    CommonLogService
-  ],
+  providers: [AspCronService, DiscrepanyCronService, CommonLogService],
 })
 export class CronModule {}
