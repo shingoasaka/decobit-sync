@@ -53,10 +53,14 @@ export class RentracksClickLogService implements LogService {
       await page.locator("#idTermSelect").selectOption(today);
       await page.getByRole("button", { name: "再表示" }).click();
 
-      const downloadPromise = page.waitForEvent("download");
-      await page.getByRole("button", { name: "ダウンロード" }).click();
-      const download = await downloadPromise;
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 60000 }),
+        page.getByRole("button", { name: "ダウンロード" }).click()
+      ]);
       const downloadPath = await download.path();
+      if (!downloadPath) {
+        throw new Error("ダウンロードパスが取得できません");
+      }
 
       return await this.processCsvAndSave(downloadPath);
     } catch (error) {

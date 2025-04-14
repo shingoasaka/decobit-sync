@@ -53,15 +53,14 @@ export class TryActionLogService implements LogService {
 
       await page.locator("label").filter({ hasText: "成果発生日" }).click();
 
-      const downloadPromise = page.waitForEvent("download");
-      await page
-        .getByRole("button", { name: "  上記条件でCSVダウンロード" })
-        .click();
-      const download = await downloadPromise;
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 60000 }),
+        page.getByRole("button", { name: "  上記条件でCSVダウンロード" }).click()
+      ]);
 
       const downloadPath = await download.path();
       if (!downloadPath) {
-        return 0;
+        throw new Error("ダウンロードパスが取得できません");
       }
 
       return await this.processCsvAndSave(downloadPath);
