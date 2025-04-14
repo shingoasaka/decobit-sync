@@ -53,11 +53,12 @@ export class SampleAffiliateActionLogService {
       if (!iframeContent) throw new Error("Iframe not found");
 
       // ✅ ダウンロードボタンをクリック
-      const downloadPromise = page.waitForEvent("download");
-      await iframeContent
-        .getByRole("button", { name: "CSVファイルをダウンロード" })
-        .click();
-      const download = await downloadPromise;
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 60000 }),
+        iframeContent
+          .getByRole("button", { name: "CSVファイルをダウンロード" })
+          .click(),
+      ]);
 
       // ✅ ファイルの保存パスを取得
       const downloadPath = await download.path();

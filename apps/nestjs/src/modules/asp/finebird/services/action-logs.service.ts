@@ -88,7 +88,7 @@ export class FinebirdActionLogService implements LogService {
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(WAIT_TIME.SHORT);
     await page.goto(
-      process.env.FINEBIRD_URL + "partneradmin/report/action/log/list",
+      (process.env.FINEBIRD_URL ?? "") + "partneradmin/report/action/log/list",
     );
   }
 
@@ -103,7 +103,7 @@ export class FinebirdActionLogService implements LogService {
       ).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
 
-      const emptyDataElement = await page.$("td[colspan='17']"); // 修正部分
+      const emptyDataElement = await page.$("td[colspan='17']");
       if (emptyDataElement) {
         const emptyDataMessage = await page.evaluate(
           (el) => el.textContent,
@@ -130,15 +130,24 @@ export class FinebirdActionLogService implements LogService {
   }
 
   private async downloadReport(page: Page): Promise<string> {
-    const downloadPromise = page.waitForEvent("download");
-    await (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click();
-    const download = await downloadPromise;
+    try {
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 60000 }),
+        (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
+      ]);
 
-    const downloadPath = await download.path();
-    if (!downloadPath) {
-      throw new Error("ダウンロードパスが取得できません");
+      const downloadPath = await download.path();
+      if (!downloadPath) {
+        throw new Error("ダウンロードパスが取得できません");
+      }
+      return downloadPath;
+    } catch (error) {
+      throw new Error(
+        `レポートダウンロード中にエラー: ${
+          error instanceof Error ? error.message : error
+        }`,
+      );
     }
-    return downloadPath;
   }
 
   private handleError(method: string, error: unknown): void {

@@ -2,7 +2,6 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./prisma/prisma.module";
-import * as Logs from "./modules/logs";
 import { CronService } from "./cron.service";
 import { LogsModule } from "./modules/logs/logs.module";
 import { LogService } from "./modules/logs/types";
@@ -28,7 +27,6 @@ import { CronModule } from "./modules/cron/cron.module";
     {
       provide: "LOG_SERVICES",
       useFactory: (...services: LogService[]) => services,
-      inject: Object.values(Logs),
     },
   ],
 })

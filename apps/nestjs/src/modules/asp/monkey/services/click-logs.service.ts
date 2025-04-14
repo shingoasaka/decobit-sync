@@ -125,17 +125,25 @@ export class MonkeyClickLogService implements LogService {
   }
 
   private async downloadReport(page: Page): Promise<string> {
-    const downloadPromise = page.waitForEvent("download");
-    await (
-      await page.waitForSelector(CONFIG.SELECTORS.REPORT.DOWNLOAD)
-    ).click();
-    const download = await downloadPromise;
+    try {
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 60000 }),
+        (await page.waitForSelector(CONFIG.SELECTORS.REPORT.DOWNLOAD)).click(),
+      ]);
 
-    const downloadPath = await download.path();
-    if (!downloadPath) {
-      throw new Error("ダウンロードパスが取得できません");
+      const downloadPath = await download.path();
+      if (!downloadPath) {
+        throw new Error("ダウンロードパスが取得できません");
+      }
+      return downloadPath;
+    } catch (error) {
+      throw new MonkeyServiceError(
+        `レポートダウンロード中にエラー: ${
+          error instanceof Error ? error.message : error
+        }`,
+        "downloadReport",
+      );
     }
-    return downloadPath;
   }
 
   private handleError(method: string, error: unknown): void {

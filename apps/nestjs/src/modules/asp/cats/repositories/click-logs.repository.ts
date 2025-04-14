@@ -1,6 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@prisma/client";
+import * as fs from "fs";
+import { parse } from "csv-parse/sync";
+import * as iconv from "iconv-lite";
 
 // 入力データの型定義
 interface RawCatsData {
@@ -57,12 +60,39 @@ interface FormattedCatsData {
 
 @Injectable()
 export class CatsClickLogRepository {
-  processCsvAndSave(downloadPath: string): number | PromiseLike<number> {
-    throw new Error("Method not implemented.");
-  }
   private readonly logger = new Logger(CatsClickLogRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * CSV を読み込み、DB に保存し、挿入件数を返します。
+   */
+  async processCsvAndSave(downloadPath: string): Promise<number> {
+    try {
+      // CSVファイルを読み込む (Shift-JIS が想定なら iconv で変換)
+      const fileBuffer = fs.readFileSync(downloadPath);
+      const utf8Content = iconv.decode(fileBuffer, "Shift_JIS");
+
+      // CSV をパースして RawCatsData の配列を作る
+      const records = parse(utf8Content, {
+        columns: true,
+        skip_empty_lines: true,
+      }) as RawCatsData[];
+
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return 0;
+      }
+
+      // 保存処理
+      const insertedCount = await this.save(records);
+      this.logger.log(`processCsvAndSave: Inserted ${insertedCount} records`);
+      return insertedCount;
+    } catch (error) {
+      this.logger.error("Error in processCsvAndSave", error);
+      throw error;
+    }
+  }
 
   private toDate(dateStr: string | null | undefined): Date | null {
     if (!dateStr) return null;
@@ -78,7 +108,7 @@ export class CatsClickLogRepository {
   private toInt(value: string | null | undefined): number | null {
     if (!value) return null;
     try {
-      const cleanValue = value.replace(/[,¥]/g, "");
+      const cleanValue = value.replace(/[¥,]/g, "");
       const num = parseInt(cleanValue, 10);
       return isNaN(num) ? null : num;
     } catch (error) {
@@ -100,6 +130,7 @@ export class CatsClickLogRepository {
   }
 
   private normalizeKey(key: string): string {
+    // キー名の先頭に余計な文字などがあれば除去
     return key.replace(/^.*?/, "");
   }
 
@@ -125,9 +156,9 @@ export class CatsClickLogRepository {
       ipAddress: this.getValue(item, "IPアドレス"),
       referrer: this.getValue(item, "リファラ"),
       clData1: this.getValue(item, "CL付加情報1"),
-      facebookClId: this.getValue(item, "Facebook CLID"),
-      tiktokClId: this.getValue(item, "TikTok CLID"),
-      catsReportId: this.getValue(item, "CatsReport ID"),
+      facebookClId: this.getValue(item, "FacebookCLID"),
+      tiktokClId: this.getValue(item, "TikTokCLID"),
+      catsReportId: this.getValue(item, "CatsReportID"),
       sessionId: this.getValue(item, "セッションID"),
       userId: this.getValue(item, "ユーザーID"),
       trackingUserId: this.getValue(item, "トラッキングユーザーID"),
@@ -137,6 +168,9 @@ export class CatsClickLogRepository {
     return data;
   }
 
+  /**
+   * DB にデータを保存
+   */
   async save(conversionData: RawCatsData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));

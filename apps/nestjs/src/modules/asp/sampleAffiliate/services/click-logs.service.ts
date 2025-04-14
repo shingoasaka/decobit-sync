@@ -140,31 +140,10 @@ export class SampleAffiliateClickLogService implements LogService {
   }
 
   private async initiateAndHandleDownload(page: Page): Promise<string> {
-    const downloadPromise = page.waitForEvent("download");
-
+    // 先にダウンロードリンクをクリックして、ダイアログを表示
     await this.clickDownloadLink(page);
-    await this.handleDownloadDialog(page);
 
-    const download = await downloadPromise;
-    const downloadPath = await download.path();
-
-    if (!downloadPath) {
-      throw new Error("ダウンロードパスが取得できません");
-    }
-
-    return downloadPath;
-  }
-
-  private async clickDownloadLink(page: Page): Promise<void> {
-    const downloadLink = await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD);
-    if (!downloadLink) {
-      throw new Error("ダウンロードリンクが見つかりません");
-    }
-    await downloadLink.click();
-    await page.waitForTimeout(WAIT_TIME.SHORT);
-  }
-
-  private async handleDownloadDialog(page: Page): Promise<void> {
+    // iframe内のボタンクリックとダウンロードイベントを同時に待つ
     const frameElement = await page.waitForSelector(
       SELECTORS.DOWNLOAD_DIALOG.IFRAME,
     );
@@ -181,7 +160,27 @@ export class SampleAffiliateClickLogService implements LogService {
       throw new Error("ダウンロード確認ボタンが見つかりません");
     }
 
-    await confirmButton.click();
+    // Promise.allを使用してダウンロードイベントとボタンクリックを関連付ける
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 60000 }),
+      confirmButton.click(),
+    ]);
+
+    const downloadPath = await download.path();
+    if (!downloadPath) {
+      throw new Error("ダウンロードパスが取得できません");
+    }
+
+    return downloadPath;
+  }
+
+  private async clickDownloadLink(page: Page): Promise<void> {
+    const downloadLink = await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD);
+    if (!downloadLink) {
+      throw new Error("ダウンロードリンクが見つかりません");
+    }
+    await downloadLink.click();
+    await page.waitForTimeout(WAIT_TIME.SHORT);
   }
 
   private handleError(method: string, error: unknown): void {
