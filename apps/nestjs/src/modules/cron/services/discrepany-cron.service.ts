@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { WebantennaActionLogService } from "../discrepany-check/webantenna/services/action-logs.service";
-import { WebantennaClickLogService } from "../discrepany-check/webantenna/services/click-logs.service";
+import { WebantennaActionLogService } from "@discrepany/webantenna/services/action-logs.service";
+import { WebantennaClickLogService } from "@discrepany/webantenna/services/click-logs.service";
 
 @Injectable()
 export class DiscrepanyCronService {
