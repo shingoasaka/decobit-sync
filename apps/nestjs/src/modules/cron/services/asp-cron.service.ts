@@ -1,22 +1,22 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
-import { CatsActionLogService } from "../asp/cats/services/action-logs.service";
-import { CatsClickLogService } from "../asp/cats/services/click-logs.service";
-import { FinebirdActionLogService } from "../asp/finebird/services/action-logs.service";
-import { FinebirdClickLogService } from "../asp/finebird/services/click-logs.service";
-import { TryActionLogService } from "../asp/hanikamu/try/action-logs.service";
-import { TryClickLogService } from "../asp/hanikamu/try/click-logs.service";
-import { LadActionLogService } from "../asp/lad/service/action-logs.service";
-import { LadClickLogService } from "../asp/lad/service/click-logs.service";
-import { MetronActionLogService } from "../asp/metron/service/action-logs.service";
-import { MetronClickLogService } from "../asp/metron/service/click-logs.service";
-import { MonkeyActionLogService } from "../asp/monkey/services/action-logs.service";
-import { MonkeyClickLogService } from "../asp/monkey/services/click-logs.service";
-import { RentracksActionLogService } from "../asp/rentracks/services/action-logs.service";
-import { RentracksClickLogService } from "../asp/rentracks/services/click-logs.service";
-import { SampleAffiliateActionLogService } from "../asp/sampleAffiliate/services/action-logs.service";
-import { SampleAffiliateClickLogService } from "../asp/sampleAffiliate/services/click-logs.service";
-import { CommonLogService } from "../logs/common-log.service";
+import { CatsActionLogService } from "@asp/cats/services/action-logs.service";
+import { CatsClickLogService } from "@asp/cats/services/click-logs.service";
+import { FinebirdActionLogService } from "@asp/finebird/services/action-logs.service";
+import { FinebirdClickLogService } from "@asp/finebird/services/click-logs.service";
+import { TryActionLogService } from "@asp/hanikamu/try/action-logs.service";
+import { TryClickLogService } from "@asp/hanikamu/try/click-logs.service";
+import { LadActionLogService } from "@asp/lad/service/action-logs.service";
+import { LadClickLogService } from "@asp/lad/service/click-logs.service";
+import { MetronActionLogService } from "@asp/metron/service/action-logs.service";
+import { MetronClickLogService } from "@asp/metron/service/click-logs.service";
+import { MonkeyActionLogService } from "@asp/monkey/services/action-logs.service";
+import { MonkeyClickLogService } from "@asp/monkey/services/click-logs.service";
+import { RentracksActionLogService } from "@asp/rentracks/services/action-logs.service";
+import { RentracksClickLogService } from "@asp/rentracks/services/click-logs.service";
+import { SampleAffiliateActionLogService } from "@asp/sampleAffiliate/services/action-logs.service";
+import { SampleAffiliateClickLogService } from "@asp/sampleAffiliate/services/click-logs.service";
+import { CommonLogService } from "@logs/common-log.service";
 
 // 実行結果の型定義
 interface ServiceResult {
