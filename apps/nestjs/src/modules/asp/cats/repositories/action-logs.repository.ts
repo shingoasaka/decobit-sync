@@ -46,7 +46,7 @@ export class CatsActionLogRepository {
   async save(conversionData: RawCatsData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));
-      
+
       const result = await this.prisma.catsActionLog.createMany({
         data: formattedData,
         skipDuplicates: true,

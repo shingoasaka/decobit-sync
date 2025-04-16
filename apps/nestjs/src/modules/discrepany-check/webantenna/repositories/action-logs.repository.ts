@@ -26,7 +26,9 @@ export class WebantennaActionLogRepository {
     return isNaN(date.getTime()) ? null : date;
   }
 
-  private formatData(item: RawWebantennaActionData): FormattedWebantennaActionData {
+  private formatData(
+    item: RawWebantennaActionData,
+  ): FormattedWebantennaActionData {
     return {
       utmSourceIdentifier: item["流入種別"] || null,
       creativeName: item["クリエイティブ名"] || null,
