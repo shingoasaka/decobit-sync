@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
+import { Prisma } from "@prisma/client";
 
 // 入力データの型定義
 interface RawFinebirdData {
@@ -43,13 +44,11 @@ export class FinebirdActionLogRepository {
   }
 
   private formatData(item: RawFinebirdData): FormattedFinebirdData {
-    const data: FormattedFinebirdData = {
+    return {
       orderDate: this.toDate(this.getValue(item, "注文日時")),
       siteName: this.getValue(item, "サイト名"),
       referrer: this.getValue(item, "リファラ"),
     };
-
-    return data;
   }
 
   async save(conversionData: RawFinebirdData[]): Promise<number> {

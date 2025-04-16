@@ -1,13 +1,14 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
+import { Prisma } from "@prisma/client";
 
-interface LadRawData {
+interface RawLadData {
   成果日時?: string;
   遷移広告URL名?: string;
   "リファラ(クリック)"?: string;
 }
 
-interface LadFormattedData {
+interface FormattedLadData {
   actionDate: Date | null;
   redirectAdUrlName: string | null;
   referrerClickUrl: string | null;
@@ -15,9 +16,11 @@ interface LadFormattedData {
 
 @Injectable()
 export class LadActionLogRepository {
+  private readonly logger = new Logger(LadActionLogRepository.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
-  private formatData(item: LadRawData): LadFormattedData {
+  private formatData(item: RawLadData): FormattedLadData {
     return {
       actionDate: toValidDate(item["成果日時"]),
       redirectAdUrlName: item["遷移広告URL名"] || null,
@@ -25,12 +28,20 @@ export class LadActionLogRepository {
     };
   }
 
-  async save(logs: LadRawData[]): Promise<void> {
-    for (const item of logs) {
-      const formatted = this.formatData(item);
-      await this.prisma.ladActionLog.create({
+  async save(logs: RawLadData[]): Promise<number> {
+    try {
+      const formatted = logs.map((item) => this.formatData(item));
+
+      const result = await this.prisma.ladActionLog.createMany({
         data: formatted,
+        skipDuplicates: true,
       });
+
+      this.logger.log(`Successfully inserted ${result.count} records`);
+      return result.count;
+    } catch (error) {
+      this.logger.error("Error saving LAD action logs:", error);
+      throw error;
     }
   }
 }

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
+import { Prisma } from "@prisma/client";
 
 // 入力データの型定義
 interface RawSampleAffiliateClickData {
@@ -47,12 +48,10 @@ export class SampleAffiliateClickLogRepository {
   private formatData(
     item: RawSampleAffiliateClickData,
   ): FormattedSampleAffiliateClickData {
-    const data: FormattedSampleAffiliateClickData = {
+    return {
       mediaName: this.getValue(item, "メディア"),
       accessCount: this.toInt(this.getValue(item, "アクセス数[件]")),
     };
-
-    return data;
   }
 
   async save(clickData: RawSampleAffiliateClickData[]): Promise<number> {

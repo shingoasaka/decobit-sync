@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
+import { Prisma } from "@prisma/client";
 
 // 入力データの型定義
-interface RawMonkeyActionData {
+interface RawMonkeyData {
   [key: string]: string | null | undefined;
   成果日時?: string;
   タグ?: string;
@@ -10,7 +11,7 @@ interface RawMonkeyActionData {
 }
 
 // 変換後のデータの型定義
-interface FormattedMonkeyActionData {
+interface FormattedMonkeyData {
   actionDate: Date | null;
   tagName: string | null;
   referrerUrl: string | null;
@@ -37,21 +38,20 @@ export class MonkeyActionLogRepository {
     return key.replace(/^.*?/, "");
   }
 
-  private getValue(item: RawMonkeyActionData, key: string): string | null {
+  private getValue(item: RawMonkeyData, key: string): string | null {
     const normalizedKey = this.normalizeKey(key);
     return item[key] || item[normalizedKey] || null;
   }
 
-  private formatData(item: RawMonkeyActionData): FormattedMonkeyActionData {
-    const data: FormattedMonkeyActionData = {
+  private formatData(item: RawMonkeyData): FormattedMonkeyData {
+    return {
       actionDate: this.toDate(this.getValue(item, "成果日時")),
       tagName: this.getValue(item, "タグ"),
       referrerUrl: this.getValue(item, "リファラ"),
     };
-    return data;
   }
 
-  async save(conversionData: RawMonkeyActionData[]): Promise<number> {
+  async save(conversionData: RawMonkeyData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));
 

@@ -1,33 +1,44 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
+import { Prisma } from "@prisma/client";
 
-interface HanikamuRawData {
+interface RawHanikamuData {
   ランディングページ: string;
   Click数: string;
 }
 
-interface HanikamuFormattedData {
+interface FormattedHanikamuData {
   landingPageName: string | null;
   click: number | null;
 }
 
 @Injectable()
 export class HanikamuClickLogRepository {
+  private readonly logger = new Logger(HanikamuClickLogRepository.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
-  private formatData(item: HanikamuRawData): HanikamuFormattedData {
+  private formatData(item: RawHanikamuData): FormattedHanikamuData {
     return {
       landingPageName: item["ランディングページ"] || null,
       click: item["Click数"] ? parseInt(item["Click数"], 10) : null,
     };
   }
 
-  async save(conversionData: HanikamuRawData[]): Promise<void> {
-    for (const item of conversionData) {
-      const formattedData = this.formatData(item);
-      await this.prisma.hanikamuClickLog.create({
+  async save(conversionData: RawHanikamuData[]): Promise<number> {
+    try {
+      const formattedData = conversionData.map((item) => this.formatData(item));
+
+      const result = await this.prisma.hanikamuClickLog.createMany({
         data: formattedData,
+        skipDuplicates: true,
       });
+
+      this.logger.log(`Successfully inserted ${result.count} records`);
+      return result.count;
+    } catch (error) {
+      this.logger.error("Error saving click data:", error);
+      throw error;
     }
   }
 }

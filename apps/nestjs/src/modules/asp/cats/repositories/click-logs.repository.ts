@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
+import { Prisma } from "@prisma/client";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
@@ -75,12 +76,10 @@ export class CatsClickLogRepository {
   }
 
   private formatData(item: RawCatsData): FormattedCatsData {
-    const data: FormattedCatsData = {
+    return {
       clickDate: this.toDate(this.getValue(item, "クリック日時")),
       adName: this.getValue(item, "広告名"),
     };
-
-    return data;
   }
 
   /**

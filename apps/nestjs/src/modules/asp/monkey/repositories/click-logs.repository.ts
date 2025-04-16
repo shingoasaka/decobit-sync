@@ -1,14 +1,15 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
+import { Prisma } from "@prisma/client";
 
 // 入力データの型定義
-interface RawMonkeyClickData {
+interface RawMonkeyData {
   [key: string]: string | null | undefined;
   タグ名?: string;
   Click?: string;
 }
 // 変換後のデータの型定義
-interface FormattedMonkeyClickData {
+interface FormattedMonkeyData {
   tagName: string | null;
   clickData: number | null;
 }
@@ -31,14 +32,14 @@ export class MonkeyClickLogRepository {
     }
   }
 
-  private formatData(item: RawMonkeyClickData): FormattedMonkeyClickData {
+  private formatData(item: RawMonkeyData): FormattedMonkeyData {
     return {
       tagName: item["タグ名"] || null,
       clickData: this.toInt(item["Click"]),
     };
   }
 
-  async save(conversionData: RawMonkeyClickData[]): Promise<number> {
+  async save(conversionData: RawMonkeyData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));
 
