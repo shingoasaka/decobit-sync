@@ -3,11 +3,7 @@ import { Module } from "@nestjs/common";
 import { TiktokModule } from "./tiktok/tiktok.module";
 
 @Module({
-  imports: [
-    TiktokModule
-  ],
-  exports: [
-    TiktokModule
-  ],
+  imports: [TiktokModule],
+  exports: [TiktokModule],
 })
 export class MediaModule {}

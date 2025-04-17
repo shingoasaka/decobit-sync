@@ -1,16 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
-import { TiktokAdvertiserService } from './advertiser.service';
-import { PrismaService } from '@prismaService';
-import { TiktokReportDto } from '../dto/tik-report.dto';
-import { TiktokReport } from '../interface/tik-report.interface';
-
+import { Injectable, Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { firstValueFrom } from "rxjs";
+import { TiktokAdvertiserService } from "./advertiser.service";
+import { PrismaService } from "@prismaService";
+import { TiktokReportDto } from "../dto/tik-report.dto";
+import { TiktokReport } from "../interface/tik-report.interface";
 
 @Injectable()
 export class TikTokReportService {
   private readonly apiUrl =
-    'https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/';
+    "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
   private readonly logger = new Logger(TikTokReportService.name);
 
   constructor(
@@ -21,46 +20,46 @@ export class TikTokReportService {
 
   async fetchAndInsertLogs(): Promise<string | null> {
     const advertiserIds = await this.advertiser.fetchAdvertiserLogs();
-    this.logger.log('取得したAdvertiser IDs: ' + JSON.stringify(advertiserIds));
+    this.logger.log("取得したAdvertiser IDs: " + JSON.stringify(advertiserIds));
 
     if (!advertiserIds || advertiserIds.length === 0) {
-      this.logger.warn('No advertiser IDs found');
+      this.logger.warn("No advertiser IDs found");
       return null;
     }
 
     for (const advertiserId of advertiserIds) {
       const headers = {
-        'Access-Token': process.env.TIKTOK_ACCESS_TOKEN,
-        'Content-Type': 'application/json',
+        "Access-Token": process.env.TIKTOK_ACCESS_TOKEN,
+        "Content-Type": "application/json",
       };
 
       const params = {
         advertiser_id: advertiserId,
-        report_type: 'BASIC',
-        dimensions: JSON.stringify(['ad_id', 'stat_time_day']),
+        report_type: "BASIC",
+        dimensions: JSON.stringify(["ad_id", "stat_time_day"]),
         metrics: JSON.stringify([
-          'budget',
-          'spend',
-          'impressions',
-          'clicks',
-          'video_play_actions',
-          'video_watched_2s',
-          'video_watched_6s',
-          'video_views_p100',
-          'reach',
-          'conversion',
-          'advertiser_id',
-          'campaign_id',
-          'campaign_name',
-          'adgroup_id',
-          'adgroup_name',
-          'ad_name',
-          'ad_url',
+          "budget",
+          "spend",
+          "impressions",
+          "clicks",
+          "video_play_actions",
+          "video_watched_2s",
+          "video_watched_6s",
+          "video_views_p100",
+          "reach",
+          "conversion",
+          "advertiser_id",
+          "campaign_id",
+          "campaign_name",
+          "adgroup_id",
+          "adgroup_name",
+          "ad_name",
+          "ad_url",
         ]),
-        data_level: 'AUCTION_AD',
-        start_date: '2025-02-01',
-        end_date: '2025-02-18',
-        primary_status: 'STATUS_ALL',
+        data_level: "AUCTION_AD",
+        start_date: "2025-02-01",
+        end_date: "2025-02-18",
+        primary_status: "STATUS_ALL",
         page: 1,
         page_size: 1000,
       };

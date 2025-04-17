@@ -4,7 +4,7 @@ import { HttpModule } from "@nestjs/axios";
 import { TikTokReportService } from "./service/report.service";
 
 @Module({
-  imports: [HttpModule], 
+  imports: [HttpModule],
   providers: [TiktokAdvertiserService, TikTokReportService],
   exports: [TiktokAdvertiserService, TikTokReportService],
 })
