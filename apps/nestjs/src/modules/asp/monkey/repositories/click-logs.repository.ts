@@ -1,23 +1,17 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
+import { Prisma } from "@prisma/client";
 
 // 入力データの型定義
-interface RawMonkeyClickData {
+interface RawMonkeyData {
   [key: string]: string | null | undefined;
   タグ名?: string;
   Click?: string;
-  CV?: string;
-  CVR?: string;
-  報酬?: string;
 }
-
 // 変換後のデータの型定義
-interface FormattedMonkeyClickData {
+interface FormattedMonkeyData {
   tagName: string | null;
-  clickData: string | null;
-  cvData: string | null;
-  cvrData: number | null;
-  rewardAmount: number | null;
+  clickData: number | null;
 }
 
 @Injectable()
@@ -25,18 +19,6 @@ export class MonkeyClickLogRepository {
   private readonly logger = new Logger(MonkeyClickLogRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
-
-  private toFloat(value: string | null | undefined): number | null {
-    if (!value) return null;
-    try {
-      const cleanValue = value.replace(/[%,]/g, "");
-      const num = parseFloat(cleanValue);
-      return isNaN(num) ? null : num;
-    } catch (error) {
-      this.logger.warn(`Invalid float format: ${value}`);
-      return null;
-    }
-  }
 
   private toInt(value: string | null | undefined): number | null {
     if (!value) return null;
@@ -50,17 +32,14 @@ export class MonkeyClickLogRepository {
     }
   }
 
-  private formatData(item: RawMonkeyClickData): FormattedMonkeyClickData {
+  private formatData(item: RawMonkeyData): FormattedMonkeyData {
     return {
       tagName: item["タグ名"] || null,
-      clickData: item["Click"] || null,
-      cvData: item["CV"] || null,
-      cvrData: this.toFloat(item["CVR"]),
-      rewardAmount: this.toInt(item["報酬"]),
+      clickData: this.toInt(item["Click"]),
     };
   }
 
-  async save(conversionData: RawMonkeyClickData[]): Promise<number> {
+  async save(conversionData: RawMonkeyData[]): Promise<number> {
     try {
       const formattedData = conversionData.map((item) => this.formatData(item));
 

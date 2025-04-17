@@ -6,29 +6,13 @@ import { Prisma } from "@prisma/client";
 interface RawSampleAffiliateClickData {
   [key: string]: string | null | undefined;
   メディア?: string;
-  "imp数[imp]"?: string;
   "アクセス数[件]"?: string;
-  "CTR[％]"?: string;
-  "発生成果数[件]"?: string;
-  "発生成果額[円]"?: string;
-  "確定成果数[件]"?: string;
-  "確定成果額[円]"?: string;
-  "CVR[％]"?: string;
-  "報酬合計[円]"?: string;
 }
 
 // 変換後のデータの型定義
 interface FormattedSampleAffiliateClickData {
   mediaName: string | null;
-  impCount: number | null;
   accessCount: number | null;
-  ctr: number | null;
-  actionCount: number | null;
-  actionAmount: number | null;
-  confirmedActionCount: number | null;
-  confirmedActionAmount: number | null;
-  cvr: number | null;
-  rewardAmount: number | null;
 }
 
 @Injectable()
@@ -49,18 +33,6 @@ export class SampleAffiliateClickLogRepository {
     }
   }
 
-  private toFloat(value: string | null | undefined): number | null {
-    if (!value) return null;
-    try {
-      const cleanValue = value.replace(/[%,¥]/g, "");
-      const num = parseFloat(cleanValue);
-      return isNaN(num) ? null : num;
-    } catch (error) {
-      this.logger.warn(`Invalid float format: ${value}`);
-      return null;
-    }
-  }
-
   private normalizeKey(key: string): string {
     return key.replace(/^.*?/, "");
   }
@@ -76,20 +48,10 @@ export class SampleAffiliateClickLogRepository {
   private formatData(
     item: RawSampleAffiliateClickData,
   ): FormattedSampleAffiliateClickData {
-    const data: FormattedSampleAffiliateClickData = {
+    return {
       mediaName: this.getValue(item, "メディア"),
-      impCount: this.toInt(this.getValue(item, "imp数[imp]")),
       accessCount: this.toInt(this.getValue(item, "アクセス数[件]")),
-      ctr: this.toFloat(this.getValue(item, "CTR[％]")),
-      actionCount: this.toInt(this.getValue(item, "発生成果数[件]")),
-      actionAmount: this.toInt(this.getValue(item, "発生成果額[円]")),
-      confirmedActionCount: this.toInt(this.getValue(item, "確定成果数[件]")),
-      confirmedActionAmount: this.toInt(this.getValue(item, "確定成果額[円]")),
-      cvr: this.toFloat(this.getValue(item, "CVR[％]")),
-      rewardAmount: this.toInt(this.getValue(item, "報酬合計[円]")),
     };
-
-    return data;
   }
 
   async save(clickData: RawSampleAffiliateClickData[]): Promise<number> {
