@@ -1,11 +1,22 @@
 import { Module } from "@nestjs/common";
-import { TiktokAdvertiserService } from "./service/advertiser.service";
+import { TikTokAdvertiserService } from "./service/advertiser.service";
 import { HttpModule } from "@nestjs/axios";
 import { TikTokReportService } from "./service/report.service";
+import { TikTokReportRepository } from "./repositories/tiktok-report.repository";
+import { PrismaService } from "@prismaService";
 
 @Module({
   imports: [HttpModule],
-  providers: [TiktokAdvertiserService, TikTokReportService],
-  exports: [TiktokAdvertiserService, TikTokReportService],
+  providers: [
+    TikTokAdvertiserService,
+    TikTokReportService,
+    TikTokReportRepository,
+    PrismaService,
+  ],
+  exports: [
+    TikTokAdvertiserService,
+    TikTokReportService,
+    TikTokReportRepository,
+  ],
 })
-export class TiktokModule {}
+export class TikTokModule {}

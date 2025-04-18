@@ -1,4 +1,4 @@
-export class TiktokReportDto {
+export class TikTokReportDto {
   metrics: {
     advertiser_id: string;
     budget: string;

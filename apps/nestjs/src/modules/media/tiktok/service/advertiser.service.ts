@@ -3,7 +3,7 @@ import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 
 @Injectable()
-export class TiktokAdvertiserService {
+export class TikTokAdvertiserService {
   private readonly apiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/oauth2/advertiser/get/";
 

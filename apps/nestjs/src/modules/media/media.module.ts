@@ -1,9 +1,11 @@
 // すべてのメディア関連モジュールを統合
 import { Module } from "@nestjs/common";
-import { TiktokModule } from "./tiktok/tiktok.module";
+import { TikTokModule } from "./tiktok/tiktok.module";
+import { PrismaService } from "@prismaService";
 
 @Module({
-  imports: [TiktokModule],
-  exports: [TiktokModule],
+  imports: [TikTokModule],
+  providers: [PrismaService],
+  exports: [TikTokModule],
 })
 export class MediaModule {}

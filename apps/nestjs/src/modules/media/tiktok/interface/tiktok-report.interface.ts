@@ -1,6 +1,6 @@
-export interface TiktokReport {
-  advertiserId: number;
-  adId: number;
+export interface TikTokReport {
+  advertiserId: string;
+  adId: string;
   statTimeDay: string;
   budget: number;
   spend: number;
@@ -12,9 +12,9 @@ export interface TiktokReport {
   videoViewsP100: number;
   reach: number;
   conversion: number;
-  campaignId: number;
+  campaignId: string;
   campaignName: string;
-  adgroupId: number;
+  adgroupId: string;
   adgroupName: string;
   adName: string;
   adUrl: string;
