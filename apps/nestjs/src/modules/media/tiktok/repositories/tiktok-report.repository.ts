@@ -33,27 +33,39 @@ export class TikTokReportRepository {
       return result.count;
     } catch (error: unknown) {
       // エラー処理の修正
-      const isPrismaError = error instanceof Error && 
-                          'code' in error && 
-                          typeof error.code === 'string';
-      
+      const isPrismaError =
+        error instanceof Error &&
+        "code" in error &&
+        typeof error.code === "string";
+
       if (isPrismaError) {
         // Prismaエラーの型安全な処理
         const prismaError = error as Error & { code: string };
         if (prismaError.code === "P2002") {
-          this.logger.warn(`一意性制約違反が発生しました: ${prismaError.message}`);
+          this.logger.warn(
+            `一意性制約違反が発生しました: ${prismaError.message}`,
+          );
         } else {
-          this.logger.error(`Prismaエラー発生: ${prismaError.message}`, prismaError.stack);
+          this.logger.error(
+            `Prismaエラー発生: ${prismaError.message}`,
+            prismaError.stack,
+          );
         }
       } else {
         // 一般的なエラー処理
-        const errorMessage = error instanceof Error ? error.message : "不明なエラー";
+        const errorMessage =
+          error instanceof Error ? error.message : "不明なエラー";
         const errorStack = error instanceof Error ? error.stack : "";
-        this.logger.error(`TikTokレポート保存中にエラーが発生: ${errorMessage}`, errorStack);
+        this.logger.error(
+          `TikTokレポート保存中にエラーが発生: ${errorMessage}`,
+          errorStack,
+        );
       }
-      
+
       // エラーを上位層に伝播
-      throw new Error(`TikTokレポートの保存に失敗: ${error instanceof Error ? error.message : "不明なエラー"}`);
+      throw new Error(
+        `TikTokレポートの保存に失敗: ${error instanceof Error ? error.message : "不明なエラー"}`,
+      );
     }
   }
 
