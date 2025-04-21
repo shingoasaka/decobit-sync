@@ -32,15 +32,27 @@ export class TikTokReportRepository {
       );
       return result.count;
     } catch (error: unknown) {
-      // エラーハンドリング
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        // Prisma特有のエラー処理
-        if (error.code === "P2002") {
-          this.logger.warn(`一意性制約違反が発生しました: ${error.message}`);
+      // エラー処理の修正
+      const isPrismaError =
+        error instanceof Error &&
+        "code" in error &&
+        typeof error.code === "string";
+
+      if (isPrismaError) {
+        // Prismaエラーの型安全な処理
+        const prismaError = error as Error & { code: string };
+        if (prismaError.code === "P2002") {
+          this.logger.warn(
+            `一意性制約違反が発生しました: ${prismaError.message}`,
+          );
         } else {
-          this.logger.error(`Prismaエラー発生: ${error.message}`, error.stack);
+          this.logger.error(
+            `Prismaエラー発生: ${prismaError.message}`,
+            prismaError.stack,
+          );
         }
       } else {
+        // 一般的なエラー処理
         const errorMessage =
           error instanceof Error ? error.message : "不明なエラー";
         const errorStack = error instanceof Error ? error.stack : "";
