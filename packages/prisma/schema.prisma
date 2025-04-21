@@ -343,3 +343,30 @@ model WebantennaClickLog {
   createdAt                     DateTime  @default(now())
   updatedAt                     DateTime  @updatedAt
 }
+
+model TikTokReport {
+  id                 Int      @id @default(autoincrement())
+  advertiserId       String?
+  adId               String?
+  statTimeDay        String?
+  budget             Int?
+  spend              Int?
+  impressions        Int?
+  clicks             Int?
+  videoPlayActions   Int?
+  videoWatched2s     Int?
+  videoWatched6s     Int?
+  videoViewsP100     Int?
+  reach              Int?
+  conversion         Int?
+  campaignId         String?
+  campaignName       String?
+  adgroupId          String?
+  adgroupName        String?
+  adName             String?
+  adUrl              String?
+  statTimeDayDimension String?
+  adIdDimension      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
