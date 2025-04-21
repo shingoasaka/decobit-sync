@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "TikTokReport" ALTER COLUMN "advertiserId" DROP NOT NULL,
+ALTER COLUMN "adId" DROP NOT NULL,
+ALTER COLUMN "statTimeDay" DROP NOT NULL;

@@ -139,16 +139,16 @@ export class TikTokReportService {
       advertiserId: dto.metrics.advertiser_id,
       adId: dto.dimensions.ad_id,
       statTimeDay: dto.dimensions.stat_time_day,
-      budget: Number(dto.metrics.budget),
-      spend: Number(dto.metrics.spend),
-      impressions: Number(dto.metrics.impressions),
-      clicks: Number(dto.metrics.clicks),
-      videoPlayActions: Number(dto.metrics.video_play_actions),
-      videoWatched2s: Number(dto.metrics.video_watched_2s),
-      videoWatched6s: Number(dto.metrics.video_watched_6s),
-      videoViewsP100: Number(dto.metrics.video_views_p100),
-      reach: Number(dto.metrics.reach),
-      conversion: Number(dto.metrics.conversion),
+      budget: this.parseNumber(dto.metrics.budget),
+      spend: this.parseNumber(dto.metrics.spend),
+      impressions: this.parseNumber(dto.metrics.impressions),
+      clicks: this.parseNumber(dto.metrics.clicks),
+      videoPlayActions: this.parseNumber(dto.metrics.video_play_actions),
+      videoWatched2s: this.parseNumber(dto.metrics.video_watched_2s),
+      videoWatched6s: this.parseNumber(dto.metrics.video_watched_6s),
+      videoViewsP100: this.parseNumber(dto.metrics.video_views_p100),
+      reach: this.parseNumber(dto.metrics.reach),
+      conversion: this.parseNumber(dto.metrics.conversion),
       campaignId: dto.metrics.campaign_id,
       campaignName: dto.metrics.campaign_name,
       adgroupId: dto.metrics.adgroup_id,
@@ -158,6 +158,12 @@ export class TikTokReportService {
       statTimeDayDimension: dto.dimensions.stat_time_day,
       adIdDimension: dto.dimensions.ad_id,
     };
+  }
+
+  // 文字列を数値に変換（数値に変換できない場合は0を返す）
+  private parseNumber(value: string): number {
+    const parsedValue = parseFloat(value);
+    return isNaN(parsedValue) ? 0 : parsedValue;
   }
 
   // 日付を YYYY-MM-DD 形式に変換

@@ -1,6 +1,6 @@
 export interface TikTokReport {
-  advertiserId: string;
-  adId: string;
+  advertiserId: string | null;
+  adId: string | null;
   statTimeDay: string;
   budget: number;
   spend: number;
