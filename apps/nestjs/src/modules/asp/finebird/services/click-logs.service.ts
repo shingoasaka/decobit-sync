@@ -132,20 +132,19 @@ export class FinebirdClickLogService implements LogService {
     if (!downloadBtn) {
       throw new Error("ダウンロードボタンが見つかりませんでした");
     }
-  
+
     const [download] = await Promise.all([
       page.waitForEvent("download", { timeout: 45000 }), // タイムアウト延長
       downloadBtn.click(),
     ]);
-  
+
     const downloadPath = await download.path();
     if (!downloadPath) {
       throw new Error("ダウンロードパスが取得できません");
     }
-  
+
     return downloadPath;
   }
-  
 
   private handleError(method: string, error: unknown): void {
     console.error(
