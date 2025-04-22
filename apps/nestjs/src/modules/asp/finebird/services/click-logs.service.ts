@@ -101,7 +101,7 @@ export class FinebirdClickLogService implements LogService {
       ).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
 
-      const emptyDataElement = await page.$("td[colspan='17']"); // 修正部分
+      const emptyDataElement = await page.$("td[colspan='17']");
       if (emptyDataElement) {
         const emptyDataMessage = await page.evaluate(
           (el) => el.textContent,
@@ -134,7 +134,7 @@ export class FinebirdClickLogService implements LogService {
     }
 
     const [download] = await Promise.all([
-      page.waitForEvent("download", { timeout: 45000 }), // タイムアウト延長
+      page.waitForEvent("download", { timeout: 45000 }),
       downloadBtn.click(),
     ]);
 

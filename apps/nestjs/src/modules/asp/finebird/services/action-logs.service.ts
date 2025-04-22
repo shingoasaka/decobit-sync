@@ -103,7 +103,7 @@ export class FinebirdActionLogService implements LogService {
       ).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
 
-      const emptyDataElement = await page.$("td[colspan='17']"); // 修正部分
+      const emptyDataElement = await page.$("td[colspan='17']");
       if (emptyDataElement) {
         const emptyDataMessage = await page.evaluate(
           (el) => el.textContent,
