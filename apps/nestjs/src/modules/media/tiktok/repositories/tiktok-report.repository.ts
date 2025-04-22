@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@operate-ad/prisma";
 import { TikTokReport } from "../interface/tiktok-report.interface";
 
 @Injectable()

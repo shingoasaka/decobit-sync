@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@operate-ad/prisma";
 
 interface RawRentracksData {
   売上日時?: string;

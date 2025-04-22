@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@operate-ad/prisma";
 
 // 入力データの型定義
 interface RawAdebisData {
