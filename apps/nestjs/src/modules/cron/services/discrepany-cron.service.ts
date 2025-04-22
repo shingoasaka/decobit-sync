@@ -6,7 +6,6 @@ import { WebantennaActionLogService } from "@discrepany/webantenna/services/acti
 export class DiscrepanyCronService {
   constructor(
     private readonly webantennaActionLogService: WebantennaActionLogService,
-
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
