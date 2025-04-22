@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
-import { FinebirdClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
+import { FinebirdClickLogRepository } from "../repositories/click-logs.repository";
 
 interface FinebirdSelectors {
   LOGIN: {
@@ -128,25 +128,24 @@ export class FinebirdClickLogService implements LogService {
   }
 
   private async downloadReport(page: Page): Promise<string> {
-    try {
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 60000 }),
-        (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
-      ]);
-
-      const downloadPath = await download.path();
-      if (!downloadPath) {
-        throw new Error("ダウンロードパスが取得できません");
-      }
-      return downloadPath;
-    } catch (error) {
-      throw new Error(
-        `レポートダウンロード中にエラー: ${
-          error instanceof Error ? error.message : error
-        }`,
-      );
+    const downloadBtn = await page.$(SELECTORS.REPORT.DOWNLOAD);
+    if (!downloadBtn) {
+      throw new Error("ダウンロードボタンが見つかりませんでした");
     }
+  
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 45000 }), // タイムアウト延長
+      downloadBtn.click(),
+    ]);
+  
+    const downloadPath = await download.path();
+    if (!downloadPath) {
+      throw new Error("ダウンロードパスが取得できません");
+    }
+  
+    return downloadPath;
   }
+  
 
   private handleError(method: string, error: unknown): void {
     console.error(

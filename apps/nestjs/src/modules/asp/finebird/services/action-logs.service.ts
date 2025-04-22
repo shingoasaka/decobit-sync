@@ -1,10 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
-import { FinebirdActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
+import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
+import { FinebirdActionLogRepository } from "../repositories/action-logs.repository";
 
 interface FinebirdSelectors {
   LOGIN: {
@@ -87,7 +88,7 @@ export class FinebirdActionLogService implements LogService {
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(WAIT_TIME.SHORT);
     await page.goto(
-      (process.env.FINEBIRD_URL ?? "") + "partneradmin/report/action/log/list",
+      process.env.FINEBIRD_URL + "partneradmin/report/action/log/list",
     );
   }
 
@@ -102,7 +103,7 @@ export class FinebirdActionLogService implements LogService {
       ).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
 
-      const emptyDataElement = await page.$("td[colspan='17']");
+      const emptyDataElement = await page.$("td[colspan='17']"); // 修正部分
       if (emptyDataElement) {
         const emptyDataMessage = await page.evaluate(
           (el) => el.textContent,
@@ -129,24 +130,15 @@ export class FinebirdActionLogService implements LogService {
   }
 
   private async downloadReport(page: Page): Promise<string> {
-    try {
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 60000 }),
-        (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
-      ]);
+    const downloadPromise = page.waitForEvent("download");
+    await (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click();
+    const download = await downloadPromise;
 
-      const downloadPath = await download.path();
-      if (!downloadPath) {
-        throw new Error("ダウンロードパスが取得できません");
-      }
-      return downloadPath;
-    } catch (error) {
-      throw new Error(
-        `レポートダウンロード中にエラー: ${
-          error instanceof Error ? error.message : error
-        }`,
-      );
+    const downloadPath = await download.path();
+    if (!downloadPath) {
+      throw new Error("ダウンロードパスが取得できません");
     }
+    return downloadPath;
   }
 
   private handleError(method: string, error: unknown): void {
