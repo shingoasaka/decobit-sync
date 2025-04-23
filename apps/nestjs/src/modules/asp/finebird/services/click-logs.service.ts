@@ -134,7 +134,7 @@ export class FinebirdClickLogService implements LogService {
     }
 
     const [download] = await Promise.all([
-      page.waitForEvent("download", { timeout: 45000 }),
+      page.waitForEvent("download", { timeout: 60000 }),
       downloadBtn.click(),
     ]);
 
