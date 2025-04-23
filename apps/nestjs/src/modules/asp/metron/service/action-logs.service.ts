@@ -37,26 +37,30 @@ export class MetronActionLogService {
       return 0;
     }
 
-    for (const item of logs) {
-      await this.prisma.metronActionLog.create({
-        data: {
-          actionDateTime: item.actionDateTime
-            ? new Date(item.actionDateTime)
-            : null,
-          siteName: item.siteName ?? null,
-          actionReferrer: item.actionReferrer ?? null,
-          sessionId: item.sessionId ?? null,
-          uid: (() => {
-            try {
-              const parsed = JSON.parse(item.clientInfo || "{}");
-              return parsed.userId1 || null;
-            } catch (e) {
-              return null;
-            }
-          })(),
-        },
-      });
-    }
+    const createData = logs.map((item) => {
+      let uid: string | null = null;
+      try {
+        const parsed = JSON.parse(item.clientInfo || "{}");
+        uid = parsed.userId1 || null;
+      } catch (e) {
+        uid = null;
+      }
+
+      return {
+        actionDateTime: item.actionDateTime
+          ? new Date(item.actionDateTime)
+          : null,
+        siteName: item.siteName ?? null,
+        actionReferrer: item.actionReferrer ?? null,
+        sessionId: item.sessionId ?? null,
+        uid,
+      };
+    });
+
+    await this.prisma.metronActionLog.createMany({
+      data: createData,
+      skipDuplicates: true, 
+    });
 
     const updated = await this.updateReferrerFromClick();
     console.log(`referrer補完:${updated}件`);
@@ -64,7 +68,7 @@ export class MetronActionLogService {
     return logs.length;
   }
 
-  private async updateReferrerFromClick(): Promise<number> {
+  private async updateReferrerFromClick(): Promise<null> {
     const clicks = await this.prisma.metronClickLog.findMany({
       where: {
         sessionId: { not: null },
@@ -80,8 +84,6 @@ export class MetronActionLogService {
       }
     }
 
-    let updatedCount = 0;
-
     for (const [sessionId, referrer] of clickMap.entries()) {
       const targets = await this.prisma.metronActionLog.findMany({
         where: {
@@ -96,11 +98,10 @@ export class MetronActionLogService {
           where: { id: target.id },
           data: { actionReferrer: referrer },
         });
-        updatedCount++;
       }
     }
 
-    return updatedCount;
+    return null;
   }
 }
 

@@ -38,18 +38,20 @@ export class MetronClickLogService {
       return 0;
     }
 
-    for (const item of logs) {
-      await this.prisma.metronClickLog.create({
-        data: {
-          clickDateTime: item.clickDateTime
-            ? new Date(item.clickDateTime)
-            : null,
-          siteName: item.siteName ?? null,
-          actionReferrer: item.referrer ?? null,
-          sessionId: item.sessionId ?? null,
-        },
-      });
-    }
+    const createData = logs.map((item) => ({
+      clickDateTime: item.clickDateTime
+        ? new Date(item.clickDateTime)
+        : null,
+      siteName: item.siteName ?? null,
+      actionReferrer: item.referrer ?? null,
+      sessionId: item.sessionId ?? null,
+    }));
+
+    await this.prisma.metronClickLog.createMany({
+      data: createData,
+      skipDuplicates: true,
+    });
+
     return logs.length;
   }
 }
