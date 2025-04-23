@@ -277,8 +277,8 @@ model ladActionLog {
   actionDate             DateTime?
   redirectAdUrlName      String?
   referrerClickUrl       String?
-  createdDate            DateTime?
-  updatedDate            DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model ladClickLog {
@@ -286,8 +286,8 @@ model ladClickLog {
   clickDate             DateTime?
   adName                String?
   referrer              String?
-  createdDate           DateTime?
-  updatedDate           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model WebantennaActionLog {
