@@ -39,18 +39,33 @@ export class LadClickLogService implements LogService {
       await page
         .getByRole("link", { name: "クリックログ", exact: true })
         .click();
-
       await page.getByRole("button", { name: "本日" }).click();
 
-      const downloadPromise = page.waitForEvent("download");
       await page.getByRole("button", { name: " CSV生成" }).click();
       await page.waitForTimeout(10000);
-      await page.goto("https://admin038.l-ad.net/admin/clicklog/list");
-      await page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]');
-      const download = await downloadPromise;
-      const downloadPath = await download.path();
 
-      if (!downloadPath) return 0;
+      await page.goto("https://admin038.l-ad.net/admin/clicklog/list");
+
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 45000 }),
+        page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
+      ]).catch((error) => {
+        console.error("ダウンロード待機中にエラーが発生しました:", error);
+        return [null];
+      });
+
+      if (!download) {
+        console.log(
+          "ダウンロードイベントが取得できませんでした。処理を中止します。",
+        );
+        return 0;
+      }
+
+      const downloadPath = await download.path();
+      if (!downloadPath) {
+        console.error("ダウンロードパスが取得できませんでした。");
+        return 0;
+      }
 
       return await this.processCsvAndSave(downloadPath);
     } catch (error) {
