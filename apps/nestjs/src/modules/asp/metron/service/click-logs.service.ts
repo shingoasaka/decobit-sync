@@ -3,6 +3,13 @@ import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
 
+interface MetronClickLogApiItem {
+  clickDateTime?: string;
+  siteName?: string;
+  referrer?: string;
+  sessionId?: string;
+}
+
 @Injectable()
 export class MetronClickLogService {
   constructor(
@@ -25,7 +32,7 @@ export class MetronClickLogService {
 
     const resp = await firstValueFrom(this.http.post(url, body, { headers }));
     const data = resp.data;
-    const logs = data?.params?.logs || [];
+    const logs: MetronClickLogApiItem[] = data?.params?.logs || [];
 
     if (logs.length === 0) {
       return 0;
@@ -34,67 +41,12 @@ export class MetronClickLogService {
     for (const item of logs) {
       await this.prisma.metronClickLog.create({
         data: {
-          actionDateTime: item.actionDateTime
-            ? new Date(item.actionDateTime)
-            : null,
           clickDateTime: item.clickDateTime
             ? new Date(item.clickDateTime)
             : null,
-          admitDateTime: item.admitDateTime
-            ? new Date(item.admitDateTime)
-            : null,
-
-          clientId: item.clientId ? parseInt(item.clientId, 10) : null,
-          contentId: item.contentId ? parseInt(item.contentId, 10) : null,
-          partnerId: item.partnerId ? parseInt(item.partnerId, 10) : null,
-          groupId: item.groupId ? parseInt(item.groupId, 10) : null,
-          siteId: item.siteId ? parseInt(item.siteId, 10) : null,
-
-          clientName: item.clientName ?? null,
-          contentName: item.contentName ?? null,
-          partnerName: item.partnerName ?? null,
-          groupName: item.groupName ?? null,
           siteName: item.siteName ?? null,
-          actionCareer: item.actionCareer ?? null,
-          actionOs: item.actionOs ?? null,
-          actionUserAgent: item.actionUserAgent ?? null,
-          actionIpAddress: item.actionIpAddress ?? null,
-          actionReferrer: item.actionReferrer ?? null,
-          queryString: item.queryString ?? null,
-          clickPartnerInfo: item.clickPartnerInfo ?? null,
-          clientInfo: item.clientInfo ?? null,
+          actionReferrer: item.referrer ?? null,
           sessionId: item.sessionId ?? null,
-          actionId: item.actionId ?? null,
-          contentBannerNum: item.contentBannerNum ?? null,
-          comment: item.comment ?? null,
-
-          clientClickCost: item.clientClickCost
-            ? parseInt(item.clientClickCost, 10)
-            : null,
-
-          partnerClickCost: item.partnerClickCost
-            ? parseInt(item.partnerClickCost, 10)
-            : null,
-
-          clientCommissionCost: item.clientCommissionCost
-            ? parseInt(item.clientCommissionCost, 10)
-            : null,
-
-          partnerCommissionCost: item.partnerCommissionCost
-            ? parseInt(item.partnerCommissionCost, 10)
-            : null,
-
-          clientActionCost: item.clientActionCost
-            ? parseInt(item.clientActionCost, 10)
-            : null,
-
-          partnerActionCost: item.partnerActionCost
-            ? parseInt(item.partnerActionCost, 10)
-            : null,
-
-          actionType: item.actionType ? parseInt(item.actionType, 10) : null,
-          amount: item.amount ? parseInt(item.amount, 10) : null,
-          status: item.status ?? null,
         },
       });
     }
