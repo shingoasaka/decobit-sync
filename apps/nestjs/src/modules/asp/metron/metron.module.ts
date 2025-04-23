@@ -6,11 +6,7 @@ import { HttpModule } from "@nestjs/axios";
 
 @Module({
   imports: [HttpModule],
-  providers: [
-    MetronActionLogService,
-    MetronClickLogService,
-    PrismaService,
-  ],
+  providers: [MetronActionLogService, MetronClickLogService, PrismaService],
   exports: [MetronActionLogService, MetronClickLogService],
 })
 export class metronModule {}

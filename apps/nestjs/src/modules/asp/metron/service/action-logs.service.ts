@@ -8,7 +8,7 @@ interface MetronActionLogApiItem {
   siteName?: string;
   actionReferrer?: string;
   sessionId?: string;
-  clientInfo?: string; 
+  clientInfo?: string;
 }
 
 @Injectable()
