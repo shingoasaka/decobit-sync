@@ -59,7 +59,7 @@ export class MetronActionLogService {
 
     await this.prisma.metronActionLog.createMany({
       data: createData,
-      skipDuplicates: true, 
+      skipDuplicates: true,
     });
 
     const updated = await this.updateReferrerFromClick();

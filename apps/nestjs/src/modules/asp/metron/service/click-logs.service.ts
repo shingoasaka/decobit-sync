@@ -39,9 +39,7 @@ export class MetronClickLogService {
     }
 
     const createData = logs.map((item) => ({
-      clickDateTime: item.clickDateTime
-        ? new Date(item.clickDateTime)
-        : null,
+      clickDateTime: item.clickDateTime ? new Date(item.clickDateTime) : null,
       siteName: item.siteName ?? null,
       actionReferrer: item.referrer ?? null,
       sessionId: item.sessionId ?? null,
