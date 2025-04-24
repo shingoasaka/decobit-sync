@@ -1,13 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { WebantennaActionLogService } from "@discrepany/webantenna/services/action-logs.service";
-import { WebantennaClickLogService } from "@discrepany/webantenna/services/click-logs.service";
 
 @Injectable()
 export class DiscrepanyCronService {
   constructor(
     private readonly webantennaActionLogService: WebantennaActionLogService,
-    private readonly webantennaClickLogService: WebantennaClickLogService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
@@ -16,7 +14,6 @@ export class DiscrepanyCronService {
 
     await this.executeWithErrorHandling("Webantenna", async () => {
       void (await this.webantennaActionLogService.fetchAndInsertLogs());
-      void (await this.webantennaClickLogService.fetchAndInsertLogs());
     });
   }
 

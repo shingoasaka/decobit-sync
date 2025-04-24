@@ -300,50 +300,6 @@ model WebantennaActionLog {
   updatedAt                  DateTime  @updatedAt
 }
 
-model WebantennaClickLog {
-  id                            Int       @id @default(autoincrement())
-  adAuthority                   String?
-  channel                       String?
-  adIdentifier                  String?
-  campaignName                  String?
-  adDurations                   DateTime?
-  click                         Int?
-  ecRegistrationCv              Int?
-  ecDirectRegistration           Int?
-  ecRevisitRegistration         Int?
-  ecRegistrationCvr             Int?
-  ecPurchaseCv                  Int?
-  ecDirectPurchaseCv           Int?
-  ecRevisitPurchaseCv          Int?
-  ecPurchaseCvr                Int?
-  webReservationCv              Int?
-  webDirectReservationCv        Int?
-  webRevisitReservationCv       Int?
-  webReservationCvr             Float?
-  epilerWebReservationCv        Int?
-  epilerDirectReservationCv     Int?
-  epilerRevisitReservationCv    Int?
-  epilerWebReservationCvr       Float?
-  test1Cv                       Int?
-  test1DirectCv                 Int?
-  test1RevisitCv               Int?
-  test1Cvr                      Float?
-  test2Cv                       Int?
-  test2DirectCv                 Int?
-  test2RevisitCv               Int?
-  test2Cvr                      Float?
-  test3Cv                       Int?
-  test3DirectCv                 Int?
-  test3RevisitCv               Int?
-  test3Cvr                      Float?
-  recruitmentCv                 Int?
-  recruitmentDirectCv           Int?
-  recruitmentRevisitCv         Int?
-  recruitmentCvr                Float?
-  createdAt                     DateTime  @default(now())
-  updatedAt                     DateTime  @updatedAt
-}
-
 model TikTokReport {
   id                 Int      @id @default(autoincrement())
   advertiserId       String?
