@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
+import { FinebirdActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-import { FinebirdActionLogRepository } from "../repositories/action-logs.repository";
 
 interface FinebirdSelectors {
   LOGIN: {
@@ -88,7 +88,7 @@ export class FinebirdActionLogService implements LogService {
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(WAIT_TIME.SHORT);
     await page.goto(
-      process.env.FINEBIRD_URL + "partneradmin/report/action/log/list",
+      (process.env.FINEBIRD_URL ?? "") + "partneradmin/report/action/log/list",
     );
   }
 
@@ -144,7 +144,7 @@ export class FinebirdActionLogService implements LogService {
     } catch (error) {
       throw new Error(
         `レポートダウンロード中にエラー: ${
-          error instanceof Error ? error.message : String(error)
+          error instanceof Error ? error.message : error
         }`,
       );
     }
