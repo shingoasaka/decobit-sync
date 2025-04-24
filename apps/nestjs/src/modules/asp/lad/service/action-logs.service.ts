@@ -82,20 +82,11 @@ export class LadActionLogService implements LogService {
         );
       }
 
+      await page.waitForTimeout(10000);
+
       await page.goto("https://admin038.l-ad.net/admin/actionlog/list", {
         waitUntil: "domcontentloaded",
       });
-
-      // ダウンロード要素が存在するか確認
-      const downloadLinkExists = await page.$(
-        'div.csvInfoExport1 a[href^="javascript:void(0)"]',
-      );
-      if (!downloadLinkExists) {
-        console.log(
-          "ダウンロードリンクが見つかりません。CSV生成が完了していない可能性があります。",
-        );
-        return 0;
-      }
 
       // ダウンロードの実行（Promise.allパターン使用）- タイムアウトを45秒に短縮
       const [download] = await Promise.all([
