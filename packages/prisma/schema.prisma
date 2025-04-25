@@ -165,8 +165,8 @@ model HanikamuClickLog {
 model MetronActionLog {
   id Int @id @default(autoincrement())
   actionDateTime        DateTime?
-  siteName              String?
-  actionReferrer        String?
+  affiliateLinkName     String?
+  referrerUrl           String?
   sessionId             String?
   uid                   String?
   createdAt DateTime @default(now())
@@ -176,8 +176,8 @@ model MetronActionLog {
 model MetronClickLog {
   id                    Int       @id @default(autoincrement())
   clickDateTime         DateTime?
-  siteName              String?
-  actionReferrer        String?
+  affiliateLinkName     String?
+  referrerUrl           String?
   sessionId             String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt

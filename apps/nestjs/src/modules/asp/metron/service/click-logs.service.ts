@@ -1,56 +1,70 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
-
-interface MetronClickLogApiItem {
-  clickDateTime?: string;
-  siteName?: string;
-  referrer?: string;
-  sessionId?: string;
-}
+import { MetronClickLogDto } from "../dto/metron-click.dto";
+import { MetronClickLogEntity } from "../interface/metron-click-log.interface";
 
 @Injectable()
 export class MetronClickLogService {
+  private readonly logger = new Logger(MetronClickLogService.name);
+  private readonly apiUrl = "https://api09.catsasp.net/log/click/listspan";
+
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
-    const url = "https://api09.catsasp.net/log/click/listspan";
-    const headers = { apiKey: process.env.AFAD_API_KEY };
+    try {
+      const start = new Date(Date.now() - 60_000);
+      const end = new Date();
+      const startStr = formatDateTime(start);
+      const endStr = formatDateTime(end);
+      const headers = { apiKey: process.env.AFAD_API_KEY };
 
-    const start = new Date(Date.now() - 60_000);
-    const end = new Date();
-    const startStr = formatDateTime(start);
-    const endStr = formatDateTime(end);
+      const body = new URLSearchParams({
+        clickDateTime: `${startStr} - ${endStr}`,
+      });
 
-    const body = new URLSearchParams({
-      clickDateTime: `${startStr} - ${endStr}`,
-    });
+      const response = await firstValueFrom(
+        this.http.post<{ params: { logs: MetronClickLogDto[] } }>(
+          this.apiUrl,
+          body,
+          { headers },
+        ),
+      );
 
-    const resp = await firstValueFrom(this.http.post(url, body, { headers }));
-    const data = resp.data;
-    const logs: MetronClickLogApiItem[] = data?.params?.logs || [];
+      const list = response.data?.params?.logs ?? [];
 
-    if (logs.length === 0) {
-      return 0;
+      if (list.length === 0) {
+        this.logger.warn("クリックログは存在しませんでした");
+        return 0;
+      }
+
+      // DTO を内部で扱いやすい Entity 形式に変換
+      const records: MetronClickLogEntity[] = list.map((dto) =>
+        this.convertDtoToEntity(dto),
+      );
+
+      await this.prisma.metronClickLog.createMany({
+        data: records,
+        skipDuplicates: true,
+      });
+      return records.length;
+    } catch (error) {
+      this.logger.error("クリックログの取得に失敗しました", error);
+      throw new Error("クリックログの取得に失敗しました");
     }
+  }
 
-    const createData = logs.map((item) => ({
-      clickDateTime: item.clickDateTime ? new Date(item.clickDateTime) : null,
-      siteName: item.siteName ?? null,
-      actionReferrer: item.referrer ?? null,
-      sessionId: item.sessionId ?? null,
-    }));
-
-    await this.prisma.metronClickLog.createMany({
-      data: createData,
-      skipDuplicates: true,
-    });
-
-    return logs.length;
+  private convertDtoToEntity(dto: MetronClickLogDto): MetronClickLogEntity {
+    return {
+      clickDateTime: dto.clickDateTime ? new Date(dto.clickDateTime) : null,
+      affiliateLinkName: dto.siteName ?? null,
+      referrerUrl: dto.referrer ?? null,
+      sessionId: dto.sessionId ?? null,
+    };
   }
 }
 
