@@ -12,8 +12,8 @@ interface RawMonkeyData {
 
 // 変換後のデータの型定義
 interface FormattedMonkeyData {
-  actionDate: Date | null;
-  tagName: string | null;
+  actionDateTime: Date | null;
+  affiliateLinkName: string | null;
   referrerUrl: string | null;
 }
 
@@ -45,8 +45,8 @@ export class MonkeyActionLogRepository {
 
   private formatData(item: RawMonkeyData): FormattedMonkeyData {
     return {
-      actionDate: this.toDate(this.getValue(item, "成果日時")),
-      tagName: this.getValue(item, "タグ"),
+      actionDateTime: this.toDate(this.getValue(item, "成果日時")),
+      affiliateLinkName: this.getValue(item, "タグ"),
       referrerUrl: this.getValue(item, "リファラ"),
     };
   }

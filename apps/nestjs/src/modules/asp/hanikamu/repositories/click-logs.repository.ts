@@ -8,8 +8,8 @@ interface RawHanikamuData {
 }
 
 interface FormattedHanikamuData {
-  landingPageName: string | null;
-  click: number | null;
+  affiliateLinkName: string | null;
+  clickData: number | null;
 }
 
 @Injectable()
@@ -20,8 +20,8 @@ export class HanikamuClickLogRepository {
 
   private formatData(item: RawHanikamuData): FormattedHanikamuData {
     return {
-      landingPageName: item["ランディングページ"] || null,
-      click: item["Click数"] ? parseInt(item["Click数"], 10) : null,
+      affiliateLinkName: item["ランディングページ"] || null,
+      clickData: item["Click数"] ? parseInt(item["Click数"], 10) : null,
     };
   }
 

@@ -114,52 +114,52 @@ model AdebisClickLog {
 }
 
 model CatsActionLog {
-  id                   Int      @id @default(autoincrement())
-  actionDate           DateTime?
-  redirectAdUrlName    String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                    Int      @id @default(autoincrement())
+  actionDateTime        DateTime?
+  affiliateLinkName     String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model CatsClickLog {
-  id                   Int      @id @default(autoincrement())
-  clickDate            DateTime?
-  adName               String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  id                    Int      @id @default(autoincrement())
+  clickDateTime         DateTime?
+  affiliateLinkName     String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model FinebirdActionLog {
-  id             Int      @id @default(autoincrement())
-  orderDate      DateTime?
-  siteName       String?
-  referrer       String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  actionDateTime        DateTime?
+  affiliateLinkName     String?
+  referrerUrl           String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model FinebirdClickLog {
   id                    Int      @id @default(autoincrement())
-  siteName              String?     
+  affiliateLinkName     String?     
   clickData             Int?       
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }
 
 model HanikamuActionLog {
-  id               Int       @id @default(autoincrement())
-  actionDateTime   DateTime?
-  landingPageName  String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                    Int       @id @default(autoincrement())
+  actionDateTime        DateTime?
+  affiliateLinkName     String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model HanikamuClickLog {
-  id               Int       @id @default(autoincrement())
-  landingPageName  String?
-  click            Int?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                    Int       @id @default(autoincrement())
+  affiliateLinkName     String?
+  clickData             Int?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model MetronActionLog {
@@ -224,80 +224,80 @@ model MetronClickLog {
 }
 
 model MonkeyActionLog {
-  id                　Int       @id @default(autoincrement())
-  actionDate        　DateTime?
-  tagName           　String?
-  referrerUrl       　String?
-  createdAt         　DateTime  @default(now())
-  updatedAt         　DateTime  @updatedAt
+  id                　  Int       @id @default(autoincrement())
+  actionDateTime　　　   DateTime?
+  affiliateLinkName　   String?
+  referrerUrl       　  String?
+  createdAt         　  DateTime  @default(now())
+  updatedAt         　  DateTime  @updatedAt
 }
 
 model MonkeyClickLog {
-  id               Int       @id @default(autoincrement())
-  tagName          String?
-  clickData        Int?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                   Int       @id @default(autoincrement())
+  affiliateLinkName    String?
+  clickData            Int?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model RentracksActionLog {
-  id               Int       @id @default(autoincrement())
-  salesDateTime    DateTime?
-  remarks          String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  id                   Int       @id @default(autoincrement())
+  actionDateTime       DateTime?
+  affiliateLinkName    String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model RentracksClickLog {
   id                   Int      @id @default(autoincrement())
-  remarks              String?
-  click                Int?
+  affiliateLinkName    String?
+  clickData            Int?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
 
 model SampleAffiliateActionLog {
-  id                    Int      @id @default(autoincrement())
-  mediaName             String?
-  actionDate            DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   Int      @id @default(autoincrement())
+  affiliateLinkName    String?
+  actionDateTime       DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model SampleAffiliateClickLog {
-  id                    Int      @id @default(autoincrement())
-  mediaName             String?
-  accessCount           Int?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   Int      @id @default(autoincrement())
+  affiliateLinkName    String?
+  clickData            Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model ladActionLog {
-  id                     Int       @id @default(autoincrement())
-  actionDate             DateTime?
-  redirectAdUrlName      String?
-  referrerClickUrl       String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   Int       @id @default(autoincrement())
+  actionDateTime       DateTime?
+  affiliateLinkName    String?
+  referrerUrl          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model ladClickLog {
-  id                    Int      @id @default(autoincrement())
-  clickDate             DateTime?
-  adName                String?
-  referrer              String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                   Int      @id @default(autoincrement())
+  clickDateTime        DateTime?
+  affiliateLinkName    String?
+  referrerUrl          String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }
 
 model WebantennaActionLog {
-  id                         Int       @id @default(autoincrement())
-  utmSourceIdentifier        String?
-  creativeName               String?
-  cvDate                     DateTime?
-  cvIdentifierId             String?
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+  id                   Int       @id @default(autoincrement())
+  utmSourceIdentifier  String?
+  creativeName         String?
+  cvDate               DateTime?
+  cvIdentifierId       String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 model TikTokReport {

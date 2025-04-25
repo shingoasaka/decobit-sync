@@ -10,8 +10,8 @@ interface RawSampleAffiliateData {
 }
 // 変換後のデータの型定義
 interface FormattedSampleAffiliateActionLog {
-  mediaName: string | null;
-  actionDate: Date | null;
+  affiliateLinkName: string | null;
+  actionDateTime: Date | null;
 }
 
 @Injectable()
@@ -39,8 +39,8 @@ export class SampleAffiliateActionLogRepository {
     item: RawSampleAffiliateData,
   ): FormattedSampleAffiliateActionLog {
     return {
-      mediaName: this.getValue(item, "メディア"),
-      actionDate: this.toDate(this.getValue(item, "発生日時")),
+      affiliateLinkName: this.getValue(item, "メディア"),
+      actionDateTime: this.toDate(this.getValue(item, "発生日時")),
     };
   }
 

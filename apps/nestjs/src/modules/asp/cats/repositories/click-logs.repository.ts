@@ -14,8 +14,8 @@ interface RawCatsData {
 
 // 変換後のデータの型定義
 interface FormattedCatsData {
-  clickDate: Date | null;
-  adName: string | null;
+  clickDateTime: Date | null;
+  affiliateLinkName: string | null;
 }
 
 @Injectable()
@@ -77,8 +77,8 @@ export class CatsClickLogRepository {
 
   private formatData(item: RawCatsData): FormattedCatsData {
     return {
-      clickDate: this.toDate(this.getValue(item, "クリック日時")),
-      adName: this.getValue(item, "広告名"),
+      clickDateTime: this.toDate(this.getValue(item, "クリック日時")),
+      affiliateLinkName: this.getValue(item, "広告名"),
     };
   }
 

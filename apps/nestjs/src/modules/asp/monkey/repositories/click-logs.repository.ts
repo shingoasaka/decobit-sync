@@ -10,7 +10,7 @@ interface RawMonkeyData {
 }
 // 変換後のデータの型定義
 interface FormattedMonkeyData {
-  tagName: string | null;
+  affiliateLinkName: string | null;
   clickData: number | null;
 }
 
@@ -34,7 +34,7 @@ export class MonkeyClickLogRepository {
 
   private formatData(item: RawMonkeyData): FormattedMonkeyData {
     return {
-      tagName: item["タグ名"] || null,
+      affiliateLinkName: item["タグ名"] || null,
       clickData: this.toInt(item["Click"]),
     };
   }

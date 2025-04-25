@@ -9,8 +9,8 @@ interface RawCatsData {
 }
 
 interface FormattedCatsData {
-  actionDate: Date | null;
-  redirectAdUrlName: string | null;
+  actionDateTime: Date | null;
+  affiliateLinkName: string | null;
 }
 
 @Injectable()
@@ -39,8 +39,8 @@ export class CatsActionLogRepository {
 
   private formatData(item: RawCatsData): FormattedCatsData {
     return {
-      actionDate: this.parseDate(this.getValue(item, "成果日時")),
-      redirectAdUrlName: this.getValue(item, "遷移広告URL名"),
+      actionDateTime: this.parseDate(this.getValue(item, "成果日時")),
+      affiliateLinkName: this.getValue(item, "遷移広告URL名"),
     };
   }
 

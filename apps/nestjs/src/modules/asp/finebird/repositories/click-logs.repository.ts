@@ -11,7 +11,7 @@ interface RawFinebirdData {
 
 // 変換後のデータの型定義
 interface FormattedFinebirdData {
-  siteName: string | null;
+  affiliateLinkName: string | null;
   clickData: number | null;
 }
 
@@ -44,7 +44,7 @@ export class FinebirdClickLogRepository {
 
   private formatData(item: RawFinebirdData): FormattedFinebirdData {
     return {
-      siteName: this.getValue(item, "サイト名"),
+      affiliateLinkName: this.getValue(item, "サイト名"),
       clickData: this.toInt(this.getValue(item, "総クリック")),
     };
   }
