@@ -79,7 +79,7 @@ export class MetronActionLogService {
     };
   }
 
-  private async updateReferrerFromClick(): Promise<null> {
+  private async updateReferrerFromClick(): Promise<number> {
     const clicks = await this.prisma.metronClickLog.findMany({
       where: {
         sessionId: { not: null },
@@ -87,14 +87,16 @@ export class MetronActionLogService {
       },
       select: { sessionId: true, referrerUrl: true },
     });
-
+  
     const clickMap = new Map<string, string>();
     for (const click of clicks) {
       if (click.sessionId && click.referrerUrl) {
         clickMap.set(click.sessionId, click.referrerUrl);
       }
     }
-
+  
+    let updateCount = 0;
+  
     for (const [sessionId, referrer] of clickMap.entries()) {
       const targets = await this.prisma.metronActionLog.findMany({
         where: {
@@ -103,16 +105,16 @@ export class MetronActionLogService {
         },
         select: { id: true },
       });
-
+  
       for (const target of targets) {
         await this.prisma.metronActionLog.update({
           where: { id: target.id },
           data: { referrerUrl: referrer },
         });
+        updateCount++;
       }
     }
-
-    return null;
+    return updateCount;
   }
 }
 
