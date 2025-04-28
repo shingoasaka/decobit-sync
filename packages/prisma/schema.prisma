@@ -163,62 +163,22 @@ model HanikamuClickLog {
 }
 
 model MetronActionLog {
-  id                    Int       @id @default(autoincrement())
+  id Int @id @default(autoincrement())
   actionDateTime        DateTime?
-  clickDateTime         DateTime?
-  adminDateTime         DateTime?
-  adId                  Int?
-  adName                String?
-  siteName              String?
-  actionOs              String?
-  actionReferrer        String?
-  amount                String?
-  status                String?
-  clInformation1        String?
-  clInformation2        String?
-  clInformation3        String?
-  clInformation4        String?
-  clInformation5        String?         
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  affiliateLinkName     String?
+  referrerUrl           String?
+  sessionId             String?
+  uid                   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model MetronClickLog {
   id                    Int       @id @default(autoincrement())
-  actionDateTime        DateTime?
   clickDateTime         DateTime?
-  admitDateTime         DateTime?
-  clientId              Int?
-  clientName            String?
-  contentId             Int?
-  contentName           String?
-  partnerId             Int?
-  partnerName           String?
-  groupId               Int?
-  groupName             String?
-  siteId                Int?
-  siteName              String?
-  actionCareer          String?
-  actionOs              String?
-  actionUserAgent       String?
-  actionIpAddress       String?
-  actionReferrer        String?
-  queryString           String?
-  clickPartnerInfo      String?
-  clientInfo            String?
+  affiliateLinkName     String?
+  referrerUrl           String?
   sessionId             String?
-  actionId              String?
-  contentBannerNum      String?
-  clientClickCost       Int?
-  partnerClickCost      Int?
-  clientCommissionCost  Int?
-  partnerCommissionCost Int?
-  clientActionCost      Int?
-  partnerActionCost     Int?
-  actionType            Int?
-  status                String?
-  amount                Int?
-  comment               String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }

@@ -1,104 +1,70 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
+import { MetronClickLogDto } from "../dto/metron-click.dto";
+import { MetronClickLogEntity } from "../interface/metron-click-log.interface";
 
 @Injectable()
 export class MetronClickLogService {
+  private readonly logger = new Logger(MetronClickLogService.name);
+  private readonly apiUrl = "https://api09.catsasp.net/log/click/listspan";
+
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
-    const url = "https://api09.catsasp.net/log/click/listspan";
-    const headers = { apiKey: process.env.AFAD_API_KEY };
+    try {
+      const end = new Date();
+      const start = new Date(end.getTime() - 3 * 60_000);
+      const startStr = formatDateTime(start);
+      const endStr = formatDateTime(end);
+      const headers = { apiKey: process.env.AFAD_API_KEY };
 
-    const start = new Date(Date.now() - 60_000);
-    const end = new Date();
-    const startStr = formatDateTime(start);
-    const endStr = formatDateTime(end);
-
-    const body = new URLSearchParams({
-      clickDateTime: `${startStr} - ${endStr}`,
-    });
-
-    const resp = await firstValueFrom(this.http.post(url, body, { headers }));
-    const data = resp.data;
-    const logs = data?.params?.logs || [];
-
-    if (logs.length === 0) {
-      return 0;
-    }
-
-    for (const item of logs) {
-      await this.prisma.metronClickLog.create({
-        data: {
-          actionDateTime: item.actionDateTime
-            ? new Date(item.actionDateTime)
-            : null,
-          clickDateTime: item.clickDateTime
-            ? new Date(item.clickDateTime)
-            : null,
-          admitDateTime: item.admitDateTime
-            ? new Date(item.admitDateTime)
-            : null,
-
-          clientId: item.clientId ? parseInt(item.clientId, 10) : null,
-          contentId: item.contentId ? parseInt(item.contentId, 10) : null,
-          partnerId: item.partnerId ? parseInt(item.partnerId, 10) : null,
-          groupId: item.groupId ? parseInt(item.groupId, 10) : null,
-          siteId: item.siteId ? parseInt(item.siteId, 10) : null,
-
-          clientName: item.clientName ?? null,
-          contentName: item.contentName ?? null,
-          partnerName: item.partnerName ?? null,
-          groupName: item.groupName ?? null,
-          siteName: item.siteName ?? null,
-          actionCareer: item.actionCareer ?? null,
-          actionOs: item.actionOs ?? null,
-          actionUserAgent: item.actionUserAgent ?? null,
-          actionIpAddress: item.actionIpAddress ?? null,
-          actionReferrer: item.actionReferrer ?? null,
-          queryString: item.queryString ?? null,
-          clickPartnerInfo: item.clickPartnerInfo ?? null,
-          clientInfo: item.clientInfo ?? null,
-          sessionId: item.sessionId ?? null,
-          actionId: item.actionId ?? null,
-          contentBannerNum: item.contentBannerNum ?? null,
-          comment: item.comment ?? null,
-
-          clientClickCost: item.clientClickCost
-            ? parseInt(item.clientClickCost, 10)
-            : null,
-
-          partnerClickCost: item.partnerClickCost
-            ? parseInt(item.partnerClickCost, 10)
-            : null,
-
-          clientCommissionCost: item.clientCommissionCost
-            ? parseInt(item.clientCommissionCost, 10)
-            : null,
-
-          partnerCommissionCost: item.partnerCommissionCost
-            ? parseInt(item.partnerCommissionCost, 10)
-            : null,
-
-          clientActionCost: item.clientActionCost
-            ? parseInt(item.clientActionCost, 10)
-            : null,
-
-          partnerActionCost: item.partnerActionCost
-            ? parseInt(item.partnerActionCost, 10)
-            : null,
-
-          actionType: item.actionType ? parseInt(item.actionType, 10) : null,
-          amount: item.amount ? parseInt(item.amount, 10) : null,
-          status: item.status ?? null,
-        },
+      const body = new URLSearchParams({
+        clickDateTime: `${startStr} - ${endStr}`,
       });
+
+      const response = await firstValueFrom(
+        this.http.post<{ params: { logs: MetronClickLogDto[] } }>(
+          this.apiUrl,
+          body,
+          { headers },
+        ),
+      );
+
+      const list = response.data?.params?.logs ?? [];
+
+      if (list.length === 0) {
+        this.logger.warn("クリックログは存在しませんでした");
+        return 0;
+      }
+
+      // DTO を内部で扱いやすい Entity 形式に変換
+      const records: MetronClickLogEntity[] = list.map((dto) =>
+        this.convertDtoToEntity(dto),
+      );
+
+      await this.prisma.metronClickLog.createMany({
+        data: records,
+        skipDuplicates: true,
+      });
+      return records.length;
+    } catch (error) {
+      this.logger.error("クリックログの取得に失敗しました", error);
+      throw new Error("クリックログの取得に失敗しました");
     }
-    return logs.length;
+  }
+
+  private convertDtoToEntity(dto: MetronClickLogDto): MetronClickLogEntity {
+    return {
+      clickDateTime: dto.clickDateTime ? new Date(dto.clickDateTime) : null,
+      affiliateLinkName: dto.siteName ?? null,
+      referrerUrl: dto.referrer ?? null,
+      sessionId: dto.sessionId ?? null,
+    };
   }
 }
 

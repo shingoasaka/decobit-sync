@@ -1,73 +1,128 @@
-import { Injectable } from "@nestjs/common";
-import { chromium, Browser } from "playwright";
-import * as fs from "fs";
-import { parse } from "csv-parse/sync";
-import * as iconv from "iconv-lite";
+import { Injectable, Logger } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "@prismaService";
-import { LogService } from "src/modules/logs/types";
-import dotenv from "dotenv";
-import { MetronActionLogRepository } from "../repositories/action-logs-repository";
-
-dotenv.config();
+import { firstValueFrom } from "rxjs";
+import { MetronActionLogDto } from "../dto/metron-action.dto";
+import { MetronActionLogEntity } from "../interface/metron-action-log.interface";
 
 @Injectable()
-export class MetronActionLogService implements LogService {
+export class MetronActionLogService {
+  private readonly logger = new Logger(MetronActionLogService.name);
+  private readonly apiUrl = "https://api09.catsasp.net/log/action/listtime";
+
   constructor(
-    private readonly repository: MetronActionLogRepository,
+    private readonly http: HttpService,
     private readonly prisma: PrismaService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
     try {
-      browser = await chromium.launch({ headless: true });
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      const end = new Date();
+      const start = new Date(end.getTime() - 3 * 60_000);
+      const startStr = formatDateTimeJapanese(start);
+      const endStr = formatDateTimeJapanese(end);
 
-      await page.goto("https://sb.me-tron.net/partner/login");
+      const headers = { apiKey: process.env.AFAD_API_KEY };
+      const body = new URLSearchParams({
+        actionDateTime: `${startStr} - ${endStr}`,
+      });
 
-      await page
-        .locator('input[name="loginId"]')
-        .fill(process.env.METRON_USERNAME ?? "");
-      await page
-        .locator('input[name="password"]')
-        .fill(process.env.METRON_PASSWORD ?? "");
+      const response = await firstValueFrom(
+        this.http.post<{ params: { logs: MetronActionLogDto[] } }>(
+          this.apiUrl,
+          body,
+          { headers },
+        ),
+      );
 
-      await page.getByRole("button", { name: "パートナー様ログイン" }).click();
+      const logs: MetronActionLogDto[] = response.data?.params?.logs ?? [];
 
-      await page.getByRole("link", { name: " レポート" }).click();
-      await page.getByRole("link", { name: "獲得ログ" }).click();
-      await page.getByRole("heading", { name: " 検索条件" }).click();
+      if (logs.length === 0) {
+        this.logger.warn("データが存在しませんでした");
+        return 0;
+      }
 
-      await page.getByRole("button", { name: "本日" }).click();
-      await page.getByRole("button", { name: "検索する" }).click();
+      const createData: MetronActionLogEntity[] = logs.map((item) =>
+        this.convertDtoToEntity(item),
+      );
 
-      const downloadPromise = page.waitForEvent("download");
-      await page.getByRole("button", { name: "CSVダウンロード" }).click();
-      const download = await downloadPromise;
-      const downloadPath = await download.path();
+      await this.prisma.metronActionLog.createMany({
+        data: createData,
+        skipDuplicates: true,
+      });
 
-      if (!downloadPath) return 0;
-      return await this.processCsvAndSave(downloadPath);
+      const updated = await this.updateReferrerFromClick();
+      this.logger.log(`referrer補完: ${updated}件`);
+
+      return logs.length;
     } catch (error) {
-      console.error("MeTron ログ取得エラー:", error);
-      return 0;
-    } finally {
-      if (browser) await browser.close();
+      this.logger.error("ログ取得に失敗しました", error);
+      throw new Error("ログ取得失敗");
     }
   }
 
-  private async processCsvAndSave(filePath: string): Promise<number> {
-    const buffer = fs.readFileSync(filePath);
-    const utf8Data = iconv.decode(buffer, "utf-8");
+  private convertDtoToEntity(dto: MetronActionLogDto): MetronActionLogEntity {
+    let uid: string | null = null;
+    try {
+      const parsed = JSON.parse(dto.clientInfo || "{}");
+      uid = parsed.userId1 || null;
+    } catch {
+      uid = null;
+    }
 
-    const records = parse(utf8Data, {
-      columns: true,
-      skip_empty_lines: true,
+    return {
+      actionDateTime: dto.actionDateTime ? new Date(dto.actionDateTime) : null,
+      affiliateLinkName: dto.siteName ?? null,
+      referrerUrl: dto.actionReferrer ?? null,
+      sessionId: dto.sessionId ?? null,
+      uid,
+    };
+  }
+
+  private async updateReferrerFromClick(): Promise<number> {
+    const clicks = await this.prisma.metronClickLog.findMany({
+      where: {
+        sessionId: { not: null },
+        referrerUrl: { not: null },
+      },
+      select: { sessionId: true, referrerUrl: true },
     });
 
-    await this.repository.save(records);
+    const clickMap = new Map<string, string>();
+    for (const click of clicks) {
+      if (click.sessionId && click.referrerUrl) {
+        clickMap.set(click.sessionId, click.referrerUrl);
+      }
+    }
 
-    return records.length;
+    let updateCount = 0;
+
+    for (const [sessionId, referrer] of clickMap.entries()) {
+      const targets = await this.prisma.metronActionLog.findMany({
+        where: {
+          sessionId,
+          referrerUrl: { not: referrer },
+        },
+        select: { id: true },
+      });
+
+      for (const target of targets) {
+        await this.prisma.metronActionLog.update({
+          where: { id: target.id },
+          data: { referrerUrl: referrer },
+        });
+        updateCount++;
+      }
+    }
+    return updateCount;
   }
+}
+
+function formatDateTimeJapanese(d: Date): string {
+  const yyyy = d.getFullYear();
+  const MM = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${yyyy}年${MM}月${dd}日 ${hh}時${mm}分`;
 }
