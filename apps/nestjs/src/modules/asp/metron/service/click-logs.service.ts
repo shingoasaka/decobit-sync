@@ -17,8 +17,8 @@ export class MetronClickLogService {
 
   async fetchAndInsertLogs(): Promise<number> {
     try {
-      const start = new Date(Date.now() - 60_000);
       const end = new Date();
+      const start = new Date(end.getTime() - 3 * 60_000);
       const startStr = formatDateTime(start);
       const endStr = formatDateTime(end);
       const headers = { apiKey: process.env.AFAD_API_KEY };
