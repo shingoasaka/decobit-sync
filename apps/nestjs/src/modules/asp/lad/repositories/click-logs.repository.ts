@@ -9,9 +9,9 @@ interface RawLadData {
 }
 
 interface FormattedLadData {
-  clickDate: Date | null;
-  adName: string | null;
-  referrer: string | null;
+  clickDateTime: Date | null;
+  affiliateLinkName: string | null;
+  referrerUrl: string | null;
 }
 
 @Injectable()
@@ -22,9 +22,9 @@ export class LadClickLogRepository {
 
   private formatData(item: RawLadData): FormattedLadData {
     return {
-      clickDate: toValidDate(item["クリック日時"]),
-      adName: item["広告名"] || null,
-      referrer: item["リファラ"] || null,
+      clickDateTime: toValidDate(item["クリック日時"]),
+      affiliateLinkName: item["広告名"] || null,
+      referrerUrl: item["リファラ"] || null,
     };
   }
 

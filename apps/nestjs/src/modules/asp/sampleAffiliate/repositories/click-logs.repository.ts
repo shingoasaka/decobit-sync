@@ -11,8 +11,8 @@ interface RawSampleAffiliateClickData {
 
 // 変換後のデータの型定義
 interface FormattedSampleAffiliateClickData {
-  mediaName: string | null;
-  accessCount: number | null;
+  affiliateLinkName: string | null;
+  clickData: number | null;
 }
 
 @Injectable()
@@ -49,8 +49,8 @@ export class SampleAffiliateClickLogRepository {
     item: RawSampleAffiliateClickData,
   ): FormattedSampleAffiliateClickData {
     return {
-      mediaName: this.getValue(item, "メディア"),
-      accessCount: this.toInt(this.getValue(item, "アクセス数[件]")),
+      affiliateLinkName: this.getValue(item, "メディア"),
+      clickData: this.toInt(this.getValue(item, "アクセス数[件]")),
     };
   }
 

@@ -8,8 +8,8 @@ interface RawRentracksData {
 }
 
 interface FormattedRentracksData {
-  salesDateTime: Date | null;
-  remarks: string | null;
+  actionDateTime: Date | null;
+  affiliateLinkName: string | null;
 }
 
 @Injectable()
@@ -20,10 +20,10 @@ export class RentracksActionLogRepository {
 
   private formatData(item: RawRentracksData): FormattedRentracksData {
     return {
-      salesDateTime: item["売上日時"]
+      actionDateTime: item["売上日時"]
         ? new Date(item["売上日時"].replace(/（.*?）/, ""))
         : null,
-      remarks: item["備考"] || null,
+      affiliateLinkName: item["備考"] || null,
     };
   }
 

@@ -12,9 +12,9 @@ interface RawFinebirdData {
 
 // 変換後のデータの型定義
 interface FormattedFinebirdData {
-  orderDate: Date | null;
-  siteName: string | null;
-  referrer: string | null;
+  actionDateTime: Date | null;
+  affiliateLinkName: string | null;
+  referrerUrl: string | null;
 }
 
 @Injectable()
@@ -45,9 +45,9 @@ export class FinebirdActionLogRepository {
 
   private formatData(item: RawFinebirdData): FormattedFinebirdData {
     return {
-      orderDate: this.toDate(this.getValue(item, "注文日時")),
-      siteName: this.getValue(item, "サイト名"),
-      referrer: this.getValue(item, "リファラ"),
+      actionDateTime: this.toDate(this.getValue(item, "注文日時")),
+      affiliateLinkName: this.getValue(item, "サイト名"),
+      referrerUrl: this.getValue(item, "リファラ"),
     };
   }
 

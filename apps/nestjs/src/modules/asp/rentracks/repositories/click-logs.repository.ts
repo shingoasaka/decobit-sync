@@ -8,8 +8,8 @@ interface RawRentracksData {
 }
 
 interface FormattedRentracksData {
-  remarks: string | null;
-  click: number;
+  affiliateLinkName: string | null;
+  clickData: number;
 }
 
 @Injectable()
@@ -20,8 +20,8 @@ export class RentracksClickLogRepository {
 
   private formatData(item: RawRentracksData): FormattedRentracksData {
     return {
-      remarks: item["備考"] || null,
-      click: item["クリック数"] ? parseInt(item["クリック数"], 10) : 0,
+      affiliateLinkName: item["備考"] || null,
+      clickData: item["クリック数"] ? parseInt(item["クリック数"], 10) : 0,
     };
   }
 

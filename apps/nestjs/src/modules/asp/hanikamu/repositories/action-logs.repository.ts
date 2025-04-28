@@ -9,7 +9,7 @@ interface RawHanikamuData {
 
 interface FormattedHanikamuData {
   actionDateTime: Date;
-  landingPageName: string | null;
+  affiliateLinkName: string | null;
 }
 
 @Injectable()
@@ -21,7 +21,7 @@ export class HanikamuActionLogRepository {
   private formatData(item: RawHanikamuData): FormattedHanikamuData {
     return {
       actionDateTime: new Date(item["成果発生日"]),
-      landingPageName: item["ランディングページ"] || null,
+      affiliateLinkName: item["ランディングページ"] || null,
     };
   }
 
