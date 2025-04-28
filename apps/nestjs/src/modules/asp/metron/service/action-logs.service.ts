@@ -87,16 +87,16 @@ export class MetronActionLogService {
       },
       select: { sessionId: true, referrerUrl: true },
     });
-  
+
     const clickMap = new Map<string, string>();
     for (const click of clicks) {
       if (click.sessionId && click.referrerUrl) {
         clickMap.set(click.sessionId, click.referrerUrl);
       }
     }
-  
+
     let updateCount = 0;
-  
+
     for (const [sessionId, referrer] of clickMap.entries()) {
       const targets = await this.prisma.metronActionLog.findMany({
         where: {
@@ -105,7 +105,7 @@ export class MetronActionLogService {
         },
         select: { id: true },
       });
-  
+
       for (const target of targets) {
         await this.prisma.metronActionLog.update({
           where: { id: target.id },
