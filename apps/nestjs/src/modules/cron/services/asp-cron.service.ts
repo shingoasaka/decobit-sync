@@ -6,10 +6,10 @@ import { FinebirdActionLogService } from "@asp/finebird/services/action-logs.ser
 import { FinebirdClickLogService } from "@asp/finebird/services/click-logs.service";
 import { TryActionLogService } from "@asp/hanikamu/try/action-logs.service";
 import { TryClickLogService } from "@asp/hanikamu/try/click-logs.service";
-import { LadActionLogService } from "@asp/lad/service/action-logs.service";
-import { LadClickLogService } from "@asp/lad/service/click-logs.service";
-import { MetronActionLogService } from "@asp/metron/service/action-logs.service";
-import { MetronClickLogService } from "@asp/metron/service/click-logs.service";
+import { LadActionLogService } from "@asp/lad/services/action-logs.service";
+import { LadClickLogService } from "@asp/lad/services/click-logs.service";
+import { MetronActionLogService } from "@asp/metron/services/action-logs.service";
+import { MetronClickLogService } from "@asp/metron/services/click-logs.service";
 import { MonkeyActionLogService } from "@asp/monkey/services/action-logs.service";
 import { MonkeyClickLogService } from "@asp/monkey/services/click-logs.service";
 import { RentracksActionLogService } from "@asp/rentracks/services/action-logs.service";
