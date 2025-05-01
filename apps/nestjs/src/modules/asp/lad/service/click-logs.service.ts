@@ -75,16 +75,7 @@ export class LadClickLogService implements LogService {
       // CSV生成のクリック
       await page.getByRole("button", { name: " CSV生成" }).click();
 
-      // CSV生成完了を示す要素の表示を待機（30秒に短縮）
-      try {
-        await page.waitForSelector("div.csvInfoExport1", { timeout: 30000 });
-      } catch (error) {
-        console.log(
-          "CSV生成待機中にタイムアウトしました。ダウンロードページに移動を試みます。",
-        );
-      }
-
-      await page.waitForTimeout(10000);
+      await page.waitForTimeout(60000);
 
       // CSVダウンロードページへ移動
       await page.goto("https://admin038.l-ad.net/admin/clicklog/list", {
