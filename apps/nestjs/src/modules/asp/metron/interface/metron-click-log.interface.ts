@@ -3,4 +3,6 @@ export interface MetronClickLogEntity {
   affiliateLinkName: string | null;
   referrerUrl: string | null;
   sessionId: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }

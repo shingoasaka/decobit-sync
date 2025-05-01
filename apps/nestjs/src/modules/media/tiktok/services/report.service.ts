@@ -5,6 +5,7 @@ import { TikTokAdvertiserService } from "./advertiser.service";
 import { TikTokReportDto } from "../dto/tiktok-report.dto";
 import { TikTokReport } from "../interface/tiktok-report.interface";
 import { TikTokReportRepository } from "../repositories/tiktok-report.repository";
+import { getNowJst } from "src/libs/date-utils";
 
 @Injectable()
 export class TikTokReportService {
@@ -135,6 +136,7 @@ export class TikTokReportService {
   }
 
   private convertDtoToEntity(dto: TikTokReportDto): TikTokReport {
+    const now = getNowJst();
     return {
       advertiserId: dto.metrics.advertiser_id,
       adId: dto.dimensions.ad_id,
@@ -157,6 +159,8 @@ export class TikTokReportService {
       adUrl: dto.metrics.ad_url,
       statTimeDayDimension: dto.dimensions.stat_time_day,
       adIdDimension: dto.dimensions.ad_id,
+      createdAt: now,
+      updatedAt: now,
     };
   }
 

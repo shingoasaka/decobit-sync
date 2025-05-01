@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@operate-ad/prisma";
+import { getNowJst } from "src/libs/date-utils";
 
 // 入力データの型定義
 interface RawMonkeyData {
@@ -12,6 +13,8 @@ interface RawMonkeyData {
 interface FormattedMonkeyData {
   affiliateLinkName: string | null;
   clickData: number | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()
@@ -33,9 +36,12 @@ export class MonkeyClickLogRepository {
   }
 
   private formatData(item: RawMonkeyData): FormattedMonkeyData {
+    const now = getNowJst();
     return {
       affiliateLinkName: item["タグ名"] || null,
       clickData: this.toInt(item["Click"]),
+      createdAt: now,
+      updatedAt: now,
     };
   }
 

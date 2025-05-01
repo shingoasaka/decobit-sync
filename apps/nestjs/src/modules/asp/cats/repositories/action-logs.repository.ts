@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@operate-ad/prisma";
+import { getNowJst } from "src/libs/date-utils";
 
 interface RawCatsData {
   [key: string]: string | null | undefined;
@@ -11,6 +12,8 @@ interface RawCatsData {
 interface FormattedCatsData {
   actionDateTime: Date | null;
   affiliateLinkName: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()
@@ -38,9 +41,12 @@ export class CatsActionLogRepository {
   }
 
   private formatData(item: RawCatsData): FormattedCatsData {
+    const now = getNowJst();
     return {
       actionDateTime: this.parseDate(this.getValue(item, "成果日時")),
       affiliateLinkName: this.getValue(item, "遷移広告URL名"),
+      createdAt: now,
+      updatedAt: now,
     };
   }
 

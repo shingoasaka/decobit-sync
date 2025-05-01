@@ -4,4 +4,6 @@ export interface MetronActionLogEntity {
   referrerUrl: string | null;
   sessionId: string | null;
   uid: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }

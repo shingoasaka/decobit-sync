@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@operate-ad/prisma";
+import { getNowJst } from "src/libs/date-utils";
 
 interface RawLadData {
   クリック日時?: string;
@@ -12,6 +13,8 @@ interface FormattedLadData {
   clickDateTime: Date | null;
   affiliateLinkName: string | null;
   referrerUrl: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()
@@ -21,10 +24,13 @@ export class LadClickLogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private formatData(item: RawLadData): FormattedLadData {
+    const now = getNowJst();
     return {
       clickDateTime: toValidDate(item["クリック日時"]),
       affiliateLinkName: item["広告名"] || null,
       referrerUrl: item["リファラ"] || null,
+      createdAt: now,
+      updatedAt: now,
     };
   }
 
