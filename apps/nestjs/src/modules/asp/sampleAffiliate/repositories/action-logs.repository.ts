@@ -13,8 +13,8 @@ interface RawSampleAffiliateData {
 interface FormattedSampleAffiliateActionLog {
   affiliateLinkName: string | null;
   actionDateTime: Date | null;
-  createdAt:Date | null;
-  updatedAt:Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()

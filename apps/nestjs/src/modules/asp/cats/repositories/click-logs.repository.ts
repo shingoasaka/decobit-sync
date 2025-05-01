@@ -17,8 +17,8 @@ interface RawCatsData {
 interface FormattedCatsData {
   clickDateTime: Date | null;
   affiliateLinkName: string | null;
-  createdAt:Date | null;
-  updatedAt:Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()

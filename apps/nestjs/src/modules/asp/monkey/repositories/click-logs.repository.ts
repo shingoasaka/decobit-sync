@@ -13,8 +13,8 @@ interface RawMonkeyData {
 interface FormattedMonkeyData {
   affiliateLinkName: string | null;
   clickData: number | null;
-  createdAt:Date | null;
-  updatedAt:Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()

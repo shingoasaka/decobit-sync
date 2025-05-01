@@ -11,8 +11,8 @@ interface RawRentracksData {
 interface FormattedRentracksData {
   actionDateTime: Date | null;
   affiliateLinkName: string | null;
-  createdAt:Date | null;
-  updatedAt:Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()

@@ -16,8 +16,8 @@ interface FormattedMonkeyData {
   actionDateTime: Date | null;
   affiliateLinkName: string | null;
   referrerUrl: string | null;
-  createdAt:Date | null;
-  updatedAt:Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()

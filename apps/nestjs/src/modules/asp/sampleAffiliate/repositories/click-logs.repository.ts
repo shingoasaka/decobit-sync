@@ -14,8 +14,8 @@ interface RawSampleAffiliateClickData {
 interface FormattedSampleAffiliateClickData {
   affiliateLinkName: string | null;
   clickData: number | null;
-  createdAt:Date | null;
-  updatedAt:Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()

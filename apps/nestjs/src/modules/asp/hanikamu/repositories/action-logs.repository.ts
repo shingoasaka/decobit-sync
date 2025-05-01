@@ -11,8 +11,8 @@ interface RawHanikamuData {
 interface FormattedHanikamuData {
   actionDateTime: Date;
   affiliateLinkName: string | null;
-  createdAt:Date | null;
-  updatedAt:Date | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()
