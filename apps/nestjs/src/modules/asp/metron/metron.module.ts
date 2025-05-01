@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
-import { MetronActionLogService } from "./service/action-logs.service";
+import { MetronActionLogService } from "./services/action-logs.service";
 import { PrismaService } from "@prismaService";
-import { MetronClickLogService } from "./service/click-logs.service";
+import { MetronClickLogService } from "./services/click-logs.service";
 import { HttpModule } from "@nestjs/axios";
 
 @Module({

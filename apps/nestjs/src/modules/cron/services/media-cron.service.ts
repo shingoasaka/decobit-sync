@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { TikTokReportService } from "../../media/tiktok/service/report.service";
+import { TikTokReportService } from "../../media/tiktok/services/report.service";
 import { CommonLogService } from "@logs/common-log.service";
 
 // 実行結果の型定義
