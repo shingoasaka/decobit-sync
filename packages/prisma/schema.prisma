@@ -117,16 +117,16 @@ model CatsActionLog {
   id                    Int      @id @default(autoincrement())
   actionDateTime        DateTime?
   affiliateLinkName     String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model CatsClickLog {
   id                    Int      @id @default(autoincrement())
   clickDateTime         DateTime?
   affiliateLinkName     String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model FinebirdActionLog {
@@ -134,32 +134,32 @@ model FinebirdActionLog {
   actionDateTime        DateTime?
   affiliateLinkName     String?
   referrerUrl           String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model FinebirdClickLog {
   id                    Int      @id @default(autoincrement())
   affiliateLinkName     String?     
   clickData             Int?       
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model HanikamuActionLog {
   id                    Int       @id @default(autoincrement())
   actionDateTime        DateTime?
   affiliateLinkName     String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model HanikamuClickLog {
   id                    Int       @id @default(autoincrement())
   affiliateLinkName     String?
   clickData             Int?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model MetronActionLog {
@@ -169,8 +169,8 @@ model MetronActionLog {
   referrerUrl           String?
   sessionId             String?
   uid                   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model MetronClickLog {
@@ -179,8 +179,8 @@ model MetronClickLog {
   affiliateLinkName     String?
   referrerUrl           String?
   sessionId             String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model MonkeyActionLog {
@@ -188,48 +188,48 @@ model MonkeyActionLog {
   actionDateTime　　　   DateTime?
   affiliateLinkName　   String?
   referrerUrl       　  String?
-  createdAt         　  DateTime  @default(now())
-  updatedAt         　  DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model MonkeyClickLog {
   id                   Int       @id @default(autoincrement())
   affiliateLinkName    String?
   clickData            Int?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model RentracksActionLog {
   id                   Int       @id @default(autoincrement())
   actionDateTime       DateTime?
   affiliateLinkName    String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model RentracksClickLog {
   id                   Int      @id @default(autoincrement())
   affiliateLinkName    String?
   clickData            Int?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model SampleAffiliateActionLog {
   id                   Int      @id @default(autoincrement())
   affiliateLinkName    String?
   actionDateTime       DateTime?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model SampleAffiliateClickLog {
   id                   Int      @id @default(autoincrement())
   affiliateLinkName    String?
   clickData            Int?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model ladActionLog {
@@ -237,8 +237,8 @@ model ladActionLog {
   actionDateTime       DateTime?
   affiliateLinkName    String?
   referrerUrl          String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model ladClickLog {
@@ -246,8 +246,8 @@ model ladClickLog {
   clickDateTime        DateTime?
   affiliateLinkName    String?
   referrerUrl          String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model WebantennaActionLog {
@@ -256,8 +256,8 @@ model WebantennaActionLog {
   creativeName         String?
   cvDate               DateTime?
   cvIdentifierId       String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
 model TikTokReport {
@@ -283,6 +283,6 @@ model TikTokReport {
   adUrl              String?
   statTimeDayDimension String?
   adIdDimension      String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }

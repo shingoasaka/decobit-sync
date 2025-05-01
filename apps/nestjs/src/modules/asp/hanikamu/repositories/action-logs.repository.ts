@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@operate-ad/prisma";
+import { getNowJst } from "src/libs/date-utils";
 
 interface RawHanikamuData {
   成果発生日: string;
@@ -10,6 +11,8 @@ interface RawHanikamuData {
 interface FormattedHanikamuData {
   actionDateTime: Date;
   affiliateLinkName: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 }
 
 @Injectable()
@@ -19,9 +22,12 @@ export class HanikamuActionLogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private formatData(item: RawHanikamuData): FormattedHanikamuData {
+    const now = getNowJst();
     return {
       actionDateTime: new Date(item["成果発生日"]),
       affiliateLinkName: item["ランディングページ"] || null,
+      createdAt: now,
+      updatedAt: now,
     };
   }
 

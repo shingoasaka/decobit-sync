@@ -88,13 +88,29 @@ export class CatsClickLogService {
 
   private async downloadReport(page: Page): Promise<string> {
     try {
+      const emptyDataElement = await page.$(".dataTables_empty");
+      if (emptyDataElement) {
+        const emptyDataMessage = await page.evaluate(
+          (el) => el.textContent,
+          emptyDataElement,
+        );
+        if (emptyDataMessage?.includes("データはありません")) {
+          throw new Error(
+            "データが存在しないため、ダウンロードをスキップします",
+          );
+        }
+      }
+
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 60000 }),
         page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
       ]);
 
       const downloadPath = await download.path();
-      if (!downloadPath) throw new Error("ダウンロードパスが取得できません");
+      if (!downloadPath) {
+        throw new Error("ダウンロードファイルのパスが取得できませんでした");
+      }
+
       return downloadPath;
     } catch (error) {
       throw new Error(

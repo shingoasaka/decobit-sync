@@ -4,6 +4,7 @@ import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
 import { MetronActionLogDto } from "../dto/metron-action.dto";
 import { MetronActionLogEntity } from "../interface/metron-action-log.interface";
+import { getNowJst } from "src/libs/date-utils";
 
 @Injectable()
 export class MetronActionLogService {
@@ -62,6 +63,7 @@ export class MetronActionLogService {
   }
 
   private convertDtoToEntity(dto: MetronActionLogDto): MetronActionLogEntity {
+    const now = getNowJst();
     let uid: string | null = null;
     try {
       const parsed = JSON.parse(dto.clientInfo || "{}");
@@ -76,6 +78,8 @@ export class MetronActionLogService {
       referrerUrl: dto.actionReferrer ?? null,
       sessionId: dto.sessionId ?? null,
       uid,
+      createdAt: now,
+      updatedAt: now,
     };
   }
 
