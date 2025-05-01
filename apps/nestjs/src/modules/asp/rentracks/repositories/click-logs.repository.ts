@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@operate-ad/prisma";
+import { getNowJst } from "src/libs/date-utils";
 
 interface RawRentracksData {
   備考?: string;
@@ -10,6 +11,8 @@ interface RawRentracksData {
 interface FormattedRentracksData {
   affiliateLinkName: string | null;
   clickData: number;
+  createdAt:Date | null;
+  updatedAt:Date | null;
 }
 
 @Injectable()
@@ -19,9 +22,12 @@ export class RentracksClickLogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   private formatData(item: RawRentracksData): FormattedRentracksData {
+    const now = getNowJst();
     return {
       affiliateLinkName: item["備考"] || null,
       clickData: item["クリック数"] ? parseInt(item["クリック数"], 10) : 0,
+      createdAt: now,
+      updatedAt: now,
     };
   }
 

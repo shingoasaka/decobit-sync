@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@operate-ad/prisma";
+import { getNowJst } from "src/libs/date-utils";
 
 // 入力データの型定義
 interface RawSampleAffiliateData {
@@ -12,6 +13,8 @@ interface RawSampleAffiliateData {
 interface FormattedSampleAffiliateActionLog {
   affiliateLinkName: string | null;
   actionDateTime: Date | null;
+  createdAt:Date | null;
+  updatedAt:Date | null;
 }
 
 @Injectable()
@@ -38,9 +41,12 @@ export class SampleAffiliateActionLogRepository {
   private formatData(
     item: RawSampleAffiliateData,
   ): FormattedSampleAffiliateActionLog {
+    const now = getNowJst();
     return {
       affiliateLinkName: this.getValue(item, "メディア"),
       actionDateTime: this.toDate(this.getValue(item, "発生日時")),
+      createdAt: now,
+      updatedAt: now,
     };
   }
 

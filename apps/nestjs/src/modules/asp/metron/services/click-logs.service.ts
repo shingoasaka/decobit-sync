@@ -4,6 +4,7 @@ import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
 import { MetronClickLogDto } from "../dto/metron-click.dto";
 import { MetronClickLogEntity } from "../interface/metron-click-log.interface";
+import { getNowJst } from "src/libs/date-utils";
 
 @Injectable()
 export class MetronClickLogService {
@@ -59,11 +60,14 @@ export class MetronClickLogService {
   }
 
   private convertDtoToEntity(dto: MetronClickLogDto): MetronClickLogEntity {
+    const now = getNowJst();
     return {
       clickDateTime: dto.clickDateTime ? new Date(dto.clickDateTime) : null,
       affiliateLinkName: dto.siteName ?? null,
       referrerUrl: dto.referrer ?? null,
       sessionId: dto.sessionId ?? null,
+      createdAt: now,
+      updatedAt: now,
     };
   }
 }

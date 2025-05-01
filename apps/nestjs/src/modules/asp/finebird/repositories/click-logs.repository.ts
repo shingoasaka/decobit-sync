@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@operate-ad/prisma";
+import { getNowJst } from "src/libs/date-utils";
 
 // 入力データの型定義
 interface RawFinebirdData {
@@ -13,6 +14,8 @@ interface RawFinebirdData {
 interface FormattedFinebirdData {
   affiliateLinkName: string | null;
   clickData: number | null;
+  createdAt:Date | null;
+  updatedAt:Date | null;
 }
 
 @Injectable()
@@ -43,9 +46,12 @@ export class FinebirdClickLogRepository {
   }
 
   private formatData(item: RawFinebirdData): FormattedFinebirdData {
+    const now = getNowJst();
     return {
       affiliateLinkName: this.getValue(item, "サイト名"),
       clickData: this.toInt(this.getValue(item, "総クリック")),
+      createdAt: now,
+      updatedAt: now,
     };
   }
 

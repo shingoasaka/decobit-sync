@@ -20,4 +20,6 @@ export interface TikTokReport {
   adUrl: string;
   statTimeDayDimension: string;
   adIdDimension: string;
+  createdAt:Date | null;
+  updatedAt:Date | null;
 }

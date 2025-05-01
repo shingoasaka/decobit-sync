@@ -4,6 +4,7 @@ import { Prisma } from "@operate-ad/prisma";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
+import { getNowJst } from "src/libs/date-utils";
 
 // 入力データの型定義
 interface RawCatsData {
@@ -16,6 +17,8 @@ interface RawCatsData {
 interface FormattedCatsData {
   clickDateTime: Date | null;
   affiliateLinkName: string | null;
+  createdAt:Date | null;
+  updatedAt:Date | null;
 }
 
 @Injectable()
@@ -76,9 +79,12 @@ export class CatsClickLogRepository {
   }
 
   private formatData(item: RawCatsData): FormattedCatsData {
+    const now = getNowJst();
     return {
       clickDateTime: this.toDate(this.getValue(item, "クリック日時")),
       affiliateLinkName: this.getValue(item, "広告名"),
+      createdAt: now,
+      updatedAt: now,
     };
   }
 
