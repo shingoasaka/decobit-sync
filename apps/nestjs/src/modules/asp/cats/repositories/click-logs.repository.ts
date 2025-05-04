@@ -1,10 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { Prisma } from "@operate-ad/prisma";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
-import { getNowJst } from "src/libs/date-utils";
+import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { BaseAspRepository } from "../../base/repository.base";
+import { AspType } from "@operate-ad/prisma";
 
 // 入力データの型定義
 interface RawCatsData {
@@ -22,10 +24,10 @@ interface FormattedCatsData {
 }
 
 @Injectable()
-export class CatsClickLogRepository {
-  private readonly logger = new Logger(CatsClickLogRepository.name);
-
-  constructor(private readonly prisma: PrismaService) {}
+export class CatsClickLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.CATS);
+  }
 
   /**
    * CSV を読み込み、DB に保存し、挿入件数を返します。
@@ -57,31 +59,14 @@ export class CatsClickLogRepository {
     }
   }
 
-  private toDate(dateStr: string | null | undefined): Date | null {
-    if (!dateStr) return null;
-    try {
-      const date = new Date(dateStr);
-      return isNaN(date.getTime()) ? null : date;
-    } catch (error) {
-      this.logger.warn(`Invalid date format: ${dateStr}`);
-      return null;
-    }
-  }
-
-  private normalizeKey(key: string): string {
-    // キー名の先頭に余計な文字などがあれば除去
-    return key.replace(/^.*?/, "");
-  }
-
   private getValue(item: RawCatsData, key: string): string | null {
-    const normalizedKey = this.normalizeKey(key);
-    return item[key] || item[normalizedKey] || null;
+    return item[key] || null;
   }
 
   private formatData(item: RawCatsData): FormattedCatsData {
     const now = getNowJst();
     return {
-      clickDateTime: this.toDate(this.getValue(item, "クリック日時")),
+      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
       affiliateLinkName: this.getValue(item, "広告名"),
       createdAt: now,
       updatedAt: now,
@@ -93,15 +78,12 @@ export class CatsClickLogRepository {
    */
   async save(conversionData: RawCatsData[]): Promise<number> {
     try {
-      const formattedData = conversionData.map((item) => this.formatData(item));
+      const formatted = conversionData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.catsClickLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspClickLog", {
+        clickDateTime: formatted[0]?.clickDateTime,
       });
-
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
       throw error;

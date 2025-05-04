@@ -4,38 +4,50 @@ import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
 import { getNowJst, parseToJst } from "src/libs/date-utils";
 
-interface RawLadData {
-  成果日時?: string;
-  遷移広告URL名?: string;
-  "リファラ(クリック)"?: string;
+interface RawMetronData {
+  actionDateTime?: string;
+  siteName?: string;
+  actionReferrer?: string;
+  sessionId?: string;
+  clientInfo?: string;
 }
 
-interface FormattedLadData {
+interface FormattedMetronData {
   actionDateTime: Date | null;
   affiliateLinkName: string | null;
   referrerUrl: string | null;
+  uid: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
 
 @Injectable()
-export class LadActionLogRepository extends BaseAspRepository {
+export class MetronActionLogRepository extends BaseAspRepository {
   constructor(protected readonly prisma: PrismaService) {
-    super(prisma, AspType.LAD);
+    super(prisma, AspType.METRON);
   }
 
-  private formatData(item: RawLadData): FormattedLadData {
+  private formatData(item: RawMetronData): FormattedMetronData {
     const now = getNowJst();
+    let uid: string | null = null;
+    try {
+      const parsed = JSON.parse(item.clientInfo || "{}");
+      uid = parsed.userId1 || null;
+    } catch {
+      uid = null;
+    }
+
     return {
-      actionDateTime: parseToJst(item["成果日時"]),
-      affiliateLinkName: item["遷移広告URL名"] || null,
-      referrerUrl: item["リファラ(クリック)"] || null,
+      actionDateTime: parseToJst(item.actionDateTime),
+      affiliateLinkName: item.siteName || null,
+      referrerUrl: item.actionReferrer || null,
+      uid,
       createdAt: now,
       updatedAt: now,
     };
   }
 
-  async save(logs: RawLadData[]): Promise<number> {
+  async save(logs: RawMetronData[]): Promise<number> {
     try {
       const formatted = logs.map((item) => this.formatData(item));
 
@@ -43,9 +55,10 @@ export class LadActionLogRepository extends BaseAspRepository {
       return await this.saveToCommonTable(formatted, "aspActionLog", {
         actionDateTime: formatted[0]?.actionDateTime,
         referrerUrl: formatted[0]?.referrerUrl,
+        uid: formatted[0]?.uid,
       });
     } catch (error) {
-      this.logger.error("Error saving LAD action logs:", error);
+      this.logger.error("Error saving Metron action logs:", error);
       throw error;
     }
   }

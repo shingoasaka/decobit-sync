@@ -1,78 +1,56 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
-import { getNowJst } from "src/libs/date-utils";
+import { AspType } from "@operate-ad/prisma";
+import { BaseAspRepository } from "../../base/repository.base";
+import { getNowJst, parseToJst } from "src/libs/date-utils";
 
 // 入力データの型定義
-interface RawSampleAffiliateClickData {
+interface RawSampleAffiliateData {
   [key: string]: string | null | undefined;
-  メディア?: string;
-  "アクセス数[件]"?: string;
+  クリック日時?: string;
+  広告名?: string;
 }
 
 // 変換後のデータの型定義
-interface FormattedSampleAffiliateClickData {
+interface FormattedSampleAffiliateData {
+  clickDateTime: Date | null;
   affiliateLinkName: string | null;
-  clickData: number | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
 
 @Injectable()
-export class SampleAffiliateClickLogRepository {
-  private readonly logger = new Logger(SampleAffiliateClickLogRepository.name);
-
-  constructor(private readonly prisma: PrismaService) {}
-
-  private toInt(value: string | null | undefined): number | null {
-    if (!value) return null;
-    try {
-      const cleanValue = value.replace(/[,¥]/g, "");
-      const num = parseInt(cleanValue, 10);
-      return isNaN(num) ? null : num;
-    } catch (error) {
-      this.logger.warn(`Invalid number format: ${value}`);
-      return null;
-    }
+export class SampleAffiliateClickLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.SAMPLE_AFFILIATE);
   }
 
-  private normalizeKey(key: string): string {
-    return key.replace(/^.*?/, "");
-  }
-
-  private getValue(
-    item: RawSampleAffiliateClickData,
-    key: string,
-  ): string | null {
-    const normalizedKey = this.normalizeKey(key);
-    return item[key] || item[normalizedKey] || null;
+  private getValue(item: RawSampleAffiliateData, key: string): string | null {
+    return item[key] || null;
   }
 
   private formatData(
-    item: RawSampleAffiliateClickData,
-  ): FormattedSampleAffiliateClickData {
+    item: RawSampleAffiliateData,
+  ): FormattedSampleAffiliateData {
     const now = getNowJst();
     return {
-      affiliateLinkName: this.getValue(item, "メディア"),
-      clickData: this.toInt(this.getValue(item, "アクセス数[件]")),
+      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
+      affiliateLinkName: this.getValue(item, "広告名"),
       createdAt: now,
       updatedAt: now,
     };
   }
 
-  async save(clickData: RawSampleAffiliateClickData[]): Promise<number> {
+  async save(conversionData: RawSampleAffiliateData[]): Promise<number> {
     try {
-      const formattedData = clickData.map((item) => this.formatData(item));
+      const formatted = conversionData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.sampleAffiliateClickLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspClickLog", {
+        clickDateTime: formatted[0]?.clickDateTime,
       });
-
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
     } catch (error) {
-      this.logger.error("Error saving click data:", error);
+      this.logger.error("Error saving conversion data:", error);
       throw error;
     }
   }

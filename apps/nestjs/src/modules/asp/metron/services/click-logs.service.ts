@@ -2,9 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
-import { MetronClickLogDto } from "../dto/metron-click.dto";
-import { MetronClickLogEntity } from "../interface/metron-click-log.interface";
 import { getNowJst } from "src/libs/date-utils";
+import { MetronClickLogRepository } from "../repositories/click-logs.repository";
 
 @Injectable()
 export class MetronClickLogService {
@@ -14,6 +13,7 @@ export class MetronClickLogService {
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
+    private readonly repository: MetronClickLogRepository,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -29,11 +29,9 @@ export class MetronClickLogService {
       });
 
       const response = await firstValueFrom(
-        this.http.post<{ params: { logs: MetronClickLogDto[] } }>(
-          this.apiUrl,
-          body,
-          { headers },
-        ),
+        this.http.post<{ params: { logs: any[] } }>(this.apiUrl, body, {
+          headers,
+        }),
       );
 
       const list = response.data?.params?.logs ?? [];
@@ -43,32 +41,11 @@ export class MetronClickLogService {
         return 0;
       }
 
-      // DTO を内部で扱いやすい Entity 形式に変換
-      const records: MetronClickLogEntity[] = list.map((dto) =>
-        this.convertDtoToEntity(dto),
-      );
-
-      await this.prisma.metronClickLog.createMany({
-        data: records,
-        skipDuplicates: true,
-      });
-      return records.length;
+      return await this.repository.save(list);
     } catch (error) {
       this.logger.error("クリックログの取得に失敗しました", error);
       throw new Error("クリックログの取得に失敗しました");
     }
-  }
-
-  private convertDtoToEntity(dto: MetronClickLogDto): MetronClickLogEntity {
-    const now = getNowJst();
-    return {
-      clickDateTime: dto.clickDateTime ? new Date(dto.clickDateTime) : null,
-      affiliateLinkName: dto.siteName ?? null,
-      referrerUrl: dto.referrer ?? null,
-      sessionId: dto.sessionId ?? null,
-      createdAt: now,
-      updatedAt: now,
-    };
   }
 }
 

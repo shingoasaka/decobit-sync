@@ -1,6 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
+import { AspType } from "@operate-ad/prisma";
+import { BaseAspRepository } from "../../base/repository.base";
 import { getNowJst } from "src/libs/date-utils";
 
 // 入力データの型定義
@@ -12,16 +13,16 @@ interface RawMonkeyData {
 // 変換後のデータの型定義
 interface FormattedMonkeyData {
   affiliateLinkName: string | null;
-  clickData: number | null;
+  clickCount: number | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
 
 @Injectable()
-export class MonkeyClickLogRepository {
-  private readonly logger = new Logger(MonkeyClickLogRepository.name);
-
-  constructor(private readonly prisma: PrismaService) {}
+export class MonkeyClickLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.MONKEY);
+  }
 
   private toInt(value: string | null | undefined): number | null {
     if (!value) return null;
@@ -39,7 +40,7 @@ export class MonkeyClickLogRepository {
     const now = getNowJst();
     return {
       affiliateLinkName: item["タグ名"] || null,
-      clickData: this.toInt(item["Click"]),
+      clickCount: this.toInt(item["Click"]),
       createdAt: now,
       updatedAt: now,
     };
@@ -47,15 +48,12 @@ export class MonkeyClickLogRepository {
 
   async save(conversionData: RawMonkeyData[]): Promise<number> {
     try {
-      const formattedData = conversionData.map((item) => this.formatData(item));
+      const formatted = conversionData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.monkeyClickLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspClickLog", {
+        clickCount: formatted[0]?.clickCount ?? undefined,
       });
-
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
     } catch (error) {
       this.logger.error("Error saving click data:", error);
       throw error;

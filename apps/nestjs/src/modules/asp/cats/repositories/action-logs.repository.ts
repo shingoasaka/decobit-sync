@@ -1,7 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
-import { getNowJst } from "src/libs/date-utils";
+import { AspType } from "@operate-ad/prisma";
+import { BaseAspRepository } from "../../base/repository.base";
+import { getNowJst, parseToJst } from "src/libs/date-utils";
 
 interface RawCatsData {
   [key: string]: string | null | undefined;
@@ -17,10 +18,10 @@ interface FormattedCatsData {
 }
 
 @Injectable()
-export class CatsActionLogRepository {
-  private readonly logger = new Logger(CatsActionLogRepository.name);
-
-  constructor(private readonly prisma: PrismaService) {}
+export class CatsActionLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.CATS);
+  }
 
   processCsvAndSave(downloadPath: string): number | PromiseLike<number> {
     throw new Error("Method not implemented.");
@@ -43,7 +44,7 @@ export class CatsActionLogRepository {
   private formatData(item: RawCatsData): FormattedCatsData {
     const now = getNowJst();
     return {
-      actionDateTime: this.parseDate(this.getValue(item, "成果日時")),
+      actionDateTime: parseToJst(this.getValue(item, "成果日時")),
       affiliateLinkName: this.getValue(item, "遷移広告URL名"),
       createdAt: now,
       updatedAt: now,
@@ -52,15 +53,12 @@ export class CatsActionLogRepository {
 
   async save(conversionData: RawCatsData[]): Promise<number> {
     try {
-      const formattedData = conversionData.map((item) => this.formatData(item));
+      const formatted = conversionData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.catsActionLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspActionLog", {
+        actionDateTime: formatted[0]?.actionDateTime,
       });
-
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
       throw error;
