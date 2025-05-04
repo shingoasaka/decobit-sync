@@ -1,7 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
-import { getNowJst } from "src/libs/date-utils";
+import { AspType } from "@operate-ad/prisma";
+import { BaseAspRepository } from "../../base/repository.base";
+import { getNowJst, parseToJst } from "src/libs/date-utils";
 
 // 入力データの型定義
 interface RawSampleAffiliateData {
@@ -18,10 +19,10 @@ interface FormattedSampleAffiliateActionLog {
 }
 
 @Injectable()
-export class SampleAffiliateActionLogRepository {
-  private readonly logger = new Logger(SampleAffiliateActionLogRepository.name);
-
-  constructor(private readonly prisma: PrismaService) {}
+export class SampleAffiliateActionLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.SAMPLE_AFFILIATE);
+  }
 
   private toDate(dateStr: string | null | undefined): Date | null {
     if (!dateStr) return null;
@@ -44,7 +45,7 @@ export class SampleAffiliateActionLogRepository {
     const now = getNowJst();
     return {
       affiliateLinkName: this.getValue(item, "メディア"),
-      actionDateTime: this.toDate(this.getValue(item, "発生日時")),
+      actionDateTime: parseToJst(this.getValue(item, "発生日時")),
       createdAt: now,
       updatedAt: now,
     };
@@ -52,15 +53,12 @@ export class SampleAffiliateActionLogRepository {
 
   async save(conversionData: RawSampleAffiliateData[]): Promise<number> {
     try {
-      const formattedData = conversionData.map((item) => this.formatData(item));
+      const formatted = conversionData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.sampleAffiliateActionLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspActionLog", {
+        actionDateTime: formatted[0]?.actionDateTime,
       });
-
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
       throw error;

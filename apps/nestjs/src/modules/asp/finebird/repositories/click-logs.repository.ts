@@ -1,73 +1,58 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
-import { getNowJst } from "src/libs/date-utils";
+import { AspType } from "@operate-ad/prisma";
+import { BaseAspRepository } from "../../base/repository.base";
+import { getNowJst, parseToJst } from "src/libs/date-utils";
 
 // 入力データの型定義
 interface RawFinebirdData {
   [key: string]: string | null | undefined;
+  クリック日時?: string;
   サイト名?: string;
-  総クリック?: string;
+  リファラ?: string;
 }
 
 // 変換後のデータの型定義
 interface FormattedFinebirdData {
+  clickDateTime: Date | null;
   affiliateLinkName: string | null;
-  clickData: number | null;
+  referrerUrl: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
 
 @Injectable()
-export class FinebirdClickLogRepository {
-  private readonly logger = new Logger(FinebirdClickLogRepository.name);
-
-  constructor(private readonly prisma: PrismaService) {}
-
-  private toInt(value: string | null | undefined): number | null {
-    if (!value) return null;
-    try {
-      const cleanValue = value.replace(/[,¥]/g, "");
-      const num = parseInt(cleanValue, 10);
-      return isNaN(num) ? null : num;
-    } catch (error) {
-      this.logger.warn(`Invalid number format: ${value}`);
-      return null;
-    }
-  }
-
-  private normalizeKey(key: string): string {
-    return key.replace(/^.*?/, "");
+export class FinebirdClickLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.FINEBIRD);
   }
 
   private getValue(item: RawFinebirdData, key: string): string | null {
-    const normalizedKey = this.normalizeKey(key);
-    return item[key] || item[normalizedKey] || null;
+    return item[key] || null;
   }
 
   private formatData(item: RawFinebirdData): FormattedFinebirdData {
     const now = getNowJst();
     return {
+      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
       affiliateLinkName: this.getValue(item, "サイト名"),
-      clickData: this.toInt(this.getValue(item, "総クリック")),
+      referrerUrl: this.getValue(item, "リファラ"),
       createdAt: now,
       updatedAt: now,
     };
   }
 
-  async save(conversionData: RawFinebirdData[]): Promise<number> {
+  async save(clickData: RawFinebirdData[]): Promise<number> {
     try {
-      const formattedData = conversionData.map((item) => this.formatData(item));
+      const formatted = clickData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.finebirdClickLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspClickLog", {
+        clickDateTime: formatted[0]?.clickDateTime,
+        referrerUrl: formatted[0]?.referrerUrl,
       });
-
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
     } catch (error) {
-      this.logger.error("Error saving conversion data:", error);
+      this.logger.error("Error saving click data:", error);
       throw error;
     }
   }

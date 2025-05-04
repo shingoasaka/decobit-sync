@@ -1,31 +1,37 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
-import { getNowJst } from "src/libs/date-utils";
+import { AspType } from "@operate-ad/prisma";
+import { BaseAspRepository } from "../../base/repository.base";
+import { getNowJst, parseToJst } from "src/libs/date-utils";
 
 interface RawHanikamuData {
-  ランディングページ: string;
-  Click数: string;
+  [key: string]: string | null | undefined;
+  クリック日時?: string;
+  ランディングページ?: string;
 }
 
 interface FormattedHanikamuData {
+  clickDateTime: Date | null;
   affiliateLinkName: string | null;
-  clickData: number | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
 
 @Injectable()
-export class HanikamuClickLogRepository {
-  private readonly logger = new Logger(HanikamuClickLogRepository.name);
+export class HanikamuClickLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.HANIKAMU);
+  }
 
-  constructor(private readonly prisma: PrismaService) {}
+  private getValue(item: RawHanikamuData, key: string): string | null {
+    return item[key] || null;
+  }
 
   private formatData(item: RawHanikamuData): FormattedHanikamuData {
     const now = getNowJst();
     return {
-      affiliateLinkName: item["ランディングページ"] || null,
-      clickData: item["Click数"] ? parseInt(item["Click数"], 10) : null,
+      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
+      affiliateLinkName: this.getValue(item, "ランディングページ"),
       createdAt: now,
       updatedAt: now,
     };
@@ -33,17 +39,14 @@ export class HanikamuClickLogRepository {
 
   async save(conversionData: RawHanikamuData[]): Promise<number> {
     try {
-      const formattedData = conversionData.map((item) => this.formatData(item));
+      const formatted = conversionData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.hanikamuClickLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspClickLog", {
+        clickDateTime: formatted[0]?.clickDateTime,
       });
-
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
     } catch (error) {
-      this.logger.error("Error saving click data:", error);
+      this.logger.error("Error saving conversion data:", error);
       throw error;
     }
   }

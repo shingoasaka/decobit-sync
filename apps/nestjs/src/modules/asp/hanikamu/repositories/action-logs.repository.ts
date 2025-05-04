@@ -1,31 +1,37 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
-import { getNowJst } from "src/libs/date-utils";
+import { AspType } from "@operate-ad/prisma";
+import { BaseAspRepository } from "../../base/repository.base";
+import { getNowJst, parseToJst } from "src/libs/date-utils";
 
 interface RawHanikamuData {
-  成果発生日: string;
+  [key: string]: string | null | undefined;
+  成果発生日?: string;
   ランディングページ?: string;
 }
 
 interface FormattedHanikamuData {
-  actionDateTime: Date;
+  actionDateTime: Date | null;
   affiliateLinkName: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
 
 @Injectable()
-export class HanikamuActionLogRepository {
-  private readonly logger = new Logger(HanikamuActionLogRepository.name);
+export class HanikamuActionLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.HANIKAMU);
+  }
 
-  constructor(private readonly prisma: PrismaService) {}
+  private getValue(item: RawHanikamuData, key: string): string | null {
+    return item[key] || null;
+  }
 
   private formatData(item: RawHanikamuData): FormattedHanikamuData {
     const now = getNowJst();
     return {
-      actionDateTime: new Date(item["成果発生日"]),
-      affiliateLinkName: item["ランディングページ"] || null,
+      actionDateTime: parseToJst(this.getValue(item, "成果発生日")),
+      affiliateLinkName: this.getValue(item, "ランディングページ"),
       createdAt: now,
       updatedAt: now,
     };
@@ -33,15 +39,12 @@ export class HanikamuActionLogRepository {
 
   async save(conversionData: RawHanikamuData[]): Promise<number> {
     try {
-      const formattedData = conversionData.map((item) => this.formatData(item));
+      const formatted = conversionData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.hanikamuActionLog.createMany({
-        data: formattedData,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspActionLog", {
+        actionDateTime: formatted[0]?.actionDateTime,
       });
-
-      this.logger.log(`Successfully inserted ${result.count} records`);
-      return result.count;
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
       throw error;

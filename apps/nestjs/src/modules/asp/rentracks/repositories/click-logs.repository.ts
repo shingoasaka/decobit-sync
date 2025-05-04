@@ -1,51 +1,56 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
-import { getNowJst } from "src/libs/date-utils";
+import { AspType } from "@operate-ad/prisma";
+import { BaseAspRepository } from "../../base/repository.base";
+import { getNowJst, parseToJst } from "src/libs/date-utils";
 
 interface RawRentracksData {
-  備考?: string;
-  クリック数?: string;
+  [key: string]: string | null | undefined;
+  クリック日時?: string;
+  サイト名?: string;
+  リファラ?: string;
 }
 
 interface FormattedRentracksData {
+  clickDateTime: Date | null;
   affiliateLinkName: string | null;
-  clickData: number;
+  referrerUrl: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
 
 @Injectable()
-export class RentracksClickLogRepository {
-  private readonly logger = new Logger(RentracksClickLogRepository.name);
+export class RentracksClickLogRepository extends BaseAspRepository {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma, AspType.RENTRACKS);
+  }
 
-  constructor(private readonly prisma: PrismaService) {}
+  private getValue(item: RawRentracksData, key: string): string | null {
+    return item[key] || null;
+  }
 
   private formatData(item: RawRentracksData): FormattedRentracksData {
     const now = getNowJst();
     return {
-      affiliateLinkName: item["備考"] || null,
-      clickData: item["クリック数"] ? parseInt(item["クリック数"], 10) : 0,
+      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
+      affiliateLinkName: this.getValue(item, "サイト名"),
+      referrerUrl: this.getValue(item, "リファラ"),
       createdAt: now,
       updatedAt: now,
     };
   }
 
-  async save(conversionData: RawRentracksData[]): Promise<number> {
+  async save(clickData: RawRentracksData[]): Promise<number> {
     try {
-      const formatted = conversionData.map((item) => this.formatData(item));
+      const formatted = clickData.map((item) => this.formatData(item));
 
-      const result = await this.prisma.rentracksClickLog.createMany({
-        data: formatted,
-        skipDuplicates: true,
+      // Save to common table
+      return await this.saveToCommonTable(formatted, "aspClickLog", {
+        clickDateTime: formatted[0]?.clickDateTime,
+        referrerUrl: formatted[0]?.referrerUrl,
       });
-
-      this.logger.log(
-        `Successfully inserted ${result.count} rentracksClickLog records`,
-      );
-      return result.count;
     } catch (error) {
-      this.logger.error("Error saving rentracks click logs:", error);
+      this.logger.error("Error saving click data:", error);
       throw error;
     }
   }

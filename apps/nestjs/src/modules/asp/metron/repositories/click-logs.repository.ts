@@ -4,13 +4,14 @@ import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
 import { getNowJst, parseToJst } from "src/libs/date-utils";
 
-interface RawLadData {
-  クリック日時?: string;
-  広告名?: string;
-  リファラ?: string;
+interface RawMetronData {
+  clickDateTime?: string;
+  siteName?: string;
+  referrer?: string;
+  sessionId?: string;
 }
 
-interface FormattedLadData {
+interface FormattedMetronData {
   clickDateTime: Date | null;
   affiliateLinkName: string | null;
   referrerUrl: string | null;
@@ -19,23 +20,23 @@ interface FormattedLadData {
 }
 
 @Injectable()
-export class LadClickLogRepository extends BaseAspRepository {
+export class MetronClickLogRepository extends BaseAspRepository {
   constructor(protected readonly prisma: PrismaService) {
-    super(prisma, AspType.LAD);
+    super(prisma, AspType.METRON);
   }
 
-  private formatData(item: RawLadData): FormattedLadData {
+  private formatData(item: RawMetronData): FormattedMetronData {
     const now = getNowJst();
     return {
-      clickDateTime: parseToJst(item["クリック日時"]),
-      affiliateLinkName: item["広告名"] || null,
-      referrerUrl: item["リファラ"] || null,
+      clickDateTime: parseToJst(item.clickDateTime),
+      affiliateLinkName: item.siteName || null,
+      referrerUrl: item.referrer || null,
       createdAt: now,
       updatedAt: now,
     };
   }
 
-  async save(logs: RawLadData[]): Promise<number> {
+  async save(logs: RawMetronData[]): Promise<number> {
     try {
       const formatted = logs.map((item) => this.formatData(item));
 
@@ -45,7 +46,7 @@ export class LadClickLogRepository extends BaseAspRepository {
         referrerUrl: formatted[0]?.referrerUrl,
       });
     } catch (error) {
-      this.logger.error("Error saving lad click logs:", error);
+      this.logger.error("Error saving Metron click logs:", error);
       throw error;
     }
   }

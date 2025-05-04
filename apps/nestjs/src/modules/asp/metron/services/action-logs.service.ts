@@ -2,9 +2,8 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
-import { MetronActionLogDto } from "../dto/metron-action.dto";
-import { MetronActionLogEntity } from "../interface/metron-action-log.interface";
 import { getNowJst } from "src/libs/date-utils";
+import { MetronActionLogRepository } from "../repositories/action-logs.repository";
 
 @Injectable()
 export class MetronActionLogService {
@@ -14,6 +13,7 @@ export class MetronActionLogService {
   constructor(
     private readonly http: HttpService,
     private readonly prisma: PrismaService,
+    private readonly repository: MetronActionLogRepository,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -29,96 +29,25 @@ export class MetronActionLogService {
       });
 
       const response = await firstValueFrom(
-        this.http.post<{ params: { logs: MetronActionLogDto[] } }>(
+        this.http.post<{ params: { logs: any[] } }>(
           this.apiUrl,
           body,
           { headers },
         ),
       );
 
-      const logs: MetronActionLogDto[] = response.data?.params?.logs ?? [];
+      const logs = response.data?.params?.logs ?? [];
 
       if (logs.length === 0) {
         this.logger.warn("データが存在しませんでした");
         return 0;
       }
 
-      const createData: MetronActionLogEntity[] = logs.map((item) =>
-        this.convertDtoToEntity(item),
-      );
-
-      await this.prisma.metronActionLog.createMany({
-        data: createData,
-        skipDuplicates: true,
-      });
-
-      const updated = await this.updateReferrerFromClick();
-      this.logger.log(`referrer補完: ${updated}件`);
-
-      return logs.length;
+      return await this.repository.save(logs);
     } catch (error) {
       this.logger.error("ログ取得に失敗しました", error);
       throw new Error("ログ取得失敗");
     }
-  }
-
-  private convertDtoToEntity(dto: MetronActionLogDto): MetronActionLogEntity {
-    const now = getNowJst();
-    let uid: string | null = null;
-    try {
-      const parsed = JSON.parse(dto.clientInfo || "{}");
-      uid = parsed.userId1 || null;
-    } catch {
-      uid = null;
-    }
-
-    return {
-      actionDateTime: dto.actionDateTime ? new Date(dto.actionDateTime) : null,
-      affiliateLinkName: dto.siteName ?? null,
-      referrerUrl: dto.actionReferrer ?? null,
-      sessionId: dto.sessionId ?? null,
-      uid,
-      createdAt: now,
-      updatedAt: now,
-    };
-  }
-
-  private async updateReferrerFromClick(): Promise<number> {
-    const clicks = await this.prisma.metronClickLog.findMany({
-      where: {
-        sessionId: { not: null },
-        referrerUrl: { not: null },
-      },
-      select: { sessionId: true, referrerUrl: true },
-    });
-
-    const clickMap = new Map<string, string>();
-    for (const click of clicks) {
-      if (click.sessionId && click.referrerUrl) {
-        clickMap.set(click.sessionId, click.referrerUrl);
-      }
-    }
-
-    let updateCount = 0;
-
-    for (const [sessionId, referrer] of clickMap.entries()) {
-      const targets = await this.prisma.metronActionLog.findMany({
-        where: {
-          sessionId,
-          referrerUrl: { not: referrer },
-        },
-        select: { id: true },
-      });
-
-      for (const target of targets) {
-        await this.prisma.metronActionLog.update({
-          where: { id: target.id },
-          data: { referrerUrl: referrer },
-        });
-        updateCount++;
-      }
-    }
-    return updateCount;
   }
 }
 
