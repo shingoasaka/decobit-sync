@@ -29,11 +29,9 @@ export class MetronActionLogService {
       });
 
       const response = await firstValueFrom(
-        this.http.post<{ params: { logs: any[] } }>(
-          this.apiUrl,
-          body,
-          { headers },
-        ),
+        this.http.post<{ params: { logs: any[] } }>(this.apiUrl, body, {
+          headers,
+        }),
       );
 
       const logs = response.data?.params?.logs ?? [];

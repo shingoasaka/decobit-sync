@@ -29,11 +29,9 @@ export class MetronClickLogService {
       });
 
       const response = await firstValueFrom(
-        this.http.post<{ params: { logs: any[] } }>(
-          this.apiUrl,
-          body,
-          { headers },
-        ),
+        this.http.post<{ params: { logs: any[] } }>(this.apiUrl, body, {
+          headers,
+        }),
       );
 
       const list = response.data?.params?.logs ?? [];
