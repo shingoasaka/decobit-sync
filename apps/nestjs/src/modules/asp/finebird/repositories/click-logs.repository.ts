@@ -2,23 +2,14 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { getNowJst } from "src/libs/date-utils";
 
-// 入力データの型定義
+// スクレイピングで取得する生データの型
 interface RawFinebirdData {
   [key: string]: string | null | undefined;
   クリック日時?: string;
   サイト名?: string;
-  リファラ?: string;
-}
-
-// 変換後のデータの型定義
-interface FormattedFinebirdData {
-  clickDateTime: Date | null;
-  affiliateLinkName: string | null;
-  referrerUrl: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
+  総クリック?: string;
 }
 
 @Injectable()
@@ -27,33 +18,72 @@ export class FinebirdClickLogRepository extends BaseAspRepository {
     super(prisma, AspType.FINEBIRD);
   }
 
-  private getValue(item: RawFinebirdData, key: string): string | null {
-    return item[key] || null;
-  }
-
-  private formatData(item: RawFinebirdData): FormattedFinebirdData {
-    const now = getNowJst();
-    return {
-      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
-      affiliateLinkName: this.getValue(item, "サイト名"),
-      referrerUrl: this.getValue(item, "リファラ"),
-      createdAt: now,
-      updatedAt: now,
-    };
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
+    }
   }
 
   async save(clickData: RawFinebirdData[]): Promise<number> {
     try {
-      const formatted = clickData.map((item) => this.formatData(item));
+      const results = await Promise.all(
+        clickData.map(async (item) => {
+          const affiliateLinkName = item.サイト名?.trim();
+          if (!affiliateLinkName) {
+            this.logger.warn("Skipping record with empty affiliateLinkName");
+            return 0;
+          }
 
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-        referrerUrl: formatted[0]?.referrerUrl,
-      });
+          const currentTotalClicks = this.toInt(item.総クリック);
+          if (currentTotalClicks === 0) {
+            this.logger.debug(
+              `Skipping record with zero clicks: ${affiliateLinkName}`,
+            );
+            return 0;
+          }
+
+          return await this.saveToCommonTable(
+            [{ affiliateLinkName }],
+            "aspClickLog",
+            {
+              currentTotalClicks,
+            },
+          );
+        }),
+      );
+
+      return results.reduce((sum, count) => sum + count, 0);
     } catch (error) {
-      this.logger.error("Error saving click data:", error);
+      this.logger.error("Error saving Finebird click data:", error);
       throw error;
     }
+  }
+
+  protected async saveSnapshot(data: {
+    affiliateLinkName: string;
+    totalClicks: number;
+  }): Promise<void> {
+    const now = getNowJst();
+
+    // 単純にスナップショットを作成
+    await this.prisma.clickLogSnapshot.create({
+      data: {
+        aspType: this.aspType,
+        ...data,
+        snapshotDate: now,
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
+
+    this.logger.debug(
+      `Saved new snapshot for ${this.aspType}/${data.affiliateLinkName}: ${data.totalClicks} at ${now.toISOString()}`,
+    );
   }
 }

@@ -7,14 +7,16 @@ import { getNowJst, parseToJst } from "src/libs/date-utils";
 // 入力データの型定義
 interface RawFinebirdData {
   [key: string]: string | null | undefined;
-  アクション日時?: string;
-  広告名?: string;
+  注文日時?: string;
+  サイト名?: string;
+  リファラ?: string;
 }
 
 // 変換後のデータの型定義
 interface FormattedFinebirdData {
   actionDateTime: Date | null;
   affiliateLinkName: string | null;
+  referrerUrl: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
@@ -32,8 +34,9 @@ export class FinebirdActionLogRepository extends BaseAspRepository {
   private formatData(item: RawFinebirdData): FormattedFinebirdData {
     const now = getNowJst();
     return {
-      actionDateTime: parseToJst(this.getValue(item, "アクション日時")),
-      affiliateLinkName: this.getValue(item, "広告名"),
+      actionDateTime: parseToJst(this.getValue(item, "注文日時")),
+      affiliateLinkName: this.getValue(item, "サイト名"),
+      referrerUrl: this.getValue(item, "リファラ"),
       createdAt: now,
       updatedAt: now,
     };

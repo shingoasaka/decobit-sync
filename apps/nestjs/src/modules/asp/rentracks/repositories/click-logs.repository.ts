@@ -2,21 +2,13 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { getNowJst } from "src/libs/date-utils";
 
 interface RawRentracksData {
   [key: string]: string | null | undefined;
   クリック日時?: string;
-  サイト名?: string;
-  リファラ?: string;
-}
-
-interface FormattedRentracksData {
-  clickDateTime: Date | null;
-  affiliateLinkName: string | null;
-  referrerUrl: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
+  備考?: string;
+  クリック数?: string;
 }
 
 @Injectable()
@@ -25,32 +17,49 @@ export class RentracksClickLogRepository extends BaseAspRepository {
     super(prisma, AspType.RENTRACKS);
   }
 
-  private getValue(item: RawRentracksData, key: string): string | null {
-    return item[key] || null;
-  }
-
-  private formatData(item: RawRentracksData): FormattedRentracksData {
-    const now = getNowJst();
-    return {
-      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
-      affiliateLinkName: this.getValue(item, "サイト名"),
-      referrerUrl: this.getValue(item, "リファラ"),
-      createdAt: now,
-      updatedAt: now,
-    };
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
+    }
   }
 
   async save(clickData: RawRentracksData[]): Promise<number> {
     try {
-      const formatted = clickData.map((item) => this.formatData(item));
+      const results = await Promise.all(
+        clickData.map(async (item) => {
+          const affiliateLinkName = item.備考?.trim();
+          if (!affiliateLinkName) {
+            this.logger.warn("Skipping record with empty affiliateLinkName");
+            return 0;
+          }
 
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-        referrerUrl: formatted[0]?.referrerUrl,
-      });
+          const currentTotalClicks = this.toInt(item.クリック数);
+          if (currentTotalClicks === 0) {
+            this.logger.debug(
+              `Skipping record with zero clicks: ${affiliateLinkName}`,
+            );
+            return 0;
+          }
+
+          return await this.saveToCommonTable(
+            [{ affiliateLinkName }],
+            "aspClickLog",
+            {
+              currentTotalClicks,
+            },
+          );
+        }),
+      );
+
+      return results.reduce((sum, count) => sum + count, 0);
     } catch (error) {
-      this.logger.error("Error saving click data:", error);
+      this.logger.error("Error saving Rentracks click data:", error);
       throw error;
     }
   }

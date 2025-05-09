@@ -2,19 +2,13 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { getNowJst } from "src/libs/date-utils";
 
 interface RawHanikamuData {
   [key: string]: string | null | undefined;
   クリック日時?: string;
   ランディングページ?: string;
-}
-
-interface FormattedHanikamuData {
-  clickDateTime: Date | null;
-  affiliateLinkName: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
+  CLICK数?: string;
 }
 
 @Injectable()
@@ -23,30 +17,49 @@ export class HanikamuClickLogRepository extends BaseAspRepository {
     super(prisma, AspType.HANIKAMU);
   }
 
-  private getValue(item: RawHanikamuData, key: string): string | null {
-    return item[key] || null;
-  }
-
-  private formatData(item: RawHanikamuData): FormattedHanikamuData {
-    const now = getNowJst();
-    return {
-      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
-      affiliateLinkName: this.getValue(item, "ランディングページ"),
-      createdAt: now,
-      updatedAt: now,
-    };
-  }
-
-  async save(conversionData: RawHanikamuData[]): Promise<number> {
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
     try {
-      const formatted = conversionData.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-      });
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
     } catch (error) {
-      this.logger.error("Error saving conversion data:", error);
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
+    }
+  }
+
+  async save(clickData: RawHanikamuData[]): Promise<number> {
+    try {
+      const results = await Promise.all(
+        clickData.map(async (item) => {
+          const affiliateLinkName = item.ランディングページ?.trim();
+          if (!affiliateLinkName) {
+            this.logger.warn("Skipping record with empty affiliateLinkName");
+            return 0;
+          }
+
+          const currentTotalClicks = this.toInt(item.CLICK数);
+          if (currentTotalClicks === 0) {
+            this.logger.debug(
+              `Skipping record with zero clicks: ${affiliateLinkName}`,
+            );
+            return 0;
+          }
+
+          return await this.saveToCommonTable(
+            [{ affiliateLinkName }],
+            "aspClickLog",
+            {
+              currentTotalClicks,
+            },
+          );
+        }),
+      );
+
+      return results.reduce((sum, count) => sum + count, 0);
+    } catch (error) {
+      this.logger.error("Error saving Hanikamu click data:", error);
       throw error;
     }
   }

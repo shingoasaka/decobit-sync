@@ -8,14 +8,7 @@ import { getNowJst } from "src/libs/date-utils";
 interface RawMonkeyData {
   [key: string]: string | null | undefined;
   タグ名?: string;
-  Click?: string;
-}
-// 変換後のデータの型定義
-interface FormattedMonkeyData {
-  affiliateLinkName: string | null;
-  clickCount: number | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
+  click?: string;
 }
 
 @Injectable()
@@ -24,38 +17,49 @@ export class MonkeyClickLogRepository extends BaseAspRepository {
     super(prisma, AspType.MONKEY);
   }
 
-  private toInt(value: string | null | undefined): number | null {
-    if (!value) return null;
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
     try {
       const cleanValue = value.replace(/[,¥]/g, "");
       const num = parseInt(cleanValue, 10);
-      return isNaN(num) ? null : num;
+      return isNaN(num) ? 0 : num;
     } catch (error) {
       this.logger.warn(`Invalid number format: ${value}`);
-      return null;
+      return 0;
     }
   }
 
-  private formatData(item: RawMonkeyData): FormattedMonkeyData {
-    const now = getNowJst();
-    return {
-      affiliateLinkName: item["タグ名"] || null,
-      clickCount: this.toInt(item["Click"]),
-      createdAt: now,
-      updatedAt: now,
-    };
-  }
-
-  async save(conversionData: RawMonkeyData[]): Promise<number> {
+  async save(clickData: RawMonkeyData[]): Promise<number> {
     try {
-      const formatted = conversionData.map((item) => this.formatData(item));
+      const results = await Promise.all(
+        clickData.map(async (item) => {
+          const affiliateLinkName = item.タグ名?.trim();
+          if (!affiliateLinkName) {
+            this.logger.warn("Skipping record with empty affiliateLinkName");
+            return 0;
+          }
 
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickCount: formatted[0]?.clickCount ?? undefined,
-      });
+          const currentTotalClicks = this.toInt(item.click);
+          if (currentTotalClicks === 0) {
+            this.logger.debug(
+              `Skipping record with zero clicks: ${affiliateLinkName}`,
+            );
+            return 0;
+          }
+
+          return await this.saveToCommonTable(
+            [{ affiliateLinkName }],
+            "aspClickLog",
+            {
+              currentTotalClicks,
+            },
+          );
+        }),
+      );
+
+      return results.reduce((sum, count) => sum + count, 0);
     } catch (error) {
-      this.logger.error("Error saving click data:", error);
+      this.logger.error("Error saving Monkey click data:", error);
       throw error;
     }
   }

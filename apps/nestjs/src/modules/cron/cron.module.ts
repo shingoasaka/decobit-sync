@@ -6,15 +6,20 @@ import { MediaCronService } from "./services/media-cron.service";
 import { AspModule } from "@asp/asp.module";
 import { DiscrepanyModule } from "@discrepany/discrepany.module";
 import { CommonLogService } from "@logs/common-log.service";
-import { MediaModule } from "../media/media.module";
+// import { MediaModule } from "../media/media.module";
 
 @Module({
-  imports: [ScheduleModule.forRoot(), AspModule, DiscrepanyModule, MediaModule],
+  imports: [
+    ScheduleModule.forRoot(),
+    AspModule,
+    DiscrepanyModule,
+    // MediaModule
+  ],
   providers: [
     AspCronService,
     DiscrepanyCronService,
     CommonLogService,
-    MediaCronService,
+    // MediaCronService,
   ],
 })
 export class CronModule {}

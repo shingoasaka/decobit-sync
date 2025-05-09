@@ -210,10 +210,21 @@ model AspClickLog {
   aspType          AspType
   clickDateTime    DateTime?
   affiliateLinkName String?
-  clickCount       Int?
   referrerUrl      String?
   createdAt        DateTime?
   updatedAt        DateTime?
 
   @@unique([aspType, clickDateTime, affiliateLinkName])
+}
+
+model ClickLogSnapshot {
+  id               Int      @id @default(autoincrement())
+  aspType          AspType
+  affiliateLinkName String
+  totalClicks      Int      // 累計クリック数（レコード数）
+  snapshotDate     DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([aspType, affiliateLinkName, snapshotDate])
 }

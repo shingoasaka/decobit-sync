@@ -38,6 +38,7 @@ export class TryClickLogService implements LogService {
       await page.getByLabel("広告選択").selectOption("1176");
 
       // 日付フィルタ適用
+      // TODO: 日付を動的に取得する
       await page.locator("#search input[name='start_date']").click();
       await page.getByRole("cell", { name: "10" }).nth(3).click();
       await page.locator("#search input[name='end_date']").click();
