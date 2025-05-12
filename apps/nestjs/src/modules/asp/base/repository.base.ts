@@ -16,7 +16,7 @@ export abstract class BaseAspRepository {
 
   protected async getLastSnapshot(
     affiliateLinkName: string,
-  ): Promise<{ totalClicks: number } | null> {
+  ): Promise<{ currentClicks: number; snapshotDate: Date } | null> {
     const now = getNowJst();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -24,14 +24,13 @@ export abstract class BaseAspRepository {
       where: {
         aspType: this.aspType,
         affiliateLinkName,
-        snapshotDate: { lt: today },
+        snapshotDate: today,
       },
-      orderBy: { snapshotDate: "desc" },
-      select: { totalClicks: true },
+      select: { currentClicks: true, snapshotDate: true },
     });
 
     this.logger.debug(
-      `Last snapshot for ${this.aspType}/${affiliateLinkName}: ${snapshot?.totalClicks ?? "none"}`,
+      `Last snapshot for ${this.aspType}/${affiliateLinkName}: ${snapshot?.currentClicks ?? "none"}`,
     );
     return snapshot;
   }
@@ -39,8 +38,12 @@ export abstract class BaseAspRepository {
   protected async getSnapshotForDate(
     affiliateLinkName: string,
     date: Date,
-  ): Promise<{ totalClicks: number } | null> {
-    const targetDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  ): Promise<{ currentClicks: number } | null> {
+    const targetDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
 
     const snapshot = await this.prisma.clickLogSnapshot.findFirst({
       where: {
@@ -48,11 +51,11 @@ export abstract class BaseAspRepository {
         affiliateLinkName,
         snapshotDate: targetDate,
       },
-      select: { totalClicks: true },
+      select: { currentClicks: true },
     });
 
     this.logger.debug(
-      `Snapshot for ${this.aspType}/${affiliateLinkName} on ${targetDate.toISOString()}: ${snapshot?.totalClicks ?? "none"}`,
+      `Snapshot for ${this.aspType}/${affiliateLinkName} on ${targetDate.toISOString()}: ${snapshot?.currentClicks ?? "none"}`,
     );
     return snapshot;
   }
@@ -71,7 +74,7 @@ export abstract class BaseAspRepository {
 
   protected async saveSnapshot(data: {
     affiliateLinkName: string;
-    totalClicks: number;
+    currentClicks: number;
   }): Promise<void> {
     const now = getNowJst();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -87,7 +90,7 @@ export abstract class BaseAspRepository {
     });
 
     this.logger.debug(
-      `Saved new snapshot for ${this.aspType}/${data.affiliateLinkName}: ${data.totalClicks} at ${today.toISOString()}`,
+      `Saved new snapshot for ${this.aspType}/${data.affiliateLinkName}: ${data.currentClicks} at ${today.toISOString()}`,
     );
   }
 
@@ -135,35 +138,38 @@ export abstract class BaseAspRepository {
 
   private async processTotalClickLog(
     affiliateLinkName: string,
-    currentTotalClicks: number,
+    currentClicks: number,
     referrerUrl?: string | null,
   ): Promise<number> {
     const now = getNowJst();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // 最後のスナップショットを取得
-    const lastSnapshot = await this.getLastSnapshot(affiliateLinkName);
-    const lastTotalClicks = lastSnapshot?.totalClicks ?? 0;
+    // 今日のスナップショットを取得
+    const todaySnapshot = await this.getSnapshotForDate(
+      affiliateLinkName,
+      today,
+    );
+    const todayLastClicks = todaySnapshot?.currentClicks ?? 0;
 
-    // 前回のスナップショットからの差分を計算
-    const diff = currentTotalClicks - lastTotalClicks;
+    // 今日の差分を計算
+    const diff = currentClicks - todayLastClicks;
 
     if (diff > 0) {
-      // 時間を分散させてレコードを作成
+      // クリックログの生成処理
       const newClicks = Array(diff)
         .fill(null)
-        .map((_, index) => {
+        .map(() => {
           const randomHours = Math.random() * 24;
           const clickTime = new Date(
-            now.getTime() - randomHours * 60 * 60 * 1000,
+            today.getTime() + randomHours * 60 * 60 * 1000,
           );
-
           return {
             aspType: this.aspType,
             clickDateTime: clickTime,
             affiliateLinkName,
             referrerUrl,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: clickTime,
+            updatedAt: clickTime,
           };
         });
 
@@ -172,15 +178,31 @@ export abstract class BaseAspRepository {
         skipDuplicates: true,
       });
 
-      this.logger.debug(
-        `Created ${diff} new click records for ${affiliateLinkName} (previous: ${lastTotalClicks}, current: ${currentTotalClicks})`,
-      );
-
-      // スナップショットを更新
-      await this.saveSnapshot({
-        affiliateLinkName,
-        totalClicks: currentTotalClicks,
-      });
+      // スナップショットの更新（値が異なる場合のみ）
+      if (!todaySnapshot || todaySnapshot.currentClicks !== currentClicks) {
+        if (todaySnapshot) {
+          // 既存のスナップショットを更新
+          await this.prisma.clickLogSnapshot.update({
+            where: {
+              aspType_affiliateLinkName_snapshotDate: {
+                aspType: this.aspType,
+                affiliateLinkName,
+                snapshotDate: today,
+              },
+            },
+            data: {
+              currentClicks,
+              updatedAt: now,
+            },
+          });
+        } else {
+          // 新規スナップショットを作成
+          await this.saveSnapshot({
+            affiliateLinkName,
+            currentClicks,
+          });
+        }
+      }
     }
 
     return diff > 0 ? diff : 0;
@@ -216,7 +238,7 @@ export abstract class BaseAspRepository {
       );
       await this.saveSnapshot({
         affiliateLinkName: clickLogs[0].affiliateLinkName,
-        totalClicks: currentTotal,
+        currentClicks: currentTotal,
       });
     }
 

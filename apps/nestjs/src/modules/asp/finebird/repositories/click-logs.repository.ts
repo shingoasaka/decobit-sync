@@ -67,7 +67,7 @@ export class FinebirdClickLogRepository extends BaseAspRepository {
 
   protected async saveSnapshot(data: {
     affiliateLinkName: string;
-    totalClicks: number;
+    currentClicks: number;
   }): Promise<void> {
     const now = getNowJst();
 
@@ -83,7 +83,7 @@ export class FinebirdClickLogRepository extends BaseAspRepository {
     });
 
     this.logger.debug(
-      `Saved new snapshot for ${this.aspType}/${data.affiliateLinkName}: ${data.totalClicks} at ${now.toISOString()}`,
+      `Saved new snapshot for ${this.aspType}/${data.affiliateLinkName}: ${data.currentClicks} at ${now.toISOString()}`,
     );
   }
 }
