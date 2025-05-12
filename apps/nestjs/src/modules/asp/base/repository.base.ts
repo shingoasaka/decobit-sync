@@ -100,7 +100,7 @@ export abstract class BaseAspRepository {
     options: {
       clickDateTime?: Date | null;
       actionDateTime?: Date | null;
-      currentTotalClicks?: number; // 合計値形式ASPの場合の現在の総クリック数
+      currentTotalClicks?: number;
       referrerUrl?: string | null;
       uid?: string | null;
     } = {},
@@ -121,7 +121,16 @@ export abstract class BaseAspRepository {
           );
         } else {
           // 個別クリックログ処理
-          return await this.processIndividualClickLogs(data, options);
+          if (!options.clickDateTime) {
+            throw new Error(
+              "clickDateTime is required for individual format ASPs",
+            );
+          }
+          return await this.processIndividualClickLogs(data, {
+            clickDateTime: options.clickDateTime,
+            referrerUrl: options.referrerUrl,
+            uid: options.uid,
+          });
         }
       } else {
         // アクションログの処理
@@ -141,109 +150,147 @@ export abstract class BaseAspRepository {
     currentClicks: number,
     referrerUrl?: string | null,
   ): Promise<number> {
-    const now = getNowJst();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    try {
+      const now = getNowJst();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // 今日のスナップショットを取得
-    const todaySnapshot = await this.getSnapshotForDate(
-      affiliateLinkName,
-      today,
-    );
-    const todayLastClicks = todaySnapshot?.currentClicks ?? 0;
+      // 今日のスナップショットを取得
+      const todaySnapshot = await this.getSnapshotForDate(
+        affiliateLinkName,
+        today,
+      );
+      const todayLastClicks = todaySnapshot?.currentClicks ?? 0;
 
-    // 今日の差分を計算
-    const diff = currentClicks - todayLastClicks;
+      // 今日の差分を計算
+      const diff = currentClicks - todayLastClicks;
 
-    if (diff > 0) {
-      // クリックログの生成処理
-      const newClicks = Array(diff)
-        .fill(null)
-        .map(() => {
-          const randomHours = Math.random() * 24;
-          const clickTime = new Date(
-            today.getTime() + randomHours * 60 * 60 * 1000,
-          );
-          return {
+      if (diff <= 0) {
+        this.logger.debug(`No new clicks to process for ${affiliateLinkName}`);
+        return 0;
+      }
+
+      // トランザクションで処理
+      return await this.prisma.$transaction(async (tx) => {
+        // クリックログの重複を防ぐため、既存のクリック数を確認
+        const existingClicks = await tx.aspClickLog.count({
+          where: {
             aspType: this.aspType,
-            clickDateTime: clickTime,
             affiliateLinkName,
-            referrerUrl,
-            createdAt: clickTime,
-            updatedAt: clickTime,
-          };
+            clickDateTime: {
+              gte: today,
+              lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+            },
+          },
         });
 
-      await this.prisma.aspClickLog.createMany({
-        data: newClicks,
-        skipDuplicates: true,
-      });
+        // 既存のクリック数と新しいクリック数の合計が現在の総クリック数を超えないようにする
+        if (existingClicks + diff > currentClicks) {
+          this.logger.warn(
+            `Click count mismatch for ${affiliateLinkName}: existing=${existingClicks}, new=${diff}, total=${currentClicks}`,
+          );
+          return 0;
+        }
 
-      // スナップショットの更新（値が異なる場合のみ）
-      if (!todaySnapshot || todaySnapshot.currentClicks !== currentClicks) {
-        if (todaySnapshot) {
-          // 既存のスナップショットを更新
-          await this.prisma.clickLogSnapshot.update({
-            where: {
-              aspType_affiliateLinkName_snapshotDate: {
-                aspType: this.aspType,
-                affiliateLinkName,
-                snapshotDate: today,
-              },
-            },
-            data: {
-              currentClicks,
-              updatedAt: now,
-            },
+        // クリックログの生成処理
+        const newClicks = Array(diff)
+          .fill(null)
+          .map(() => {
+            const randomHours = Math.random() * 24;
+            const clickTime = new Date(
+              today.getTime() + randomHours * 60 * 60 * 1000,
+            );
+            return {
+              aspType: this.aspType,
+              clickDateTime: clickTime,
+              affiliateLinkName,
+              referrerUrl,
+              createdAt: clickTime,
+              updatedAt: clickTime,
+            };
           });
-        } else {
-          // 新規スナップショットを作成
-          await this.saveSnapshot({
+
+        // クリックログの保存
+        await tx.aspClickLog.createMany({
+          data: newClicks,
+          skipDuplicates: true,
+        });
+
+        // スナップショットの更新
+        await tx.clickLogSnapshot.upsert({
+          where: {
+            aspType_affiliateLinkName: {
+              aspType: this.aspType,
+              affiliateLinkName,
+            },
+          },
+          create: {
+            aspType: this.aspType,
             affiliateLinkName,
             currentClicks,
-          });
-        }
-      }
-    }
+            snapshotDate: today,
+            createdAt: now,
+            updatedAt: now,
+          },
+          update: {
+            currentClicks,
+            updatedAt: now,
+          },
+        });
 
-    return diff > 0 ? diff : 0;
+        return diff;
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error processing total click log for ${affiliateLinkName}:`,
+        error instanceof Error ? error.stack : error,
+      );
+      throw error;
+    }
   }
 
   private async processIndividualClickLogs(
-    data: any[],
+    data: Array<{ affiliateLinkName: string }>,
     options: {
-      clickDateTime?: Date | null;
+      clickDateTime: Date;
       referrerUrl?: string | null;
       uid?: string | null;
     },
   ): Promise<number> {
-    const now = getNowJst();
-    const clickLogs = data.map((item) => ({
-      aspType: this.aspType,
-      clickDateTime: options.clickDateTime,
-      affiliateLinkName: item.affiliateLinkName,
-      referrerUrl: options.referrerUrl,
-      createdAt: now,
-      updatedAt: now,
-    }));
-
-    const result = await this.prisma.aspClickLog.createMany({
-      data: clickLogs as Prisma.AspClickLogCreateManyInput[],
-      skipDuplicates: true,
-    });
-
-    // スナップショットの更新
-    if (result.count > 0 && clickLogs[0]?.affiliateLinkName) {
-      const currentTotal = await this.getCurrentClickCount(
-        clickLogs[0].affiliateLinkName,
-      );
-      await this.saveSnapshot({
-        affiliateLinkName: clickLogs[0].affiliateLinkName,
-        currentClicks: currentTotal,
+    try {
+      const now = getNowJst();
+      const clickLogs = data.map((item) => {
+        if (!item.affiliateLinkName) {
+          throw new Error(
+            "affiliateLinkName is required for individual format ASPs",
+          );
+        }
+        return {
+          aspType: this.aspType,
+          clickDateTime: options.clickDateTime,
+          affiliateLinkName: item.affiliateLinkName,
+          referrerUrl: options.referrerUrl,
+          createdAt: now,
+          updatedAt: now,
+        };
       });
-    }
 
-    this.logger.log(`Saved ${result.count} individual click logs`);
-    return result.count;
+      // トランザクションで処理
+      return await this.prisma.$transaction(async (tx) => {
+        const result = await tx.aspClickLog.createMany({
+          data: clickLogs as Prisma.AspClickLogCreateManyInput[],
+          skipDuplicates: true,
+        });
+
+        this.logger.log(`Saved ${result.count} individual click logs`);
+        return result.count;
+      });
+    } catch (error) {
+      this.logger.error(
+        `Error processing individual click logs:`,
+        error instanceof Error ? error.stack : error,
+      );
+      throw error;
+    }
   }
 
   private async processActionLogs(

@@ -10,7 +10,7 @@ interface RawSampleAffiliateData {
   クリック日時?: string;
   メディア?: string;
   // TODO これ確認アクセス数/発生成果数/確定成果数 どれか確認
-  アクセス数?: string;
+  "アクセス数[件]"?: string;
 }
 
 @Injectable()
@@ -41,7 +41,7 @@ export class SampleAffiliateClickLogRepository extends BaseAspRepository {
             return 0;
           }
 
-          const currentTotalClicks = this.toInt(item.アクセス数);
+          const currentTotalClicks = this.toInt(item["アクセス数[件]"]);
           if (currentTotalClicks === 0) {
             this.logger.debug(
               `Skipping record with zero clicks: ${affiliateLinkName}`,
