@@ -192,22 +192,19 @@ export abstract class BaseAspRepository {
         }
 
         // クリックログの生成処理
-        const newClicks = Array(diff)
-          .fill(null)
-          .map(() => {
-            const randomHours = Math.random() * 24;
-            const clickTime = new Date(
-              today.getTime() + randomHours * 60 * 60 * 1000,
-            );
-            return {
-              aspType: this.aspType,
-              clickDateTime: clickTime,
-              affiliateLinkName,
-              referrerUrl,
-              createdAt: clickTime,
-              updatedAt: clickTime,
-            };
-          });
+        // １ミリずつ時刻を増やす
+        const baseMillis = now.getTime(); // snapshot (diff) acquisition time
+        const newClicks = Array.from({ length: diff }, (_, i) => {
+          const clickTime = new Date(baseMillis + i);
+          return {
+            aspType: this.aspType,
+            clickDateTime: clickTime,
+            affiliateLinkName,
+            referrerUrl,
+            createdAt: clickTime,
+            updatedAt: clickTime,
+          };
+        });
 
         // クリックログの保存
         await tx.aspClickLog.createMany({
@@ -218,9 +215,10 @@ export abstract class BaseAspRepository {
         // スナップショットの更新
         await tx.clickLogSnapshot.upsert({
           where: {
-            aspType_affiliateLinkName: {
+            aspType_affiliateLinkName_snapshotDate: {
               aspType: this.aspType,
               affiliateLinkName,
+              snapshotDate: today,
             },
           },
           create: {

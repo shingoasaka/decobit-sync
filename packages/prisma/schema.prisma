@@ -226,5 +226,5 @@ model ClickLogSnapshot {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  @@unique([aspType, affiliateLinkName])
+  @@unique([aspType, affiliateLinkName, snapshotDate])
 }
