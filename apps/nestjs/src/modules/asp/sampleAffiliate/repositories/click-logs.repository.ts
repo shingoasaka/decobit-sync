@@ -9,12 +9,13 @@ interface RawSampleAffiliateData {
   [key: string]: string | null | undefined;
   クリック日時?: string;
   メディア?: string;
-  // TODO これ確認アクセス数/発生成果数/確定成果数 どれか確認
   "アクセス数[件]"?: string;
 }
 
 @Injectable()
 export class SampleAffiliateClickLogRepository extends BaseAspRepository {
+  protected readonly format = "total" as const;
+
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.SAMPLE_AFFILIATE);
   }
@@ -31,37 +32,30 @@ export class SampleAffiliateClickLogRepository extends BaseAspRepository {
     }
   }
 
+  private formatData(item: RawSampleAffiliateData) {
+    const affiliateLinkName = item.メディア?.trim();
+    if (!affiliateLinkName) {
+      throw new Error("メディアが必須です");
+    }
+
+    const currentTotalClicks = this.toInt(item["アクセス数[件]"]);
+    if (currentTotalClicks === 0) {
+      throw new Error("アクセス数が0です");
+    }
+
+    return {
+      affiliateLinkName,
+      currentTotalClicks,
+      referrerUrl: null,
+    };
+  }
+
   async save(clickData: RawSampleAffiliateData[]): Promise<number> {
     try {
-      const results = await Promise.all(
-        clickData.map(async (item) => {
-          const affiliateLinkName = item.メディア?.trim();
-          if (!affiliateLinkName) {
-            this.logger.warn("Skipping record with empty affiliateLinkName");
-            return 0;
-          }
-
-          const currentTotalClicks = this.toInt(item["アクセス数[件]"]);
-          if (currentTotalClicks === 0) {
-            this.logger.debug(
-              `Skipping record with zero clicks: ${affiliateLinkName}`,
-            );
-            return 0;
-          }
-
-          return await this.saveToCommonTable(
-            [{ affiliateLinkName }],
-            "aspClickLog",
-            {
-              currentTotalClicks,
-            },
-          );
-        }),
-      );
-
-      return results.reduce((sum, count) => sum + count, 0);
+      const formatted = clickData.map((item) => this.formatData(item));
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
-      this.logger.error("Error saving click data:", error);
+      this.logger.error("Error saving SampleAffiliate click data:", error);
       throw error;
     }
   }

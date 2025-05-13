@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
-import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { BaseActionLogRepository } from "../../base/repository.base";
+import { parseToJst } from "src/libs/date-utils";
 
 interface RawCatsData {
   [key: string]: string | null | undefined;
@@ -10,15 +10,8 @@ interface RawCatsData {
   遷移広告URL名?: string;
 }
 
-interface FormattedCatsData {
-  actionDateTime: Date | null;
-  affiliateLinkName: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-}
-
 @Injectable()
-export class CatsActionLogRepository extends BaseAspRepository {
+export class CatsActionLogRepository extends BaseActionLogRepository {
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.CATS);
   }
@@ -27,38 +20,32 @@ export class CatsActionLogRepository extends BaseAspRepository {
     throw new Error("Method not implemented.");
   }
 
-  private parseDate(value?: string | null): Date | null {
-    if (!value) return null;
-    const date = new Date(value);
-    if (isNaN(date.getTime())) {
-      this.logger.warn(`Invalid date format: ${value}`);
-      return null;
-    }
-    return date;
-  }
-
   private getValue(item: RawCatsData, key: keyof RawCatsData): string | null {
     return item[key] ?? null;
   }
 
-  private formatData(item: RawCatsData): FormattedCatsData {
-    const now = getNowJst();
+  private formatData(item: RawCatsData) {
+    const actionDateTime = parseToJst(this.getValue(item, "成果日時"));
+    if (!actionDateTime) {
+      throw new Error("成果日時が必須です");
+    }
+
+    const affiliateLinkName = this.getValue(item, "遷移広告URL名");
+    if (!affiliateLinkName) {
+      throw new Error("遷移広告URL名が必須です");
+    }
+
     return {
-      actionDateTime: parseToJst(this.getValue(item, "成果日時")),
-      affiliateLinkName: this.getValue(item, "遷移広告URL名"),
-      createdAt: now,
-      updatedAt: now,
+      actionDateTime,
+      affiliateLinkName,
+      referrerUrl: null,
     };
   }
 
   async save(conversionData: RawCatsData[]): Promise<number> {
     try {
       const formatted = conversionData.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspActionLog", {
-        actionDateTime: formatted[0]?.actionDateTime,
-      });
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
       throw error;

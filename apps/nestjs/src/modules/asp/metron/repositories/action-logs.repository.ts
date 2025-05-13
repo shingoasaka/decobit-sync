@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
-import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { BaseActionLogRepository } from "../../base/repository.base";
+import { parseToJst } from "src/libs/date-utils";
 
 interface RawMetronData {
   actionDateTime?: string;
@@ -12,23 +12,23 @@ interface RawMetronData {
   clientInfo?: string;
 }
 
-interface FormattedMetronData {
-  actionDateTime: Date | null;
-  affiliateLinkName: string | null;
-  referrerUrl: string | null;
-  uid: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-}
-
 @Injectable()
-export class MetronActionLogRepository extends BaseAspRepository {
+export class MetronActionLogRepository extends BaseActionLogRepository {
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.METRON);
   }
 
-  private formatData(item: RawMetronData): FormattedMetronData {
-    const now = getNowJst();
+  private formatData(item: RawMetronData) {
+    const actionDateTime = parseToJst(item.actionDateTime);
+    if (!actionDateTime) {
+      throw new Error("actionDateTime is required");
+    }
+
+    const affiliateLinkName = item.siteName;
+    if (!affiliateLinkName) {
+      throw new Error("siteName is required");
+    }
+
     let uid: string | null = null;
     try {
       const parsed = JSON.parse(item.clientInfo || "{}");
@@ -38,25 +38,17 @@ export class MetronActionLogRepository extends BaseAspRepository {
     }
 
     return {
-      actionDateTime: parseToJst(item.actionDateTime),
-      affiliateLinkName: item.siteName || null,
+      actionDateTime,
+      affiliateLinkName,
       referrerUrl: item.actionReferrer || null,
       uid,
-      createdAt: now,
-      updatedAt: now,
     };
   }
 
   async save(logs: RawMetronData[]): Promise<number> {
     try {
       const formatted = logs.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspActionLog", {
-        actionDateTime: formatted[0]?.actionDateTime,
-        referrerUrl: formatted[0]?.referrerUrl,
-        uid: formatted[0]?.uid,
-      });
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
       this.logger.error("Error saving Metron action logs:", error);
       throw error;

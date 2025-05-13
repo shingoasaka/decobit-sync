@@ -4,46 +4,43 @@ import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
 import { getNowJst, parseToJst } from "src/libs/date-utils";
 
+// LAD固有のカラム名を持つインターフェース
 interface RawLadData {
   クリック日時?: string;
   広告名?: string;
   リファラ?: string;
 }
 
-interface FormattedLadData {
-  clickDateTime: Date | null;
-  affiliateLinkName: string | null;
-  referrerUrl: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-}
-
 @Injectable()
 export class LadClickLogRepository extends BaseAspRepository {
+  protected readonly format = "individual" as const;
+
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.LAD);
   }
 
-  private formatData(item: RawLadData): FormattedLadData {
-    const now = getNowJst();
+  private formatData(item: RawLadData) {
+    const clickDateTime = parseToJst(item["クリック日時"]);
+    if (!clickDateTime) {
+      throw new Error("クリック日時が必須です");
+    }
+
+    const affiliateLinkName = item["広告名"];
+    if (!affiliateLinkName) {
+      throw new Error("広告名が必須です");
+    }
+
     return {
-      clickDateTime: parseToJst(item["クリック日時"]),
-      affiliateLinkName: item["広告名"] || null,
+      clickDateTime,
+      affiliateLinkName,
       referrerUrl: item["リファラ"] || null,
-      createdAt: now,
-      updatedAt: now,
     };
   }
 
   async save(logs: RawLadData[]): Promise<number> {
     try {
       const formatted = logs.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-        referrerUrl: formatted[0]?.referrerUrl,
-      });
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
       this.logger.error("Error saving lad click logs:", error);
       throw error;

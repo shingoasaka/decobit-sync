@@ -4,6 +4,7 @@ import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
 import { getNowJst } from "src/libs/date-utils";
 
+// 入力データの型定義
 interface RawRentracksData {
   [key: string]: string | null | undefined;
   クリック日時?: string;
@@ -13,6 +14,8 @@ interface RawRentracksData {
 
 @Injectable()
 export class RentracksClickLogRepository extends BaseAspRepository {
+  protected readonly format = "total" as const;
+
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.RENTRACKS);
   }
@@ -29,35 +32,28 @@ export class RentracksClickLogRepository extends BaseAspRepository {
     }
   }
 
+  private formatData(item: RawRentracksData) {
+    const affiliateLinkName = item.備考?.trim();
+    if (!affiliateLinkName) {
+      throw new Error("備考が必須です");
+    }
+
+    const currentTotalClicks = this.toInt(item.クリック数);
+    if (currentTotalClicks === 0) {
+      throw new Error("クリック数が0です");
+    }
+
+    return {
+      affiliateLinkName,
+      currentTotalClicks,
+      referrerUrl: null,
+    };
+  }
+
   async save(clickData: RawRentracksData[]): Promise<number> {
     try {
-      const results = await Promise.all(
-        clickData.map(async (item) => {
-          const affiliateLinkName = item.備考?.trim();
-          if (!affiliateLinkName) {
-            this.logger.warn("Skipping record with empty affiliateLinkName");
-            return 0;
-          }
-
-          const currentTotalClicks = this.toInt(item.クリック数);
-          if (currentTotalClicks === 0) {
-            this.logger.debug(
-              `Skipping record with zero clicks: ${affiliateLinkName}`,
-            );
-            return 0;
-          }
-
-          return await this.saveToCommonTable(
-            [{ affiliateLinkName }],
-            "aspClickLog",
-            {
-              currentTotalClicks,
-            },
-          );
-        }),
-      );
-
-      return results.reduce((sum, count) => sum + count, 0);
+      const formatted = clickData.map((item) => this.formatData(item));
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
       this.logger.error("Error saving Rentracks click data:", error);
       throw error;
