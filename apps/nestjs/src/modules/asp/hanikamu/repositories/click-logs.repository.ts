@@ -37,10 +37,6 @@ export class HanikamuClickLogRepository extends BaseAspRepository {
     }
 
     const currentTotalClicks = this.toInt(item["CLICK数"]);
-    if (currentTotalClicks === 0) {
-      throw new Error("CLICK数が0です");
-    }
-
     return {
       affiliateLinkName,
       currentTotalClicks,

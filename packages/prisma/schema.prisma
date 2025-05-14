@@ -221,7 +221,7 @@ model ClickLogSnapshot {
   id               Int      @id @default(autoincrement())
   aspType          AspType
   affiliateLinkName String
-  currentClicks    Int      // ASPから取得した現在のクリック数
+  currentTotalClicks Int      // ASPから取得した現在の総クリック数
   snapshotDate     DateTime
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

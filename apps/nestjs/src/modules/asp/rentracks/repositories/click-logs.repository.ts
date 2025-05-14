@@ -39,10 +39,6 @@ export class RentracksClickLogRepository extends BaseAspRepository {
     }
 
     const currentTotalClicks = this.toInt(item.クリック数);
-    if (currentTotalClicks === 0) {
-      throw new Error("クリック数が0です");
-    }
-
     return {
       affiliateLinkName,
       currentTotalClicks,

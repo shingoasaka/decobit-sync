@@ -39,10 +39,6 @@ export class SampleAffiliateClickLogRepository extends BaseAspRepository {
     }
 
     const currentTotalClicks = this.toInt(item["アクセス数[件]"]);
-    if (currentTotalClicks === 0) {
-      throw new Error("アクセス数が0です");
-    }
-
     return {
       affiliateLinkName,
       currentTotalClicks,

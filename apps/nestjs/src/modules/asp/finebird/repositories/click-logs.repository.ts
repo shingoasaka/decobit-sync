@@ -37,10 +37,6 @@ export class FinebirdClickLogRepository extends BaseAspRepository {
     }
 
     const currentTotalClicks = this.toInt(item["総クリック"]);
-    if (currentTotalClicks === 0) {
-      throw new Error("総クリック数が0です");
-    }
-
     return {
       affiliateLinkName,
       currentTotalClicks,
@@ -56,27 +52,5 @@ export class FinebirdClickLogRepository extends BaseAspRepository {
       this.logger.error("Error saving Finebird click data:", error);
       throw error;
     }
-  }
-
-  protected async saveSnapshot(data: {
-    affiliateLinkName: string;
-    currentClicks: number;
-  }): Promise<void> {
-    const now = getNowJst();
-
-    // 単純にスナップショットを作成
-    await this.prisma.clickLogSnapshot.create({
-      data: {
-        aspType: this.aspType,
-        ...data,
-        snapshotDate: now,
-        createdAt: now,
-        updatedAt: now,
-      },
-    });
-
-    this.logger.debug(
-      `Saved new snapshot for ${this.aspType}/${data.affiliateLinkName}: ${data.currentClicks} at ${now.toISOString()}`,
-    );
   }
 }

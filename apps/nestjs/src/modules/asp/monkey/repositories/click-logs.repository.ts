@@ -37,10 +37,6 @@ export class MonkeyClickLogRepository extends BaseAspRepository {
     }
 
     const currentTotalClicks = this.toInt(item["click"]);
-    if (currentTotalClicks === 0) {
-      throw new Error("click数が0です");
-    }
-
     return {
       affiliateLinkName,
       currentTotalClicks,
