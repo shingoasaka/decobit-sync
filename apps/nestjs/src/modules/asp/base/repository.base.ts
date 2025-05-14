@@ -231,76 +231,144 @@ export abstract class BaseAspRepository {
     try {
       const now = getNowJst();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      today.setHours(0, 0, 0, 0);
 
-      return await this.prisma.$transaction(async (tx) => {
-        // スナップショットを一括取得
-        const snapshots = await tx.clickLogSnapshot.findMany({
-          where: {
-            aspType: this.aspType,
-            snapshotDate: today,
-            affiliateLinkName: {
-              in: data.map((item) => item.affiliateLinkName),
-            },
-          },
-        });
+      // スナップショットを取得
+      const snapshots = await this.prisma.clickLogSnapshot.findMany({
+        where: {
+          aspType: this.aspType,
+          snapshotDate: today,
+          affiliateLinkName: {
+            in: data.map(item => item.affiliateLinkName)
+          }
+        }
+      });
 
-        let totalSaved = 0;
-        for (const item of data) {
-          const snapshot = snapshots.find(
-            (s) => s.affiliateLinkName === item.affiliateLinkName,
-          );
+      let totalSaved = 0;
+      for (const item of data) {
+        try {
+          const snapshot = snapshots.find(s => s.affiliateLinkName === item.affiliateLinkName);
           const todayLastClicks = snapshot?.currentTotalClicks ?? 0;
           const diff = item.currentTotalClicks - todayLastClicks;
 
-          if (diff <= 0) continue;
+          if (diff <= 0) {
+            this.logger.debug(
+              `Skipping ${this.aspType}/${item.affiliateLinkName}: current=${item.currentTotalClicks}, last=${todayLastClicks}, diff=${diff}`
+            );
+            // スナップショットが存在しない場合のみ作成
+            if (!snapshot) {
+              await this.updateSnapshot(item, today, now);
+            }
+            continue;
+          }
 
-          const baseMillis = now.getTime();
-          const newClicks = Array.from({ length: diff }, (_, i) => ({
-            aspType: this.aspType,
-            clickDateTime: new Date(baseMillis + i),
-            affiliateLinkName: item.affiliateLinkName,
-            referrerUrl: item.referrerUrl,
-            createdAt: now,
-            updatedAt: now,
-          }));
+          // クリックログの保存
+          await this.saveClickLogs(item, diff, today, now);
 
-          await tx.aspClickLog.createMany({
-            data: newClicks,
-            skipDuplicates: true,
-          });
-
-          await tx.clickLogSnapshot.upsert({
-            where: {
-              aspType_affiliateLinkName_snapshotDate: {
-                aspType: this.aspType,
-                affiliateLinkName: item.affiliateLinkName,
-                snapshotDate: today,
-              },
-            },
-            create: {
-              aspType: this.aspType,
-              affiliateLinkName: item.affiliateLinkName,
-              currentTotalClicks: item.currentTotalClicks,
-              snapshotDate: today,
-              createdAt: now,
-              updatedAt: now,
-            },
-            update: {
-              currentTotalClicks: item.currentTotalClicks,
-              updatedAt: now,
-            },
-          });
+          // クリックログ保存成功後にスナップショットを更新
+          await this.updateSnapshot(item, today, now);
 
           totalSaved += diff;
+          this.logger.debug(
+            `Processed ${this.aspType}/${item.affiliateLinkName}: current=${item.currentTotalClicks}, last=${todayLastClicks}, diff=${diff}, saved=${totalSaved}`
+          );
+        } catch (itemError) {
+          this.logger.error(
+            `Error processing item ${item.affiliateLinkName}:`,
+            itemError instanceof Error ? itemError.stack : itemError,
+          );
+          continue;
         }
-        return totalSaved;
-      });
+      }
+      return totalSaved;
     } catch (error) {
       this.logger.error(
         `Error processing total click log:`,
         error instanceof Error ? error.stack : error,
       );
       throw error;
+    }
+  }
+
+  // スナップショット更新の共通処理
+  private async updateSnapshot(
+    item: TotalClickLog,
+    today: Date,
+    now: Date,
+  ): Promise<void> {
+    // スナップショットが存在する場合は、値が変更された場合のみ更新
+    const existingSnapshot = await this.prisma.clickLogSnapshot.findUnique({
+      where: {
+        aspType_affiliateLinkName_snapshotDate: {
+          aspType: this.aspType,
+          affiliateLinkName: item.affiliateLinkName,
+          snapshotDate: today,
+        },
+      },
+    });
+
+    if (existingSnapshot && existingSnapshot.currentTotalClicks === item.currentTotalClicks) {
+      this.logger.debug(
+        `Skipping snapshot update for ${this.aspType}/${item.affiliateLinkName}: value unchanged (${item.currentTotalClicks})`
+      );
+      return;
+    }
+
+    await this.prisma.clickLogSnapshot.upsert({
+      where: {
+        aspType_affiliateLinkName_snapshotDate: {
+          aspType: this.aspType,
+          affiliateLinkName: item.affiliateLinkName,
+          snapshotDate: today,
+        },
+      },
+      create: {
+        aspType: this.aspType,
+        affiliateLinkName: item.affiliateLinkName,
+        currentTotalClicks: item.currentTotalClicks,
+        snapshotDate: today,
+        createdAt: now,
+        updatedAt: now,
+      },
+      update: {
+        currentTotalClicks: item.currentTotalClicks,
+        updatedAt: now,
+      },
+    });
+
+    this.logger.debug(
+      `Updated snapshot for ${this.aspType}/${item.affiliateLinkName}: ${item.currentTotalClicks}`
+    );
+  }
+
+  // クリックログ保存の共通処理
+  private async saveClickLogs(
+    item: TotalClickLog,
+    diff: number,
+    today: Date,
+    now: Date,
+  ): Promise<void> {
+    const batchSize = 1000;
+    const newClicks = Array.from({ length: diff }, (_, i) => {
+      const clickDateTime = new Date(now);
+      const interval = (3 * 60 * 1000) / diff;
+      clickDateTime.setMilliseconds(now.getMilliseconds() + (i * interval));
+      return {
+        aspType: this.aspType,
+        clickDateTime,
+        affiliateLinkName: item.affiliateLinkName,
+        referrerUrl: item.referrerUrl,
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
+
+    for (let i = 0; i < newClicks.length; i += batchSize) {
+      const batch = newClicks.slice(i, i + batchSize);
+      await this.prisma.aspClickLog.createMany({
+        data: batch,
+        skipDuplicates: true,
+      });
     }
   }
 }
