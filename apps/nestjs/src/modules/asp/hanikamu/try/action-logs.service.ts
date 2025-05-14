@@ -6,7 +6,8 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-// import { getTodayDateOnly } from "src/libs/date-utils";
+import { getNowJst } from "src/libs/date-utils";
+import { format } from "date-fns";
 
 @Injectable()
 export class TryActionLogService implements LogService {
@@ -43,13 +44,14 @@ export class TryActionLogService implements LogService {
       await page.locator("#select_site").selectOption("1176");
       await page.waitForTimeout(1000);
 
-      // const today = getTodayDateOnly();
-      // console.log(today)
-      // TODO: 日にちを8日に設定,あとでtodayに変更
+      // 日付フィルタ適用
+      const today = getNowJst();
+      const day = format(today, "d");  // "14" のような形式
+
       await page.locator('input[name="start_date"]').click();
-      await page.getByRole("cell", { name: "8", exact: true }).first().click();
+      await page.getByRole("cell", { name: day }).first().click();
       await page.locator('input[name="end_date"]').click();
-      await page.getByRole("cell", { name: "8", exact: true }).nth(2).click();
+      await page.getByRole("cell", { name: day }).first().click();
 
       await page.locator("label").filter({ hasText: "成果発生日" }).click();
 
@@ -67,6 +69,7 @@ export class TryActionLogService implements LogService {
 
       return await this.processCsvAndSave(downloadPath);
     } catch (error) {
+      console.error("Error during fetchAndInsertLogs:", error);
       return 0;
     } finally {
       if (browser) {

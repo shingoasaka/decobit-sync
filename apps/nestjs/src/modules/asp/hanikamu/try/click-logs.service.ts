@@ -6,6 +6,8 @@ import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
 import { HanikamuClickLogRepository } from "../repositories/click-logs.repository";
+import { getNowJst } from "src/libs/date-utils";
+import { format } from "date-fns";
 
 @Injectable()
 export class TryClickLogService implements LogService {
@@ -32,17 +34,19 @@ export class TryClickLogService implements LogService {
       await page.getByRole("button", { name: "LOGIN" }).click();
 
       await page.waitForTimeout(2000);
-      await page.getByRole("link", { name: " Reports" }).click();
+      await page.getByRole("link", { name: " Reports" }).click();
       await page.getByRole("link", { name: "LP別" }).click();
       await page.goto("https://www.82comb.net/partner/report/lp");
       await page.getByLabel("広告選択").selectOption("1176");
 
       // 日付フィルタ適用
-      // TODO: 日付を動的に取得する
+      const today = getNowJst();
+      const day = format(today, "d");
+
       await page.locator("#search input[name='start_date']").click();
-      await page.getByRole("cell", { name: "10" }).nth(3).click();
+      await page.getByRole("cell", { name: day }).first().click();
       await page.locator("#search input[name='end_date']").click();
-      await page.getByRole("cell", { name: "10" }).nth(4).click();
+      await page.getByRole("cell", { name: day }).first().click();
 
       // CSVダウンロード
       const [download] = await Promise.all([

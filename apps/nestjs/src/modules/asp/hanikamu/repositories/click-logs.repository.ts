@@ -7,7 +7,7 @@ import { getNowJst } from "src/libs/date-utils";
 // Hanikamu固有のカラム名を持つインターフェース
 interface RawHanikamuData {
   ランディングページ?: string;
-  CLICK数?: string;
+  Click数?: string;
 }
 
 @Injectable()
@@ -36,7 +36,7 @@ export class HanikamuClickLogRepository extends BaseAspRepository {
       throw new Error("ランディングページが必須です");
     }
 
-    const currentTotalClicks = this.toInt(item["CLICK数"]);
+    const currentTotalClicks = this.toInt(item["Click数"]);
     return {
       affiliateLinkName,
       currentTotalClicks,
