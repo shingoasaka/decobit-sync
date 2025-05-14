@@ -239,21 +239,23 @@ export abstract class BaseAspRepository {
           aspType: this.aspType,
           snapshotDate: today,
           affiliateLinkName: {
-            in: data.map(item => item.affiliateLinkName)
-          }
-        }
+            in: data.map((item) => item.affiliateLinkName),
+          },
+        },
       });
 
       let totalSaved = 0;
       for (const item of data) {
         try {
-          const snapshot = snapshots.find(s => s.affiliateLinkName === item.affiliateLinkName);
+          const snapshot = snapshots.find(
+            (s) => s.affiliateLinkName === item.affiliateLinkName,
+          );
           const todayLastClicks = snapshot?.currentTotalClicks ?? 0;
           const diff = item.currentTotalClicks - todayLastClicks;
 
           if (diff <= 0) {
             this.logger.debug(
-              `Skipping ${this.aspType}/${item.affiliateLinkName}: current=${item.currentTotalClicks}, last=${todayLastClicks}, diff=${diff}`
+              `Skipping ${this.aspType}/${item.affiliateLinkName}: current=${item.currentTotalClicks}, last=${todayLastClicks}, diff=${diff}`,
             );
             // スナップショットが存在しない場合のみ作成
             if (!snapshot) {
@@ -270,7 +272,7 @@ export abstract class BaseAspRepository {
 
           totalSaved += diff;
           this.logger.debug(
-            `Processed ${this.aspType}/${item.affiliateLinkName}: current=${item.currentTotalClicks}, last=${todayLastClicks}, diff=${diff}, saved=${totalSaved}`
+            `Processed ${this.aspType}/${item.affiliateLinkName}: current=${item.currentTotalClicks}, last=${todayLastClicks}, diff=${diff}, saved=${totalSaved}`,
           );
         } catch (itemError) {
           this.logger.error(
@@ -307,9 +309,12 @@ export abstract class BaseAspRepository {
       },
     });
 
-    if (existingSnapshot && existingSnapshot.currentTotalClicks === item.currentTotalClicks) {
+    if (
+      existingSnapshot &&
+      existingSnapshot.currentTotalClicks === item.currentTotalClicks
+    ) {
       this.logger.debug(
-        `Skipping snapshot update for ${this.aspType}/${item.affiliateLinkName}: value unchanged (${item.currentTotalClicks})`
+        `Skipping snapshot update for ${this.aspType}/${item.affiliateLinkName}: value unchanged (${item.currentTotalClicks})`,
       );
       return;
     }
@@ -337,7 +342,7 @@ export abstract class BaseAspRepository {
     });
 
     this.logger.debug(
-      `Updated snapshot for ${this.aspType}/${item.affiliateLinkName}: ${item.currentTotalClicks}`
+      `Updated snapshot for ${this.aspType}/${item.affiliateLinkName}: ${item.currentTotalClicks}`,
     );
   }
 
@@ -352,7 +357,7 @@ export abstract class BaseAspRepository {
     const newClicks = Array.from({ length: diff }, (_, i) => {
       const clickDateTime = new Date(now);
       const interval = (3 * 60 * 1000) / diff;
-      clickDateTime.setMilliseconds(now.getMilliseconds() + (i * interval));
+      clickDateTime.setMilliseconds(now.getMilliseconds() + i * interval);
       return {
         aspType: this.aspType,
         clickDateTime,
