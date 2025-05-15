@@ -154,33 +154,6 @@ model WebantennaActionLog {
   updatedAt             DateTime?
 }
 
-model TikTokReport {
-  id                 Int      @id @default(autoincrement())
-  advertiserId       String?
-  adId               String?
-  statTimeDay        String?
-  budget             Int?
-  spend              Int?
-  impressions        Int?
-  clicks             Int?
-  videoPlayActions   Int?
-  videoWatched2s     Int?
-  videoWatched6s     Int?
-  videoViewsP100     Int?
-  reach              Int?
-  conversion         Int?
-  campaignId         String?
-  campaignName       String?
-  adgroupId          String?
-  adgroupName        String?
-  adName             String?
-  adUrl              String?
-  statTimeDayDimension String?
-  adIdDimension      String?
-  createdAt             DateTime?
-  updatedAt             DateTime?
-}
-
 enum AspType {
   METRON
   CATS
@@ -228,3 +201,85 @@ model ClickLogSnapshot {
 
   @@unique([aspType, affiliateLinkName, snapshotDate])
 }
+
+model TikTokRawReportAd {
+  id                    Int      @id @default(autoincrement())
+  advertiser_id         String
+  ad_id                 String
+  stat_time_day         String?
+  budget                Int?
+  spend                 Int?
+  impressions           Int?
+  clicks                Int?
+  video_play_actions    Int?
+  video_watched_2s      Int?
+  video_watched_6s      Int?
+  video_views_p100      Int?
+  reach                 Int?
+  conversion            Int?
+  campaign_id           String
+  campaign_name         String?
+  adgroup_id            String
+  adgroup_name          String?
+  ad_name               String?
+  ad_url                String?
+  stat_time_day_dim     String?
+  ad_id_dim             String?
+  created_at            DateTime @default(now())
+}
+
+
+model TiktokFactReportAd {
+  advertiser_id         String
+  ad_id                 String
+  adgroup_id            String
+  campaign_id           String
+  stat_time_day         String
+  budget                Int?
+  spend                 Int?
+  impressions           Int?
+  clicks                Int?
+  video_play_actions    Int?
+  video_watched_2s      Int?
+  video_watched_6s      Int?
+  video_views_p100      Int?
+  reach                 Int?
+  campaign_name         String?
+  adgroup_name          String?
+  ad_name               String?
+  ad_url                String?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  campaign              TiktokDimensionCampaign @relation(fields: [campaign_id], references: [campaign_id])
+  @@id([stat_time_day, ad_id])
+}
+
+
+model TiktokDimensionCampaign {
+  campaign_id    String           @id
+  advertiser_id  String
+  campaign_name  String?
+  adgroups       TiktokDimensionAdgroup[]
+
+  reports        TiktokFactReportAd[]
+}
+
+model TiktokDimensionAdgroup {
+  adgroup_id     String           @id
+  adgroup_name   String
+  advertiser_id  String
+  campaign_id    String
+  campaign        TiktokDimensionCampaign @relation(fields: [campaign_id], references: [campaign_id])
+  ads            TiktokDimensionAd[]
+
+}
+
+model TiktokDimensionAd {
+  ad_id          String           @id
+  ad_name        String
+  advertiser_id  String
+  adgroup_id     String
+  adgroup        TiktokDimensionAdgroup   @relation(fields: [adgroup_id], references: [adgroup_id])
+}
+

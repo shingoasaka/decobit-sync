@@ -63,7 +63,6 @@ export class MediaCronService {
     );
   }
 
-  // 毎日午前3時に実行
   @Cron("*/3 * * * *")
   async handleMediaDataCollection() {
     if (this.isRunning) {

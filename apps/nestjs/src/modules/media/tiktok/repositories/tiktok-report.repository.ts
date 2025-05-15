@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { Prisma } from "@operate-ad/prisma";
-import { TikTokReport } from "../interface/tiktok-report.interface";
+import { TikTokRawReportAd } from "../interface/tiktok-report.interface";
+import { TiktokFactReportAd } from "../interface/tiktok-report.interface";
 
 @Injectable()
 export class TikTokReportRepository {
@@ -14,7 +14,7 @@ export class TikTokReportRepository {
    * @param reports 保存するレポートデータの配列
    * @returns 保存に成功したレコード数
    */
-  async save(reports: TikTokReport[]): Promise<number> {
+  async save(reports: TikTokRawReportAd[]): Promise<number> {
     if (!reports?.length) {
       this.logger.log("保存対象のTikTokデータがありません");
       return 0;
@@ -22,7 +22,7 @@ export class TikTokReportRepository {
 
     try {
       // データベースへの保存処理
-      const result = await this.prisma.tikTokReport.createMany({
+      const result = await this.prisma.TikTokRawReportAd.createMany({
         data: reports,
         skipDuplicates: true, // 重複データはスキップ
       });
@@ -30,6 +30,7 @@ export class TikTokReportRepository {
       this.logger.log(
         `Successfully inserted ${result.count} TikTok report records`,
       );
+
       return result.count;
     } catch (error: unknown) {
       // エラー処理の修正

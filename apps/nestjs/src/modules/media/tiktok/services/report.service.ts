@@ -2,8 +2,10 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { TikTokAdvertiserService } from "./advertiser.service";
+import { FactAdReportService } from "./fact/fact-report-ad.service";
+import { DimExecService } from "./dimensions/dim-exec.service";
 import { TikTokReportDto } from "../dto/tiktok-report.dto";
-import { TikTokReport } from "../interface/tiktok-report.interface";
+import { TikTokRawReportAd } from "../interface/tiktok-report.interface";
 import { TikTokReportRepository } from "../repositories/tiktok-report.repository";
 import { getNowJst } from "src/libs/date-utils";
 
@@ -17,6 +19,8 @@ export class TikTokReportService {
     private readonly http: HttpService,
     private readonly advertiser: TikTokAdvertiserService,
     private readonly reportRepository: TikTokReportRepository,
+    private readonly factAdReportService: FactAdReportService,
+    private readonly dimExecService: DimExecService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -93,13 +97,17 @@ export class TikTokReportService {
 
           if (list?.length > 0) {
             // DTOからエンティティに変換
-            const records: TikTokReport[] = list.map((dto) =>
+            const records: TikTokRawReportAd[] = list.map((dto) =>
               this.convertDtoToEntity(dto),
             );
 
             // バッチ処理で一括保存
             const savedCount = await this.reportRepository.save(records);
             totalRecords += savedCount;
+            //ディメンションテーブル更新
+            await this.dimExecService.execute(records);
+            //ファクトテーブル更新
+            await this.factAdReportService.normalize(records);
 
             this.logger.log(
               `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`,
@@ -135,32 +143,30 @@ export class TikTokReportService {
     }
   }
 
-  private convertDtoToEntity(dto: TikTokReportDto): TikTokReport {
+  private convertDtoToEntity(dto: TikTokReportDto): TikTokRawReportAd {
     const now = getNowJst();
     return {
-      advertiserId: dto.metrics.advertiser_id,
-      adId: dto.dimensions.ad_id,
-      statTimeDay: dto.dimensions.stat_time_day,
+      advertiser_id: dto.metrics.advertiser_id,
+      ad_id: dto.dimensions.ad_id,
+      stat_time_day: dto.dimensions.stat_time_day,
       budget: this.parseNumber(dto.metrics.budget),
       spend: this.parseNumber(dto.metrics.spend),
       impressions: this.parseNumber(dto.metrics.impressions),
       clicks: this.parseNumber(dto.metrics.clicks),
-      videoPlayActions: this.parseNumber(dto.metrics.video_play_actions),
-      videoWatched2s: this.parseNumber(dto.metrics.video_watched_2s),
-      videoWatched6s: this.parseNumber(dto.metrics.video_watched_6s),
-      videoViewsP100: this.parseNumber(dto.metrics.video_views_p100),
+      video_play_actions: this.parseNumber(dto.metrics.video_play_actions),
+      video_watched_2s: this.parseNumber(dto.metrics.video_watched_2s),
+      video_watched_6s: this.parseNumber(dto.metrics.video_watched_6s),
+      video_views_p100: this.parseNumber(dto.metrics.video_views_p100),
       reach: this.parseNumber(dto.metrics.reach),
       conversion: this.parseNumber(dto.metrics.conversion),
-      campaignId: dto.metrics.campaign_id,
-      campaignName: dto.metrics.campaign_name,
-      adgroupId: dto.metrics.adgroup_id,
-      adgroupName: dto.metrics.adgroup_name,
-      adName: dto.metrics.ad_name,
-      adUrl: dto.metrics.ad_url,
-      statTimeDayDimension: dto.dimensions.stat_time_day,
-      adIdDimension: dto.dimensions.ad_id,
-      createdAt: now,
-      updatedAt: now,
+      campaign_id: dto.metrics.campaign_id,
+      campaign_name: dto.metrics.campaign_name,
+      adgroup_id: dto.metrics.adgroup_id,
+      adgroup_name: dto.metrics.adgroup_name,
+      ad_name: dto.metrics.ad_name,
+      ad_url: dto.metrics.ad_url,
+      stat_time_day_dim: dto.dimensions.stat_time_day,
+      ad_id_dim: dto.dimensions.ad_id,
     };
   }
 
