@@ -208,12 +208,23 @@ model AspActionLog {
 model AspClickLog {
   id               Int      @id @default(autoincrement())
   aspType          AspType
-  clickDateTime    DateTime?
-  affiliateLinkName String?
-  clickCount       Int?
+  clickDateTime    DateTime
+  affiliateLinkName String
   referrerUrl      String?
   createdAt        DateTime?
   updatedAt        DateTime?
 
   @@unique([aspType, clickDateTime, affiliateLinkName])
+}
+
+model ClickLogSnapshot {
+  id               Int      @id @default(autoincrement())
+  aspType          AspType
+  affiliateLinkName String
+  currentTotalClicks Int      // ASPから取得した現在の総クリック数
+  snapshotDate     DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([aspType, affiliateLinkName, snapshotDate])
 }

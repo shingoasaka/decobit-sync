@@ -2,55 +2,56 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { getNowJst } from "src/libs/date-utils";
 
+// 入力データの型定義
 interface RawRentracksData {
   [key: string]: string | null | undefined;
   クリック日時?: string;
-  サイト名?: string;
-  リファラ?: string;
-}
-
-interface FormattedRentracksData {
-  clickDateTime: Date | null;
-  affiliateLinkName: string | null;
-  referrerUrl: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
+  備考?: string;
+  クリック数?: string;
 }
 
 @Injectable()
 export class RentracksClickLogRepository extends BaseAspRepository {
+  protected readonly format = "total" as const;
+
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.RENTRACKS);
   }
 
-  private getValue(item: RawRentracksData, key: string): string | null {
-    return item[key] || null;
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
+    }
   }
 
-  private formatData(item: RawRentracksData): FormattedRentracksData {
-    const now = getNowJst();
+  private formatData(item: RawRentracksData) {
+    const affiliateLinkName = item.備考?.trim();
+    if (!affiliateLinkName) {
+      throw new Error("備考が必須です");
+    }
+
+    const currentTotalClicks = this.toInt(item.クリック数);
     return {
-      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
-      affiliateLinkName: this.getValue(item, "サイト名"),
-      referrerUrl: this.getValue(item, "リファラ"),
-      createdAt: now,
-      updatedAt: now,
+      affiliateLinkName,
+      currentTotalClicks,
+      referrerUrl: null,
     };
   }
 
   async save(clickData: RawRentracksData[]): Promise<number> {
     try {
       const formatted = clickData.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-        referrerUrl: formatted[0]?.referrerUrl,
-      });
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
-      this.logger.error("Error saving click data:", error);
+      this.logger.error("Error saving Rentracks click data:", error);
       throw error;
     }
   }

@@ -6,7 +6,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-// import { getTodayDateOnly } from "src/libs/date-utils";
+import { getNowJst } from "src/libs/date-utils";
 
 @Injectable()
 export class TryActionLogService implements LogService {
@@ -43,13 +43,21 @@ export class TryActionLogService implements LogService {
       await page.locator("#select_site").selectOption("1176");
       await page.waitForTimeout(1000);
 
-      // const today = getTodayDateOnly();
-      // console.log(today)
-      // TODO: 日にちを8日に設定,あとでtodayに変更
+      // 今日の日付を取得
+      const today = getNowJst();
+      const todayDay = today.getDate().toString();
+
       await page.locator('input[name="start_date"]').click();
-      await page.getByRole("cell", { name: "8", exact: true }).first().click();
+      // 現在の月の日付セルを選択（正確なクラス名を指定）
+      await page
+        .locator(`td[class="day  active"]:has-text("${todayDay}")`)
+        .click();
+
       await page.locator('input[name="end_date"]').click();
-      await page.getByRole("cell", { name: "8", exact: true }).nth(2).click();
+      // 現在の月の日付セルを選択（正確なクラス名を指定）
+      await page
+        .locator(`td[class="day  active"]:has-text("${todayDay}")`)
+        .click();
 
       await page.locator("label").filter({ hasText: "成果発生日" }).click();
 

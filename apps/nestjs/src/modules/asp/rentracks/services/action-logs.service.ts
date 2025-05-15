@@ -7,7 +7,7 @@ import { PrismaService } from "@prismaService";
 import { LogService } from "src/modules/logs/types";
 import { RentracksActionLogRepository } from "../repositories/action-logs.repository";
 import dotenv from "dotenv";
-import { getToday } from "src/libs/date-utils";
+import { getNowJst, formatDateForRentracks } from "src/libs/date-utils";
 
 dotenv.config();
 
@@ -56,8 +56,9 @@ export class RentracksActionLogService implements LogService {
         })
         .click();
 
-      const today = getToday();
-      await page.locator("#idTermSelect").selectOption(today);
+      const today = getNowJst();
+      const formattedDate = formatDateForRentracks(today);
+      await page.locator("#idTermSelect").selectOption(formattedDate);
       await page.getByRole("button", { name: "再表示" }).click();
 
       const [download] = await Promise.all([

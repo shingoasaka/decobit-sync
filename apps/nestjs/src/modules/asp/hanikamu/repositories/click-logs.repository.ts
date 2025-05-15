@@ -2,51 +2,54 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { getNowJst } from "src/libs/date-utils";
 
+// Hanikamu固有のカラム名を持つインターフェース
 interface RawHanikamuData {
-  [key: string]: string | null | undefined;
-  クリック日時?: string;
   ランディングページ?: string;
-}
-
-interface FormattedHanikamuData {
-  clickDateTime: Date | null;
-  affiliateLinkName: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
+  Click数?: string;
 }
 
 @Injectable()
 export class HanikamuClickLogRepository extends BaseAspRepository {
+  protected readonly format = "total" as const;
+
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.HANIKAMU);
   }
 
-  private getValue(item: RawHanikamuData, key: string): string | null {
-    return item[key] || null;
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
+    }
   }
 
-  private formatData(item: RawHanikamuData): FormattedHanikamuData {
-    const now = getNowJst();
+  private formatData(item: RawHanikamuData) {
+    const affiliateLinkName = item["ランディングページ"]?.trim();
+    if (!affiliateLinkName) {
+      throw new Error("ランディングページが必須です");
+    }
+
+    const currentTotalClicks = this.toInt(item["Click数"]);
     return {
-      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
-      affiliateLinkName: this.getValue(item, "ランディングページ"),
-      createdAt: now,
-      updatedAt: now,
+      affiliateLinkName,
+      currentTotalClicks,
+      referrerUrl: null,
     };
   }
 
-  async save(conversionData: RawHanikamuData[]): Promise<number> {
+  async save(clickData: RawHanikamuData[]): Promise<number> {
     try {
-      const formatted = conversionData.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-      });
+      const formatted = clickData.map((item) => this.formatData(item));
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
-      this.logger.error("Error saving conversion data:", error);
+      this.logger.error("Error saving Hanikamu click data:", error);
       throw error;
     }
   }

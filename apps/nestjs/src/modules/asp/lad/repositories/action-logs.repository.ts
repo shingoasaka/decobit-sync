@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
-import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { BaseActionLogRepository } from "../../base/repository.base";
+import { parseToJst } from "src/libs/date-utils";
 
 interface RawLadData {
   成果日時?: string;
@@ -10,40 +10,34 @@ interface RawLadData {
   "リファラ(クリック)"?: string;
 }
 
-interface FormattedLadData {
-  actionDateTime: Date | null;
-  affiliateLinkName: string | null;
-  referrerUrl: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-}
-
 @Injectable()
-export class LadActionLogRepository extends BaseAspRepository {
+export class LadActionLogRepository extends BaseActionLogRepository {
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.LAD);
   }
 
-  private formatData(item: RawLadData): FormattedLadData {
-    const now = getNowJst();
+  private formatData(item: RawLadData) {
+    const actionDateTime = parseToJst(item["成果日時"]);
+    if (!actionDateTime) {
+      throw new Error("成果日時が必須です");
+    }
+
+    const affiliateLinkName = item["遷移広告URL名"];
+    if (!affiliateLinkName) {
+      throw new Error("遷移広告URL名が必須です");
+    }
+
     return {
-      actionDateTime: parseToJst(item["成果日時"]),
-      affiliateLinkName: item["遷移広告URL名"] || null,
+      actionDateTime,
+      affiliateLinkName,
       referrerUrl: item["リファラ(クリック)"] || null,
-      createdAt: now,
-      updatedAt: now,
     };
   }
 
   async save(logs: RawLadData[]): Promise<number> {
     try {
       const formatted = logs.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspActionLog", {
-        actionDateTime: formatted[0]?.actionDateTime,
-        referrerUrl: formatted[0]?.referrerUrl,
-      });
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
       this.logger.error("Error saving LAD action logs:", error);
       throw error;

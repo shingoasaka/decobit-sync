@@ -2,57 +2,54 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
-import { getNowJst, parseToJst } from "src/libs/date-utils";
+import { getNowJst } from "src/libs/date-utils";
 
-// 入力データの型定義
+// Finebird固有のカラム名を持つインターフェース
 interface RawFinebirdData {
-  [key: string]: string | null | undefined;
-  クリック日時?: string;
   サイト名?: string;
-  リファラ?: string;
-}
-
-// 変換後のデータの型定義
-interface FormattedFinebirdData {
-  clickDateTime: Date | null;
-  affiliateLinkName: string | null;
-  referrerUrl: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
+  総クリック?: string;
 }
 
 @Injectable()
 export class FinebirdClickLogRepository extends BaseAspRepository {
+  protected readonly format = "total" as const;
+
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.FINEBIRD);
   }
 
-  private getValue(item: RawFinebirdData, key: string): string | null {
-    return item[key] || null;
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
+    }
   }
 
-  private formatData(item: RawFinebirdData): FormattedFinebirdData {
-    const now = getNowJst();
+  private formatData(item: RawFinebirdData) {
+    const affiliateLinkName = item["サイト名"]?.trim();
+    if (!affiliateLinkName) {
+      throw new Error("サイト名が必須です");
+    }
+
+    const currentTotalClicks = this.toInt(item["総クリック"]);
     return {
-      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
-      affiliateLinkName: this.getValue(item, "サイト名"),
-      referrerUrl: this.getValue(item, "リファラ"),
-      createdAt: now,
-      updatedAt: now,
+      affiliateLinkName,
+      currentTotalClicks,
+      referrerUrl: null,
     };
   }
 
   async save(clickData: RawFinebirdData[]): Promise<number> {
     try {
       const formatted = clickData.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-        referrerUrl: formatted[0]?.referrerUrl,
-      });
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
-      this.logger.error("Error saving click data:", error);
+      this.logger.error("Error saving Finebird click data:", error);
       throw error;
     }
   }

@@ -8,9 +8,8 @@ import { getNowJst, parseToJst } from "src/libs/date-utils";
 import { BaseAspRepository } from "../../base/repository.base";
 import { AspType } from "@operate-ad/prisma";
 
-// 入力データの型定義
+// CATS固有のカラム名を持つインターフェース
 interface RawCatsData {
-  [key: string]: string | null | undefined;
   クリック日時?: string;
   広告名?: string;
 }
@@ -25,6 +24,8 @@ interface FormattedCatsData {
 
 @Injectable()
 export class CatsClickLogRepository extends BaseAspRepository {
+  protected readonly format = "individual" as const;
+
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.CATS);
   }
@@ -59,33 +60,33 @@ export class CatsClickLogRepository extends BaseAspRepository {
     }
   }
 
-  private getValue(item: RawCatsData, key: string): string | null {
-    return item[key] || null;
-  }
+  private formatData(item: RawCatsData) {
+    const clickDateTime = parseToJst(item["クリック日時"]);
+    if (!clickDateTime) {
+      throw new Error("クリック日時が必須です");
+    }
 
-  private formatData(item: RawCatsData): FormattedCatsData {
-    const now = getNowJst();
+    const affiliateLinkName = item["広告名"];
+    if (!affiliateLinkName) {
+      throw new Error("広告名が必須です");
+    }
+
     return {
-      clickDateTime: parseToJst(this.getValue(item, "クリック日時")),
-      affiliateLinkName: this.getValue(item, "広告名"),
-      createdAt: now,
-      updatedAt: now,
+      clickDateTime,
+      affiliateLinkName,
+      referrerUrl: null,
     };
   }
 
   /**
    * DB にデータを保存
    */
-  async save(conversionData: RawCatsData[]): Promise<number> {
+  async save(logs: RawCatsData[]): Promise<number> {
     try {
-      const formatted = conversionData.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-      });
+      const formatted = logs.map((item) => this.formatData(item));
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
-      this.logger.error("Error saving conversion data:", error);
+      this.logger.error("Error saving CATS click logs:", error);
       throw error;
     }
   }

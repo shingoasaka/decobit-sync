@@ -126,10 +126,11 @@ export class LadClickLogService implements LogService {
 
   private async processCsvAndSave(filePath: string): Promise<number> {
     const buffer = fs.readFileSync(filePath);
-    const utf8Data = iconv.decode(buffer, "Shift_JIS");
+    let utf8Data = iconv.decode(buffer, "CP932");
+    utf8Data = utf8Data.replace(/^\uFEFF/, "");
 
     const records = parse(utf8Data, {
-      columns: true,
+      columns: (header: string[]) => header.map((h) => h.trim()),
       skip_empty_lines: true,
       relax_column_count: true,
     });

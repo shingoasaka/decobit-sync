@@ -4,6 +4,7 @@ import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
 import { getNowJst, parseToJst } from "src/libs/date-utils";
 
+// Metron固有のカラム名を持つインターフェース
 interface RawMetronData {
   clickDateTime?: string;
   siteName?: string;
@@ -11,42 +12,38 @@ interface RawMetronData {
   sessionId?: string;
 }
 
-interface FormattedMetronData {
-  clickDateTime: Date | null;
-  affiliateLinkName: string | null;
-  referrerUrl: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-}
-
 @Injectable()
 export class MetronClickLogRepository extends BaseAspRepository {
+  protected readonly format = "individual" as const;
+
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.METRON);
   }
 
-  private formatData(item: RawMetronData): FormattedMetronData {
-    const now = getNowJst();
+  private formatData(item: RawMetronData) {
+    const clickDateTime = parseToJst(item.clickDateTime);
+    if (!clickDateTime) {
+      throw new Error("clickDateTime is required");
+    }
+
+    const affiliateLinkName = item.siteName;
+    if (!affiliateLinkName) {
+      throw new Error("siteName is required");
+    }
+
     return {
-      clickDateTime: parseToJst(item.clickDateTime),
-      affiliateLinkName: item.siteName || null,
+      clickDateTime,
+      affiliateLinkName,
       referrerUrl: item.referrer || null,
-      createdAt: now,
-      updatedAt: now,
     };
   }
 
   async save(logs: RawMetronData[]): Promise<number> {
     try {
       const formatted = logs.map((item) => this.formatData(item));
-
-      // Save to common table
-      return await this.saveToCommonTable(formatted, "aspClickLog", {
-        clickDateTime: formatted[0]?.clickDateTime,
-        referrerUrl: formatted[0]?.referrerUrl,
-      });
+      return await this.saveToCommonTable(formatted);
     } catch (error) {
-      this.logger.error("Error saving Metron click logs:", error);
+      this.logger.error("Error saving metron click logs:", error);
       throw error;
     }
   }
