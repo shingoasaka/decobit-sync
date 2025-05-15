@@ -145,57 +145,61 @@ model ladClickLog {
 }
 
 model WebantennaActionLog {
-  id                         Int       @id @default(autoincrement())
-  utmSourceIdentifier        String?
-  creativeName               String?
-  cvDate                     DateTime?
-  cvIdentifierId             String?
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+  id                   Int       @id @default(autoincrement())
+  utmSourceIdentifier  String?
+  creativeName         String?
+  cvDate               DateTime?
+  cvIdentifierId       String?
+  createdAt             DateTime?
+  updatedAt             DateTime?
 }
 
-model WebantennaClickLog {
-  id                            Int       @id @default(autoincrement())
-  adAuthority                   String?
-  channel                       String?
-  adIdentifier                  String?
-  campaignName                  String?
-  adDurations                   DateTime?
-  click                         Int?
-  ecRegistrationCv              Int?
-  ecDirectRegistration           Int?
-  ecRevisitRegistration         Int?
-  ecRegistrationCvr             Int?
-  ecPurchaseCv                  Int?
-  ecDirectPurchaseCv           Int?
-  ecRevisitPurchaseCv          Int?
-  ecPurchaseCvr                Int?
-  webReservationCv              Int?
-  webDirectReservationCv        Int?
-  webRevisitReservationCv       Int?
-  webReservationCvr             Float?
-  epilerWebReservationCv        Int?
-  epilerDirectReservationCv     Int?
-  epilerRevisitReservationCv    Int?
-  epilerWebReservationCvr       Float?
-  test1Cv                       Int?
-  test1DirectCv                 Int?
-  test1RevisitCv               Int?
-  test1Cvr                      Float?
-  test2Cv                       Int?
-  test2DirectCv                 Int?
-  test2RevisitCv               Int?
-  test2Cvr                      Float?
-  test3Cv                       Int?
-  test3DirectCv                 Int?
-  test3RevisitCv               Int?
-  test3Cvr                      Float?
-  recruitmentCv                 Int?
-  recruitmentDirectCv           Int?
-  recruitmentRevisitCv         Int?
-  recruitmentCvr                Float?
-  createdAt                     DateTime  @default(now())
-  updatedAt                     DateTime  @updatedAt
+enum AspType {
+  METRON
+  CATS
+  LAD
+  MONKEY
+  FINEBIRD
+  HANIKAMU
+  RENTRACKS
+  SAMPLE_AFFILIATE
+}
+
+model AspActionLog {
+  id               Int      @id @default(autoincrement())
+  aspType          AspType
+  actionDateTime   DateTime?
+  affiliateLinkName String?
+  referrerUrl      String?
+  uid              String?
+  createdAt        DateTime?
+  updatedAt        DateTime?
+
+  @@unique([aspType, actionDateTime, affiliateLinkName])
+}
+
+model AspClickLog {
+  id               Int      @id @default(autoincrement())
+  aspType          AspType
+  clickDateTime    DateTime
+  affiliateLinkName String
+  referrerUrl      String?
+  createdAt        DateTime?
+  updatedAt        DateTime?
+
+  @@unique([aspType, clickDateTime, affiliateLinkName])
+}
+
+model ClickLogSnapshot {
+  id               Int      @id @default(autoincrement())
+  aspType          AspType
+  affiliateLinkName String
+  currentTotalClicks Int      // ASPから取得した現在の総クリック数
+  snapshotDate     DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([aspType, affiliateLinkName, snapshotDate])
 }
 
 model TikTokRawReportAd {
