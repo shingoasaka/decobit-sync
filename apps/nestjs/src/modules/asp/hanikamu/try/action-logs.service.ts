@@ -7,7 +7,6 @@ import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
 import { getNowJst } from "src/libs/date-utils";
-import { format } from "date-fns";
 
 @Injectable()
 export class TryActionLogService implements LogService {
@@ -44,14 +43,21 @@ export class TryActionLogService implements LogService {
       await page.locator("#select_site").selectOption("1176");
       await page.waitForTimeout(1000);
 
-      // 日付フィルタ適用
+      // 今日の日付を取得
       const today = getNowJst();
-      const day = format(today, "d");  // "14" のような形式
+      const todayDay = today.getDate().toString();
 
       await page.locator('input[name="start_date"]').click();
-      await page.getByRole("cell", { name: day }).first().click();
+      // 現在の月の日付セルを選択（正確なクラス名を指定）
+      await page
+        .locator(`td[class="day  active"]:has-text("${todayDay}")`)
+        .click();
+
       await page.locator('input[name="end_date"]').click();
-      await page.getByRole("cell", { name: day }).first().click();
+      // 現在の月の日付セルを選択（正確なクラス名を指定）
+      await page
+        .locator(`td[class="day  active"]:has-text("${todayDay}")`)
+        .click();
 
       await page.locator("label").filter({ hasText: "成果発生日" }).click();
 
@@ -69,7 +75,6 @@ export class TryActionLogService implements LogService {
 
       return await this.processCsvAndSave(downloadPath);
     } catch (error) {
-      console.error("Error during fetchAndInsertLogs:", error);
       return 0;
     } finally {
       if (browser) {

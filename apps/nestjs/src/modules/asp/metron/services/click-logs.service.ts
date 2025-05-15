@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
-import { getNowJst } from "src/libs/date-utils";
+import { getNowJst, formatDateTime } from "src/libs/date-utils";
 import { MetronClickLogRepository } from "../repositories/click-logs.repository";
 
 @Injectable()
@@ -47,13 +47,4 @@ export class MetronClickLogService {
       throw new Error("クリックログの取得に失敗しました");
     }
   }
-}
-
-function formatDateTime(d: Date): string {
-  const yyyy = d.getFullYear();
-  const MM = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${yyyy}-${MM}-${dd} ${hh}:${mm}`;
 }
