@@ -6,7 +6,7 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
-import { getNowJst } from "src/libs/date-utils";
+import { getNowJstForDisplay } from "src/libs/date-utils";
 
 @Injectable()
 export class TryActionLogService implements LogService {
@@ -44,19 +44,17 @@ export class TryActionLogService implements LogService {
       await page.waitForTimeout(1000);
 
       // 今日の日付を取得
-      const today = getNowJst();
-      const todayDay = today.getDate().toString();
+      const today = getNowJstForDisplay();
+      const formattedDate = today.getDate().toString().padStart(2, "0");
 
-      await page.locator('input[name="start_date"]').click();
-      // 現在の月の日付セルを選択（正確なクラス名を指定）
+      await page.locator('#search input[name="start_date"]').click();
       await page
-        .locator(`td[class="day  active"]:has-text("${todayDay}")`)
+        .getByRole("cell", { name: `${formattedDate}`, exact: true })
         .click();
-
-      await page.locator('input[name="end_date"]').click();
-      // 現在の月の日付セルを選択（正確なクラス名を指定）
+      await page.locator('#search input[name="end_date"]').click();
       await page
-        .locator(`td[class="day  active"]:has-text("${todayDay}")`)
+        .getByRole("cell", { name: `${formattedDate}`, exact: true })
+        .nth(1)
         .click();
 
       await page.locator("label").filter({ hasText: "成果発生日" }).click();
