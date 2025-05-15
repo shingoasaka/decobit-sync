@@ -145,138 +145,137 @@ model ladClickLog {
 }
 
 model WebantennaActionLog {
-  id                   Int       @id @default(autoincrement())
-  utmSourceIdentifier  String?
-  creativeName         String?
-  cvDate               DateTime?
-  cvIdentifierId       String?
-  createdAt             DateTime?
-  updatedAt             DateTime?
+  id                         Int       @id @default(autoincrement())
+  utmSourceIdentifier        String?
+  creativeName               String?
+  cvDate                     DateTime?
+  cvIdentifierId             String?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 }
 
-model TikTokReport {
-  id                 Int      @id @default(autoincrement())
-  advertiserId       String
-  adId               String
-  statTimeDay        String?
-  budget             Int?
-  spend              Int?
-  impressions        Int?
-  clicks             Int?
-  videoPlayActions   Int?
-  videoWatched2s     Int?
-  videoWatched6s     Int?
-  videoViewsP100     Int?
-  reach              Int?
-  conversion         Int?
-  campaignId         String
-  campaignName       String?
-  adgroupId          String
-  adgroupName        String?
-  adName             String?
-  adUrl              String?
-  statTimeDayDimension String?
-  adIdDimension      String?
-  createdAt             DateTime?
-  updatedAt             DateTime?
+model WebantennaClickLog {
+  id                            Int       @id @default(autoincrement())
+  adAuthority                   String?
+  channel                       String?
+  adIdentifier                  String?
+  campaignName                  String?
+  adDurations                   DateTime?
+  click                         Int?
+  ecRegistrationCv              Int?
+  ecDirectRegistration           Int?
+  ecRevisitRegistration         Int?
+  ecRegistrationCvr             Int?
+  ecPurchaseCv                  Int?
+  ecDirectPurchaseCv           Int?
+  ecRevisitPurchaseCv          Int?
+  ecPurchaseCvr                Int?
+  webReservationCv              Int?
+  webDirectReservationCv        Int?
+  webRevisitReservationCv       Int?
+  webReservationCvr             Float?
+  epilerWebReservationCv        Int?
+  epilerDirectReservationCv     Int?
+  epilerRevisitReservationCv    Int?
+  epilerWebReservationCvr       Float?
+  test1Cv                       Int?
+  test1DirectCv                 Int?
+  test1RevisitCv               Int?
+  test1Cvr                      Float?
+  test2Cv                       Int?
+  test2DirectCv                 Int?
+  test2RevisitCv               Int?
+  test2Cvr                      Float?
+  test3Cv                       Int?
+  test3DirectCv                 Int?
+  test3RevisitCv               Int?
+  test3Cvr                      Float?
+  recruitmentCv                 Int?
+  recruitmentDirectCv           Int?
+  recruitmentRevisitCv         Int?
+  recruitmentCvr                Float?
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
 }
 
-enum AspType {
-  METRON
-  CATS
-  LAD
-  MONKEY
-  FINEBIRD
-  HANIKAMU
-  RENTRACKS
-  SAMPLE_AFFILIATE
+model TikTokRawReportAd {
+  id                    Int      @id @default(autoincrement())
+  advertiser_id         String
+  ad_id                 String
+  stat_time_day         String?
+  budget                Int?
+  spend                 Int?
+  impressions           Int?
+  clicks                Int?
+  video_play_actions    Int?
+  video_watched_2s      Int?
+  video_watched_6s      Int?
+  video_views_p100      Int?
+  reach                 Int?
+  conversion            Int?
+  campaign_id           String
+  campaign_name         String?
+  adgroup_id            String
+  adgroup_name          String?
+  ad_name               String?
+  ad_url                String?
+  stat_time_day_dim     String?
+  ad_id_dim             String?
+  created_at            DateTime @default(now())
 }
 
-model AspActionLog {
-  id               Int      @id @default(autoincrement())
-  aspType          AspType
-  actionDateTime   DateTime?
-  affiliateLinkName String?
-  referrerUrl      String?
-  uid              String?
-  createdAt        DateTime?
-  updatedAt        DateTime?
 
-  @@unique([aspType, actionDateTime, affiliateLinkName])
+model TiktokFactReportAd {
+  advertiser_id         String
+  ad_id                 String
+  adgroup_id            String
+  campaign_id           String
+  stat_time_day         String
+  budget                Int?
+  spend                 Int?
+  impressions           Int?
+  clicks                Int?
+  video_play_actions    Int?
+  video_watched_2s      Int?
+  video_watched_6s      Int?
+  video_views_p100      Int?
+  reach                 Int?
+  campaign_name         String?
+  adgroup_name          String?
+  ad_name               String?
+  ad_url                String?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  campaign              TiktokDimensionCampaign @relation(fields: [campaign_id], references: [campaign_id])
+  @@id([stat_time_day, ad_id])
 }
 
-model AspClickLog {
-  id               Int      @id @default(autoincrement())
-  aspType          AspType
-  clickDateTime    DateTime
-  affiliateLinkName String
-  referrerUrl      String?
-  createdAt        DateTime?
-  updatedAt        DateTime?
 
-  @@unique([aspType, clickDateTime, affiliateLinkName])
+model TiktokDimensionCampaign {
+  campaign_id    String           @id
+  advertiser_id  String
+  campaign_name  String?
+  adgroups       TiktokDimensionAdgroup[]
+
+  reports        TiktokFactReportAd[]
 }
 
-model ClickLogSnapshot {
-  id               Int      @id @default(autoincrement())
-  aspType          AspType
-  affiliateLinkName String
-  currentTotalClicks Int      // ASPから取得した現在の総クリック数
-  snapshotDate     DateTime
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@unique([aspType, affiliateLinkName, snapshotDate])
-}
-model NormalizeTiktokReport{
-	advertiserId       String
-  adId               String
-  adgroupId          String
-  campaignId         String
-  statTimeDay        String?
-  budget             Int?
-  spend              Int?
-  impressions        Int?
-  clicks             Int?
-  videoPlayActions   Int?
-  videoWatched2s     Int?
-  videoWatched6s     Int?
-  videoViewsP100     Int?
-  reach              Int?
-  campaignName       String?
-  adgroupName        String?
-  adName             String?
-  adUrl              String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  
-  @@id([campaignId,adgroupId,adId])
-}
-
-model TikTokAd {
-  id                 Int      @default(autoincrement())
-  advertiserId       String
-  adId               String   @id
-  adgroupId         String
-  campaignId        String
-  adName             String
-  
-}
-
-model TikTokAdGroup {
-  id                 Int       @default(autoincrement())
-  advertiserId       String
-  adId               String
-  adgroupId         String  @id
-  campaignId        String
-  adgroupName　　　　 String?
+model TiktokDimensionAdgroup {
+  adgroup_id     String           @id
+  adgroup_name   String
+  advertiser_id  String
+  campaign_id    String
+  campaign        TiktokDimensionCampaign @relation(fields: [campaign_id], references: [campaign_id])
+  ads            TiktokDimensionAd[]
 
 }
 
-model TikTokCampaign {
-
-  id                 Int      @default(autoincrement())
-  campaignId         String   @id
-  advertiserId       String
-  campaignName       String
+model TiktokDimensionAd {
+  ad_id          String           @id
+  ad_name        String
+  advertiser_id  String
+  adgroup_id     String
+  adgroup        TiktokDimensionAdgroup   @relation(fields: [adgroup_id], references: [adgroup_id])
 }
+
