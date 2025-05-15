@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
-import { getNowJst, formatDateTime } from "src/libs/date-utils";
+import { formatDateTime, getNowJstForDisplay } from "src/libs/date-utils";
 import { MetronClickLogRepository } from "../repositories/click-logs.repository";
 
 @Injectable()
@@ -18,12 +18,11 @@ export class MetronClickLogService {
 
   async fetchAndInsertLogs(): Promise<number> {
     try {
-      const end = new Date();
+      const end = getNowJstForDisplay();
       const start = new Date(end.getTime() - 3 * 60_000);
       const startStr = formatDateTime(start);
       const endStr = formatDateTime(end);
       const headers = { apiKey: process.env.AFAD_API_KEY };
-
       const body = new URLSearchParams({
         clickDateTime: `${startStr} - ${endStr}`,
       });

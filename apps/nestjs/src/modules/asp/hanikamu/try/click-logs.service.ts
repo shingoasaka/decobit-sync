@@ -6,7 +6,7 @@ import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
 import { HanikamuClickLogRepository } from "../repositories/click-logs.repository";
-import { getNowJst, formatDateTime } from "src/libs/date-utils";
+import { getNowJstForDisplay } from "src/libs/date-utils";
 
 @Injectable()
 export class TryClickLogService implements LogService {
@@ -44,19 +44,22 @@ export class TryClickLogService implements LogService {
       await page.waitForLoadState("networkidle");
 
       // 今日の日付を取得
-      const today = getNowJst();
-      const formattedDate = formatDateTime(today).split(" ")[0];
+      const today = getNowJstForDisplay();
+      const formattedDate = today.getDate().toString().padStart(2, "0");
+      console.log("formattedDate", formattedDate);
 
       try {
-        // 日付フィルタ適用
-        // 入力フィールドが表示されるのを待つ
-        await page.waitForSelector('input[name="start_date"]');
-        await page.waitForSelector('input[name="end_date"]');
-
         // 日付を設定
-        await page.fill('input[name="start_date"]', formattedDate);
-        await page.fill('input[name="end_date"]', formattedDate);
-
+        await page.locator('#search input[name="start_date"]').click();
+        await page
+          .getByRole("cell", { name: `${formattedDate}`, exact: true })
+          .nth(2)
+          .click();
+        await page.locator('#search input[name="end_date"]').click();
+        await page
+          .getByRole("cell", { name: `${formattedDate}`, exact: true })
+          .nth(3)
+          .click();
         // 日付入力後のページ更新を待つ
         await page.waitForLoadState("networkidle");
 

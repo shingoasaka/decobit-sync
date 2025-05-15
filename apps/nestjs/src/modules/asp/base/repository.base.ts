@@ -1,8 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType, Prisma } from "@operate-ad/prisma";
-import { getNowJst } from "src/libs/date-utils";
-
+import { getNowJstForDB } from "src/libs/date-utils";
+import { startOfDay } from "date-fns";
 // 共通のデータベース保存形式
 interface IndividualClickLog {
   clickDateTime: Date;
@@ -37,7 +37,7 @@ export abstract class BaseActionLogRepository {
 
   protected async saveToCommonTable(data: ActionLog[]): Promise<number> {
     try {
-      const now = getNowJst();
+      const now = getNowJstForDB();
       const actionLogs = data.map((item) => ({
         aspType: this.aspType,
         actionDateTime: item.actionDateTime,
@@ -80,8 +80,8 @@ export abstract class BaseAspRepository {
   protected async getLastSnapshot(
     affiliateLinkName: string,
   ): Promise<{ currentTotalClicks: number; snapshotDate: Date } | null> {
-    const now = getNowJst();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const now = getNowJstForDB();
+    const today = startOfDay(now);
 
     const snapshot = await this.prisma.clickLogSnapshot.findFirst({
       where: {
@@ -102,11 +102,7 @@ export abstract class BaseAspRepository {
     affiliateLinkName: string,
     date: Date,
   ): Promise<{ currentTotalClicks: number } | null> {
-    const targetDate = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-    );
+    const targetDate = startOfDay(date);
 
     const snapshot = await this.prisma.clickLogSnapshot.findFirst({
       where: {
@@ -139,8 +135,8 @@ export abstract class BaseAspRepository {
     affiliateLinkName: string;
     currentTotalClicks: number;
   }): Promise<void> {
-    const now = getNowJst();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const now = getNowJstForDB();
+    const today = startOfDay(now);
 
     await this.prisma.clickLogSnapshot.upsert({
       where: {
@@ -173,6 +169,7 @@ export abstract class BaseAspRepository {
     data: IndividualClickLog[] | TotalClickLog[],
   ): Promise<number> {
     try {
+      const now = getNowJstForDB();
       return this.format === "individual"
         ? this.processIndividualClickLogs(data as IndividualClickLog[])
         : this.processTotalClickLog(data as TotalClickLog[]);
@@ -189,7 +186,7 @@ export abstract class BaseAspRepository {
     data: IndividualClickLog[],
   ): Promise<number> {
     try {
-      const now = getNowJst();
+      const now = getNowJstForDB();
       const clickLogs = data.map((item) => ({
         aspType: this.aspType,
         clickDateTime: item.clickDateTime,
@@ -229,7 +226,7 @@ export abstract class BaseAspRepository {
 
   private async processTotalClickLog(data: TotalClickLog[]): Promise<number> {
     try {
-      const now = getNowJst();
+      const now = getNowJstForDB();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       today.setHours(0, 0, 0, 0);
 
@@ -355,7 +352,7 @@ export abstract class BaseAspRepository {
   ): Promise<void> {
     const batchSize = 1000;
     const newClicks = Array.from({ length: diff }, (_, i) => {
-      const clickDateTime = new Date(now);
+      const clickDateTime = new Date(now.getTime());
       const interval = (3 * 60 * 1000) / diff;
       clickDateTime.setMilliseconds(now.getMilliseconds() + i * interval);
       return {
