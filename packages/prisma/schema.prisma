@@ -156,8 +156,8 @@ model WebantennaActionLog {
 
 model TikTokReport {
   id                 Int      @id @default(autoincrement())
-  advertiserId       String?
-  adId               String?
+  advertiserId       String
+  adId               String
   statTimeDay        String?
   budget             Int?
   spend              Int?
@@ -169,9 +169,9 @@ model TikTokReport {
   videoViewsP100     Int?
   reach              Int?
   conversion         Int?
-  campaignId         String?
+  campaignId         String
   campaignName       String?
-  adgroupId          String?
+  adgroupId          String
   adgroupName        String?
   adName             String?
   adUrl              String?
@@ -227,4 +227,56 @@ model ClickLogSnapshot {
   updatedAt        DateTime @updatedAt
 
   @@unique([aspType, affiliateLinkName, snapshotDate])
+}
+model NormalizeTiktokReport{
+	advertiserId       String
+  adId               String
+  adgroupId          String
+  campaignId         String
+  statTimeDay        String?
+  budget             Int?
+  spend              Int?
+  impressions        Int?
+  clicks             Int?
+  videoPlayActions   Int?
+  videoWatched2s     Int?
+  videoWatched6s     Int?
+  videoViewsP100     Int?
+  reach              Int?
+  campaignName       String?
+  adgroupName        String?
+  adName             String?
+  adUrl              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  @@id([campaignId,adgroupId,adId])
+}
+
+model TikTokAd {
+  id                 Int      @default(autoincrement())
+  advertiserId       String
+  adId               String   @id
+  adgroupId         String
+  campaignId        String
+  adName             String
+  
+}
+
+model TikTokAdGroup {
+  id                 Int       @default(autoincrement())
+  advertiserId       String
+  adId               String
+  adgroupId         String  @id
+  campaignId        String
+  adgroupName　　　　 String?
+
+}
+
+model TikTokCampaign {
+
+  id                 Int      @default(autoincrement())
+  campaignId         String   @id
+  advertiserId       String
+  campaignName       String
 }
