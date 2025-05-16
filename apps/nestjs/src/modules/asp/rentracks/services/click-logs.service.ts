@@ -7,7 +7,10 @@ import { PrismaService } from "@prismaService";
 import { LogService } from "src/modules/logs/types";
 import { RentracksClickLogRepository } from "../repositories/click-logs.repository";
 import dotenv from "dotenv";
-import { getNowJst, formatDateForRentracks } from "src/libs/date-utils";
+import {
+  getNowJstForDisplay,
+  formatDateForRentracks,
+} from "src/libs/date-utils";
 
 dotenv.config();
 
@@ -49,7 +52,7 @@ export class RentracksClickLogService implements LogService {
         .click();
       await page.waitForTimeout(1000);
 
-      const today = getNowJst();
+      const today = getNowJstForDisplay();
       const formattedDate = formatDateForRentracks(today);
       await page.locator("#idTermSelect").selectOption(formattedDate);
       await page.getByRole("button", { name: "再表示" }).click();
