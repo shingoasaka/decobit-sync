@@ -88,11 +88,11 @@ export class MediaCronService {
     try {
       // メディアサービスのリスト定義
       const mediaServices = [
-        // { name: "TikTok-Report", service: this.tikTokReportService },
-        // {
-        //   name: "TikTok-Report-adgroup",
-        //   service: this.tikTokReportAdgroupService,
-        // },
+        { name: "TikTok-Report", service: this.tikTokReportService },
+        {
+          name: "TikTok-Report-adgroup",
+          service: this.tikTokReportAdgroupService,
+        },
         {
           name: "TikTok-Report-campaign",
           service: this.tikTokReportCampaignService,

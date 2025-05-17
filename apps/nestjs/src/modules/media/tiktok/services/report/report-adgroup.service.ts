@@ -2,11 +2,10 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { TikTokAdvertiserService } from "../advertiser.service";
-import { FactAdReportService } from "../fact/fact-report-ad.service";
 import { TikTokRawReportAdgroup } from "../../interface/tiktok-report.interface";
 import { TikTokReportAdgroupRepository } from "../../repositories/report/tiktok-report-adgroup.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
-
+import { FactAdgroupReportService } from "../fact/fact-report-adgroup.service";
 @Injectable()
 export class TikTokReportAdgroupService {
   private readonly apiUrl =
@@ -16,9 +15,8 @@ export class TikTokReportAdgroupService {
   constructor(
     private readonly http: HttpService,
     private readonly advertiser: TikTokAdvertiserService,
-    // private readonly tikTokRawReportAdgroup: TikTokRawReportAdgroup,
     private readonly reportRepository: TikTokReportAdgroupRepository,
-    // private readonly factAdReportService: FactAdReportService,
+    private readonly factAdgroupReportService: FactAdgroupReportService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -66,7 +64,7 @@ export class TikTokReportAdgroupService {
             "reach",
             "conversion",
             "advertiser_id",
-            "adgroup_name"
+            "adgroup_name",
           ]),
           data_level: "AUCTION_ADGROUP",
           start_date: startDate,
@@ -115,7 +113,7 @@ export class TikTokReportAdgroupService {
             const savedCount = await this.reportRepository.save(records);
             totalRecords += savedCount;
             //ファクトテーブル更新
-            // await this.factAdgroupReportService.normalize(records);
+            await this.factAdgroupReportService.normalize(records);
 
             this.logger.log(
               `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`,

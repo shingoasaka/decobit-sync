@@ -2,10 +2,10 @@ import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
 import { TikTokAdvertiserService } from "../advertiser.service";
-// import { FactCampaignReportService } from "../fact/fact-report-campaign.service";
 import { TikTokRawReportCampaign } from "../../interface/tiktok-report.interface";
 import { TikTokReportCampaignRepository } from "../../repositories/report/tiktok-report-campaign.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
+import { FactCampaignReportService } from "../fact/fact-report-campaign.service";
 
 @Injectable()
 export class TikTokReportCampaignService {
@@ -16,8 +16,8 @@ export class TikTokReportCampaignService {
   constructor(
     private readonly http: HttpService,
     private readonly advertiser: TikTokAdvertiserService,
-    private readonly reportRepository: TikTokReportCampaignRepository
-    // private readonly factCampaignReportService: FactCampaignReportService
+    private readonly reportRepository: TikTokReportCampaignRepository,
+    private readonly factCampaignReportService: FactCampaignReportService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -65,13 +65,13 @@ export class TikTokReportCampaignService {
 
         try {
           this.logger.log(
-            `キャンペーンAPIリクエスト開始 (advertiser_id: ${advertiserId})`
+            `キャンペーンAPIリクエスト開始 (advertiser_id: ${advertiserId})`,
           );
           const response = await firstValueFrom(
             this.http.get<{ data: { list: any[] } }>(this.apiUrl, {
               params,
               headers,
-            })
+            }),
           );
           const list = response.data?.data?.list || [];
 
@@ -84,7 +84,7 @@ export class TikTokReportCampaignService {
               impressions: this.parseNumber(item.metrics.impressions),
               clicks: this.parseNumber(item.metrics.clicks),
               video_play_actions: this.parseNumber(
-                item.metrics.video_play_actions
+                item.metrics.video_play_actions,
               ),
               campaign_name: item.metrics.campaign_name,
               video_watched_2s: this.parseNumber(item.metrics.video_watched_2s),
@@ -98,17 +98,17 @@ export class TikTokReportCampaignService {
 
             const saved = await this.reportRepository.save(records);
             total += saved;
-            // await this.factCampaignReportService.normalize(records);
             this.logger.log(
-              `✅ ${saved}件のキャンペーンレポートを保存しました`
+              `✅ ${saved}件のキャンペーンレポートを保存しました`,
             );
+            await this.factCampaignReportService.normalize(records);
           } else {
             this.logger.warn(`本日(${todayStr})のキャンペーンレポートが空です`);
           }
         } catch (e) {
           this.logger.error(
             `❌ API取得エラー (advertiser_id: ${advertiserId})`,
-            e instanceof Error ? e.stack : String(e)
+            e instanceof Error ? e.stack : String(e),
           );
         }
       }
@@ -118,7 +118,7 @@ export class TikTokReportCampaignService {
     } catch (e) {
       this.logger.error(
         `❌ キャンペーンレポート取得処理中にエラー`,
-        e instanceof Error ? e.stack : String(e)
+        e instanceof Error ? e.stack : String(e),
       );
       throw e;
     }
