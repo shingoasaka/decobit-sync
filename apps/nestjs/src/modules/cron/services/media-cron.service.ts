@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { TikTokReportService } from "../../media/tiktok/services/report.service";
+import { TikTokReportService } from "../../media/tiktok/services/report/report-ad.service";
+import { TikTokReportAdgroupService } from "../../media/tiktok/services/report/report-adgroup.service";
+import { TikTokReportCampaignService } from "../../media/tiktok/services/report/report-campaign.service";
 import { CommonLogService } from "@logs/common-log.service";
 
 // 実行結果の型定義
@@ -53,6 +55,8 @@ export class MediaCronService {
 
   constructor(
     private readonly tikTokReportService: TikTokReportService,
+    private readonly tikTokReportAdgroupService: TikTokReportAdgroupService,
+    private readonly tikTokReportCampaignService: TikTokReportCampaignService,
     private readonly commonLog: CommonLogService,
   ) {
     // 同時実行数の設定
@@ -84,7 +88,15 @@ export class MediaCronService {
     try {
       // メディアサービスのリスト定義
       const mediaServices = [
-        { name: "TikTok-Report", service: this.tikTokReportService },
+        // { name: "TikTok-Report", service: this.tikTokReportService },
+        // {
+        //   name: "TikTok-Report-adgroup",
+        //   service: this.tikTokReportAdgroupService,
+        // },
+        {
+          name: "TikTok-Report-campaign",
+          service: this.tikTokReportCampaignService,
+        },
         // 他のメディアサービスを今後追加
       ];
 
