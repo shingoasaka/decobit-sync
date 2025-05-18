@@ -1,13 +1,13 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { TikTokAdvertiserService } from "./advertiser.service";
-import { FactAdReportService } from "./fact/fact-report-ad.service";
-import { DimExecService } from "./dimensions/dim-exec.service";
-import { TikTokReportDto } from "../dto/tiktok-report.dto";
-import { TikTokRawReportAd } from "../interface/tiktok-report.interface";
-import { TikTokReportRepository } from "../repositories/tiktok-report.repository";
-import { getNowJst } from "src/libs/date-utils";
+import { TikTokAdvertiserService } from "../advertiser.service";
+import { FactAdReportService } from "../fact/fact-report-ad.service";
+import { DimExecService } from "../dimensions/dim-exec.service";
+import { TikTokReportDto } from "../../dto/tiktok-report.dto";
+import { TikTokRawReportAd } from "../../interface/tiktok-report.interface";
+import { TikTokReportRepository } from "../../repositories/report/tiktok-report-ad.repository";
+import { getNowJstForDB } from "src/libs/date-utils";
 
 @Injectable()
 export class TikTokReportService {
@@ -144,7 +144,7 @@ export class TikTokReportService {
   }
 
   private convertDtoToEntity(dto: TikTokReportDto): TikTokRawReportAd {
-    const now = getNowJst();
+    const now = getNowJstForDB();
     return {
       advertiser_id: dto.metrics.advertiser_id,
       ad_id: dto.dimensions.ad_id,
