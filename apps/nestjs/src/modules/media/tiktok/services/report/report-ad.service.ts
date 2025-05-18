@@ -33,7 +33,8 @@ export class TikTokReportService {
       await this.advertiserService.fetchAndSaveAllPlatformAdvertisers();
 
       // テーブルから広告主IDを取得
-      let advertiserIds = await this.advertiserService.getAdvertisersByPlatform(1);//Todo
+      let advertiserIds =
+        await this.advertiserService.getAdvertisersByPlatform(1); //Todo
 
       if (!advertiserIds || advertiserIds.length === 0) {
         this.logger.warn("No advertiser IDs found");
@@ -92,20 +93,20 @@ export class TikTokReportService {
 
         try {
           this.logger.log(
-            `APIリクエスト開始 (advertiser_id: ${advertiserId}, 日付: ${todayStr})`
+            `APIリクエスト開始 (advertiser_id: ${advertiserId}, 日付: ${todayStr})`,
           );
           const response = await firstValueFrom(
             this.http.get<{ data: { list: TikTokReportDto[] } }>(this.apiUrl, {
               params,
               headers,
-            })
+            }),
           );
           const list = response.data?.data?.list;
 
           if (list?.length > 0) {
             // DTOからエンティティに変換
             const records: TikTokRawReportAd[] = list.map((dto) =>
-              this.convertDtoToEntity(dto)
+              this.convertDtoToEntity(dto),
             );
 
             // バッチ処理で一括保存
@@ -117,17 +118,17 @@ export class TikTokReportService {
             await this.factAdReportService.normalize(records);
 
             this.logger.log(
-              `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`
+              `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`,
             );
           } else {
             this.logger.warn(
-              `本日(${todayStr})のレポートデータが空です (advertiser_id: ${advertiserId})`
+              `本日(${todayStr})のレポートデータが空です (advertiser_id: ${advertiserId})`,
             );
           }
         } catch (error) {
           this.logger.error(
             `❌ APIリクエストエラー (advertiser_id: ${advertiserId})`,
-            error instanceof Error ? error.stack : String(error)
+            error instanceof Error ? error.stack : String(error),
           );
           // 処理は継続
         }
@@ -135,17 +136,17 @@ export class TikTokReportService {
 
       const processingTime = (Date.now() - startTime) / 1000;
       this.logger.log(
-        `処理完了: ${totalRecords}件のデータを${processingTime}秒で取得しました`
+        `処理完了: ${totalRecords}件のデータを${processingTime}秒で取得しました`,
       );
 
       return totalRecords;
     } catch (error) {
       this.logger.error(
         `❌ TikTokレポート取得処理中にエラーが発生しました`,
-        error instanceof Error ? error.stack : String(error)
+        error instanceof Error ? error.stack : String(error),
       );
       throw new Error(
-        `TikTokレポート取得処理に失敗しました: ${error instanceof Error ? error.message : String(error)}`
+        `TikTokレポート取得処理に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

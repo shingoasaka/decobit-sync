@@ -11,8 +11,6 @@ export interface AdAccounts {
 }
 
 export interface TikTokResponseData {
-
-    advertiser_id: string;
-    advertiser_name: string;
-    
+  advertiser_id: string;
+  advertiser_name: string;
 }

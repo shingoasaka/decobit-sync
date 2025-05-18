@@ -37,13 +37,13 @@ export class MediaAdvertiserRepository {
     try {
       await this.prisma.$transaction(operations);
       this.logger.log(
-        `✅ ${operations.length} 件の広告主アカウントを保存しました`
+        `✅ ${operations.length} 件の広告主アカウントを保存しました`,
       );
       return operations.length;
     } catch (error) {
       this.logger.error(
         "❌ 広告主アカウントの保存中にエラーが発生しました",
-        error instanceof Error ? error.stack : String(error)
+        error instanceof Error ? error.stack : String(error),
       );
       throw error;
     }
@@ -62,12 +62,12 @@ export class MediaAdvertiserRepository {
 
       return advertisers.map(
         (advertiser: { ad_platform_account_id: string }) =>
-          advertiser.ad_platform_account_id
+          advertiser.ad_platform_account_id,
       );
     } catch (error) {
       this.logger.error(
         `❌ プラットフォームID: ${platformId} の広告主ID取得中にエラーが発生しました`,
-        error instanceof Error ? error.stack : String(error)
+        error instanceof Error ? error.stack : String(error),
       );
       throw error;
     }

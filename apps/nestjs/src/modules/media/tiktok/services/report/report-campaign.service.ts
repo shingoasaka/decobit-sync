@@ -24,10 +24,10 @@ export class TikTokReportCampaignService {
   async fetchAndInsertLogs(): Promise<number> {
     try {
       const startTime = Date.now();
-      
 
       // テーブルから広告主IDを取得
-      let advertiserIds = await this.advertiserService.getAdvertisersByPlatform(1);
+      let advertiserIds =
+        await this.advertiserService.getAdvertisersByPlatform(1);
       if (!advertiserIds?.length) {
         this.logger.warn("保存対象の広告主IDがありません");
         return 0;

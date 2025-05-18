@@ -24,8 +24,6 @@ import { MediaModule } from "../media.module";
 import { MediaAdvertiserService } from "../accounts/advertiser.service";
 import { MediaAdvertiserRepository } from "../accounts/advertiser.repository";
 
-
-
 @Module({
   imports: [HttpModule],
   providers: [

@@ -13,6 +13,4 @@ export class MediaAdvertiserController {
     await this.advertiserService.fetchAndSaveAllPlatformAdvertisers();
     return { message: "広告主アカウント情報の取得が完了しました" };
   }
-
-
 }

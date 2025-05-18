@@ -12,7 +12,7 @@ export class MediaAdvertiserService {
 
   constructor(
     private readonly http: HttpService,
-    private readonly repository: MediaAdvertiserRepository
+    private readonly repository: MediaAdvertiserRepository,
   ) {}
 
   /**
@@ -30,12 +30,12 @@ export class MediaAdvertiserService {
       // await this.fetchAndSaveFacebookAdvertisers();
 
       this.logger.log(
-        "✅ 全プラットフォームのアドバタイザー情報を保存しました"
+        "✅ 全プラットフォームのアドバタイザー情報を保存しました",
       );
     } catch (error) {
       this.logger.error(
         "❌ アドバタイザー情報の取得中にエラーが発生しました",
-        error instanceof Error ? error.stack : String(error)
+        error instanceof Error ? error.stack : String(error),
       );
     }
   }
@@ -57,17 +57,19 @@ export class MediaAdvertiserService {
       this.logger.log("TikTok広告主情報の取得を開始します");
 
       const resp = await firstValueFrom(
-        this.http.get(apiUrl, { params, headers })
+        this.http.get(apiUrl, { params, headers }),
       );
 
-      const advertisers: AdAccounts[] = resp.data.data.list.map((advertiser: TikTokResponseData) => ({
-        ad_platform_account_id: advertiser.advertiser_id,
-        name: advertiser.advertiser_name,
-        ad_platform_id: this.TIKTOK_PLATFORM_ID,
-        department_id: 1, // デフォルト値
-        project_id: 1, // デフォルト値
-        created_at: getNowJstForDB,
-      }));
+      const advertisers: AdAccounts[] = resp.data.data.list.map(
+        (advertiser: TikTokResponseData) => ({
+          ad_platform_account_id: advertiser.advertiser_id,
+          name: advertiser.advertiser_name,
+          ad_platform_id: this.TIKTOK_PLATFORM_ID,
+          department_id: 1, // デフォルト値
+          project_id: 1, // デフォルト値
+          created_at: getNowJstForDB,
+        }),
+      );
 
       if (!advertisers?.length) {
         this.logger.warn("広告主情報が見つかりませんでした");
@@ -76,12 +78,12 @@ export class MediaAdvertiserService {
 
       await this.repository.upsertMany(advertisers);
       return advertisers.map(
-        (advertiser: AdAccounts) => advertiser.ad_platform_account_id
+        (advertiser: AdAccounts) => advertiser.ad_platform_account_id,
       );
     } catch (error) {
       this.logger.error(
         "❌ TikTok広告主情報の取得中にエラーが発生しました",
-        error instanceof Error ? error.stack : String(error)
+        error instanceof Error ? error.stack : String(error),
       );
       return [];
     }
