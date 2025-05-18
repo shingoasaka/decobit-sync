@@ -1,7 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { AdAccounts, TikTokResponseData } from "./advertiser.interface";
+import {
+  AdAccounts,
+  TikTokResponseData,
+  TikTokApiResponse,
+} from "./advertiser.interface";
 import { MediaAdvertiserRepository } from "./advertiser.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
 
@@ -57,7 +61,7 @@ export class MediaAdvertiserService {
       this.logger.log("TikTok広告主情報の取得を開始します");
 
       const resp = await firstValueFrom(
-        this.http.get(apiUrl, { params, headers }),
+        this.http.get<TikTokApiResponse>(apiUrl, { params, headers }),
       );
 
       const advertisers: AdAccounts[] = resp.data.data.list.map(
@@ -65,9 +69,10 @@ export class MediaAdvertiserService {
           ad_platform_account_id: advertiser.advertiser_id,
           name: advertiser.advertiser_name,
           ad_platform_id: this.TIKTOK_PLATFORM_ID,
-          department_id: 1, // デフォルト値
-          project_id: 1, // デフォルト値
-          created_at: getNowJstForDB,
+          department_id: null,
+          project_id: null,
+          created_at: getNowJstForDB(),
+          updated_at: getNowJstForDB(),
         }),
       );
 
