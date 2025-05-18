@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AdAccounts } from "./advertiser.interface";
+import { PLATFORM_IDS } from "src/constants/platform";
 
 @Injectable()
 export class MediaAdvertiserRepository {
@@ -23,8 +24,8 @@ export class MediaAdvertiserRepository {
           name: advertiser.name,
           ad_platform_account_id: advertiser.ad_platform_account_id,
           ad_platform_id: advertiser.ad_platform_id,
-          department_id: 1, // Default department
-          project_id: 1, // Default project
+          department_id: null,
+          project_id: null,
         },
         update: {
           name: advertiser.name,
@@ -37,19 +38,21 @@ export class MediaAdvertiserRepository {
     try {
       await this.prisma.$transaction(operations);
       this.logger.log(
-        `✅ ${operations.length} 件の広告主アカウントを保存しました`,
+        `[MediaAdvertiser] ${operations.length} 件の広告主アカウントを保存しました`,
       );
       return operations.length;
     } catch (error) {
       this.logger.error(
-        "❌ 広告主アカウントの保存中にエラーが発生しました",
+        "[MediaAdvertiser] 広告主アカウントの保存中にエラーが発生しました",
         error instanceof Error ? error.stack : String(error),
       );
       throw error;
     }
   }
 
-  async findAdvertisersByPlatform(platformId: number): Promise<string[]> {
+  async findAdvertisersByPlatform(
+    platformId: typeof PLATFORM_IDS[keyof typeof PLATFORM_IDS]
+  ): Promise<string[]> {
     try {
       const advertisers = await this.prisma.adAccount.findMany({
         where: {
@@ -66,8 +69,12 @@ export class MediaAdvertiserRepository {
       );
     } catch (error) {
       this.logger.error(
-        `❌ プラットフォームID: ${platformId} の広告主ID取得中にエラーが発生しました`,
-        error instanceof Error ? error.stack : String(error),
+        "[MediaAdvertiser] 広告主ID取得中にエラーが発生しました",
+        {
+          platformId,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        }
       );
       throw error;
     }
