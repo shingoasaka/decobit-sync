@@ -4,7 +4,6 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { PrismaModule } from "./prisma/prisma.module";
 import { LogsModule } from "./modules/logs/logs.module";
 import { AspModule } from "./modules/asp/asp.module";
-import { DiscrepanyModule } from "./modules/discrepany-check/discrepany.module";
 import { CronModule } from "./modules/cron/cron.module";
 
 @Module({
@@ -17,7 +16,6 @@ import { CronModule } from "./modules/cron/cron.module";
     PrismaModule,
     LogsModule,
     AspModule,
-    DiscrepanyModule,
     CronModule,
   ],
   providers: [],

@@ -15,7 +15,6 @@
     "paths": {
       "@prismaService": ["src/prisma/prisma.service"],
       "@asp/*": ["src/modules/asp/*"],
-      "@discrepany/*": ["src/modules/discrepany-check/*"],
       "@logs/*": ["src/modules/logs/*"],
       "@cron/*": ["src/modules/cron/*"],
       "@common/*": ["src/modules/common/*"]
