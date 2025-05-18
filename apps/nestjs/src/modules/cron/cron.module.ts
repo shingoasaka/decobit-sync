@@ -8,10 +8,6 @@ import { MediaModule } from "../media/media.module";
 
 @Module({
   imports: [ScheduleModule.forRoot(), AspModule, MediaModule],
-  providers: [
-    AspCronService,
-    CommonLogService,
-    MediaCronService,
-  ],
+  providers: [AspCronService, CommonLogService, MediaCronService],
 })
 export class CronModule {}
