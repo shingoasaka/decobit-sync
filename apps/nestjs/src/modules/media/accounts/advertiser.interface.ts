@@ -22,3 +22,9 @@ export interface TikTokResponseData {
   advertiser_id: string;
   advertiser_name: string;
 }
+
+// 4. APIパラメータの型
+export interface TikTokApiParams {
+  app_id: string; // アプリケーションID
+  secret: string; // シークレットキー
+}

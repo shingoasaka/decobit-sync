@@ -5,14 +5,15 @@ import {
   AdAccounts,
   TikTokResponseData,
   TikTokApiResponse,
+  TikTokApiParams,
 } from "./advertiser.interface";
 import { MediaAdvertiserRepository } from "./advertiser.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
+import { PLATFORM_IDS } from "src/constants/platform";
 
 @Injectable()
 export class MediaAdvertiserService {
   private readonly logger = new Logger(MediaAdvertiserService.name);
-  private readonly TIKTOK_PLATFORM_ID = 1;
 
   constructor(
     private readonly http: HttpService,
@@ -23,7 +24,7 @@ export class MediaAdvertiserService {
    * 全てのプラットフォームのアドバタイザー情報を取得・保存します
    */
   async fetchAndSaveAllPlatformAdvertisers(): Promise<void> {
-    this.logger.log("全プラットフォームのアドバタイザー情報取得を開始します");
+    this.logger.log("[MediaAdvertiser] 全プラットフォームのアドバタイザー情報取得を開始します");
 
     try {
       // TikTokのアドバタイザー情報を取得
@@ -33,9 +34,7 @@ export class MediaAdvertiserService {
       // await this.fetchAndSaveTwitterAdvertisers();
       // await this.fetchAndSaveFacebookAdvertisers();
 
-      this.logger.log(
-        "✅ 全プラットフォームのアドバタイザー情報を保存しました",
-      );
+      this.logger.log("[MediaAdvertiser] 全プラットフォームのアドバタイザー情報を保存しました");
     } catch (error) {
       this.logger.error(
         "❌ アドバタイザー情報の取得中にエラーが発生しました",
@@ -45,6 +44,7 @@ export class MediaAdvertiserService {
   }
 
   private async fetchAndSaveTikTokAdvertisers(): Promise<string[]> {
+    this.validateTikTokEnv();
     const apiUrl =
       "https://business-api.tiktok.com/open_api/v1.3/oauth2/advertiser/get/";
 
@@ -53,9 +53,10 @@ export class MediaAdvertiserService {
       "Content-Type": "application/json",
     };
 
-    const params = new URLSearchParams();
-    params.append("app_id", process.env.TIKTOK_APP_ID || "");
-    params.append("secret", process.env.TIKTOK_SECRET || "");
+    const params: TikTokApiParams = {
+      app_id: process.env.TIKTOK_APP_ID || "",
+      secret: process.env.TIKTOK_SECRET || "",
+    };
 
     try {
       this.logger.log("TikTok広告主情報の取得を開始します");
@@ -68,7 +69,7 @@ export class MediaAdvertiserService {
         (advertiser: TikTokResponseData) => ({
           ad_platform_account_id: advertiser.advertiser_id,
           name: advertiser.advertiser_name,
-          ad_platform_id: this.TIKTOK_PLATFORM_ID,
+          ad_platform_id: PLATFORM_IDS.TIKTOK,
           department_id: null,
           project_id: null,
           created_at: getNowJstForDB(),
@@ -87,10 +88,13 @@ export class MediaAdvertiserService {
       );
     } catch (error) {
       this.logger.error(
-        "❌ TikTok広告主情報の取得中にエラーが発生しました",
-        error instanceof Error ? error.stack : String(error),
+        "TikTok広告主情報の取得中にエラーが発生しました",
+        {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        }
       );
-      return [];
+      throw new Error('Failed to fetch TikTok advertisers');
     }
   }
   // 他のプラットフォームのメソッドを追加する場合はここに追加
@@ -98,5 +102,11 @@ export class MediaAdvertiserService {
   // 指定されたプラットフォームの広告主IDを取得
   async getAdvertisersByPlatform(platformId: number): Promise<string[]> {
     return this.repository.findAdvertisersByPlatform(platformId);
+  }
+
+  private validateTikTokEnv(): void {
+    if (!process.env.TIKTOK_APP_ID || !process.env.TIKTOK_SECRET) {
+      throw new Error('Required TikTok environment variables are not set');
+    }
   }
 }
