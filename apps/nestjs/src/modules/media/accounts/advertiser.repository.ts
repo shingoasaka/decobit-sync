@@ -51,7 +51,7 @@ export class MediaAdvertiserRepository {
   }
 
   async findAdvertisersByPlatform(
-    platformId: typeof PLATFORM_IDS[keyof typeof PLATFORM_IDS]
+    platformId: (typeof PLATFORM_IDS)[keyof typeof PLATFORM_IDS],
   ): Promise<string[]> {
     try {
       const advertisers = await this.prisma.adAccount.findMany({
@@ -74,7 +74,7 @@ export class MediaAdvertiserRepository {
           platformId,
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined,
-        }
+        },
       );
       throw error;
     }

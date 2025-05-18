@@ -370,8 +370,8 @@ model AdAccount {
   name                  String    @unique
   ad_platform_account_id String
   ad_platform_id        Int
-  department_id         Int
-  project_id            Int
+  department_id         Int?
+  project_id            Int?
   created_at            DateTime  @default(now())
   updated_at            DateTime  @updatedAt
 

@@ -24,7 +24,9 @@ export class MediaAdvertiserService {
    * 全てのプラットフォームのアドバタイザー情報を取得・保存します
    */
   async fetchAndSaveAllPlatformAdvertisers(): Promise<void> {
-    this.logger.log("[MediaAdvertiser] 全プラットフォームのアドバタイザー情報取得を開始します");
+    this.logger.log(
+      "[MediaAdvertiser] 全プラットフォームのアドバタイザー情報取得を開始します",
+    );
 
     try {
       // TikTokのアドバタイザー情報を取得
@@ -34,7 +36,9 @@ export class MediaAdvertiserService {
       // await this.fetchAndSaveTwitterAdvertisers();
       // await this.fetchAndSaveFacebookAdvertisers();
 
-      this.logger.log("[MediaAdvertiser] 全プラットフォームのアドバタイザー情報を保存しました");
+      this.logger.log(
+        "[MediaAdvertiser] 全プラットフォームのアドバタイザー情報を保存しました",
+      );
     } catch (error) {
       this.logger.error(
         "❌ アドバタイザー情報の取得中にエラーが発生しました",
@@ -87,26 +91,25 @@ export class MediaAdvertiserService {
         (advertiser: AdAccounts) => advertiser.ad_platform_account_id,
       );
     } catch (error) {
-      this.logger.error(
-        "TikTok広告主情報の取得中にエラーが発生しました",
-        {
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        }
-      );
-      throw new Error('Failed to fetch TikTok advertisers');
+      this.logger.error("TikTok広告主情報の取得中にエラーが発生しました", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw new Error("Failed to fetch TikTok advertisers");
     }
   }
   // 他のプラットフォームのメソッドを追加する場合はここに追加
 
   // 指定されたプラットフォームの広告主IDを取得
-  async getAdvertisersByPlatform(platformId: number): Promise<string[]> {
+  async getAdvertisersByPlatform(
+    platformId: (typeof PLATFORM_IDS)[keyof typeof PLATFORM_IDS],
+  ): Promise<string[]> {
     return this.repository.findAdvertisersByPlatform(platformId);
   }
 
   private validateTikTokEnv(): void {
     if (!process.env.TIKTOK_APP_ID || !process.env.TIKTOK_SECRET) {
-      throw new Error('Required TikTok environment variables are not set');
+      throw new Error("Required TikTok environment variables are not set");
     }
   }
 }
