@@ -365,3 +365,15 @@ model TiktokDimensionAd {
   adgroup        TiktokDimensionAdgroup   @relation(fields: [adgroup_id], references: [adgroup_id])
 }
 
+model AdAccount {
+  id                    Int       @id @default(autoincrement())
+  name                  String    @unique
+  ad_platform_account_id String
+  ad_platform_id        Int
+  department_id         Int?
+  project_id            Int?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  @@unique([ad_platform_account_id, ad_platform_id])
+}

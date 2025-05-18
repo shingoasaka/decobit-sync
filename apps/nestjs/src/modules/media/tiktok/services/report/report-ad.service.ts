@@ -1,13 +1,14 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { TikTokAdvertiserService } from "../advertiser.service";
 import { FactAdReportService } from "../fact/fact-report-ad.service";
 import { DimExecService } from "../dimensions/dim-exec.service";
 import { TikTokReportDto } from "../../dto/tiktok-report.dto";
 import { TikTokRawReportAd } from "../../interface/tiktok-report.interface";
 import { TikTokReportRepository } from "../../repositories/report/tiktok-report-ad.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
+import { MediaAdvertiserService } from "../../../accounts/advertiser.service";
+import { MediaAdvertiserRepository } from "../../../accounts/advertiser.repository";
 
 @Injectable()
 export class TikTokReportService {
@@ -17,16 +18,23 @@ export class TikTokReportService {
 
   constructor(
     private readonly http: HttpService,
-    private readonly advertiser: TikTokAdvertiserService,
     private readonly reportRepository: TikTokReportRepository,
     private readonly factAdReportService: FactAdReportService,
     private readonly dimExecService: DimExecService,
+    private readonly advertiserService: MediaAdvertiserService,
+    // private readonly advertiserRepository: MediaAdvertiserRepository
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     try {
       const startTime = Date.now();
-      const advertiserIds = await this.advertiser.fetchAdvertiserLogs();
+
+      // 広告主情報を取得,保存
+      await this.advertiserService.fetchAndSaveAllPlatformAdvertisers();
+
+      // テーブルから広告主IDを取得
+      let advertiserIds =
+        await this.advertiserService.getAdvertisersByPlatform(1); //Todo
 
       if (!advertiserIds || advertiserIds.length === 0) {
         this.logger.warn("No advertiser IDs found");
