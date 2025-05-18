@@ -5,6 +5,7 @@ import { TikTokReportAdgroupService } from "../../media/tiktok/services/report/r
 import { TikTokReportCampaignService } from "../../media/tiktok/services/report/report-campaign.service";
 import { CommonLogService } from "@logs/common-log.service";
 
+
 // 実行結果の型定義
 interface ServiceResult {
   name: string;

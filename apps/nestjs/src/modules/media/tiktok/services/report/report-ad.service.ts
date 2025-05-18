@@ -1,13 +1,14 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { TikTokAdvertiserService } from "../advertiser.service";
 import { FactAdReportService } from "../fact/fact-report-ad.service";
 import { DimExecService } from "../dimensions/dim-exec.service";
 import { TikTokReportDto } from "../../dto/tiktok-report.dto";
 import { TikTokRawReportAd } from "../../interface/tiktok-report.interface";
 import { TikTokReportRepository } from "../../repositories/report/tiktok-report-ad.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
+import { MediaAdvertiserService } from "../../../accounts/advertiser.service";
+import { MediaAdvertiserRepository } from "../../../accounts/advertiser.repository";
 
 @Injectable()
 export class TikTokReportService {
@@ -17,16 +18,22 @@ export class TikTokReportService {
 
   constructor(
     private readonly http: HttpService,
-    private readonly advertiser: TikTokAdvertiserService,
     private readonly reportRepository: TikTokReportRepository,
     private readonly factAdReportService: FactAdReportService,
     private readonly dimExecService: DimExecService,
+    private readonly advertiserService: MediaAdvertiserService,
+    // private readonly advertiserRepository: MediaAdvertiserRepository
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     try {
       const startTime = Date.now();
-      const advertiserIds = await this.advertiser.fetchAdvertiserLogs();
+
+      // 広告主情報を取得,保存
+      await this.advertiserService.fetchAndSaveAllPlatformAdvertisers();
+
+      // テーブルから広告主IDを取得
+      let advertiserIds = await this.advertiserService.getAdvertisersByPlatform(1);//Todo
 
       if (!advertiserIds || advertiserIds.length === 0) {
         this.logger.warn("No advertiser IDs found");
@@ -85,20 +92,20 @@ export class TikTokReportService {
 
         try {
           this.logger.log(
-            `APIリクエスト開始 (advertiser_id: ${advertiserId}, 日付: ${todayStr})`,
+            `APIリクエスト開始 (advertiser_id: ${advertiserId}, 日付: ${todayStr})`
           );
           const response = await firstValueFrom(
             this.http.get<{ data: { list: TikTokReportDto[] } }>(this.apiUrl, {
               params,
               headers,
-            }),
+            })
           );
           const list = response.data?.data?.list;
 
           if (list?.length > 0) {
             // DTOからエンティティに変換
             const records: TikTokRawReportAd[] = list.map((dto) =>
-              this.convertDtoToEntity(dto),
+              this.convertDtoToEntity(dto)
             );
 
             // バッチ処理で一括保存
@@ -110,17 +117,17 @@ export class TikTokReportService {
             await this.factAdReportService.normalize(records);
 
             this.logger.log(
-              `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`,
+              `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`
             );
           } else {
             this.logger.warn(
-              `本日(${todayStr})のレポートデータが空です (advertiser_id: ${advertiserId})`,
+              `本日(${todayStr})のレポートデータが空です (advertiser_id: ${advertiserId})`
             );
           }
         } catch (error) {
           this.logger.error(
             `❌ APIリクエストエラー (advertiser_id: ${advertiserId})`,
-            error instanceof Error ? error.stack : String(error),
+            error instanceof Error ? error.stack : String(error)
           );
           // 処理は継続
         }
@@ -128,17 +135,17 @@ export class TikTokReportService {
 
       const processingTime = (Date.now() - startTime) / 1000;
       this.logger.log(
-        `処理完了: ${totalRecords}件のデータを${processingTime}秒で取得しました`,
+        `処理完了: ${totalRecords}件のデータを${processingTime}秒で取得しました`
       );
 
       return totalRecords;
     } catch (error) {
       this.logger.error(
         `❌ TikTokレポート取得処理中にエラーが発生しました`,
-        error instanceof Error ? error.stack : String(error),
+        error instanceof Error ? error.stack : String(error)
       );
       throw new Error(
-        `TikTokレポート取得処理に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+        `TikTokレポート取得処理に失敗しました: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
