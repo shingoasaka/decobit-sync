@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { TikTokAdvertiserService } from "./services/advertiser.service";
 import { HttpModule } from "@nestjs/axios";
 import { TikTokReportService } from "./services/report/report-ad.service";
 import { TikTokReportAdgroupService } from "./services/report/report-adgroup.service";
@@ -21,11 +20,13 @@ import { DimAdRepository } from "./repositories/dimensions/dim-ad.repository";
 import { PrismaService } from "@prismaService";
 import { FactCampaignReportRepository } from "./repositories/fact/fact-report-campaign.repository";
 import { FactAdgroupReportRepository } from "./repositories/fact/fact-report-adgroup.repository";
+import { MediaModule } from "../media.module";
+import { MediaAdvertiserService } from "../accounts/advertiser.service";
+import { MediaAdvertiserRepository } from "../accounts/advertiser.repository";
 
 @Module({
   imports: [HttpModule],
   providers: [
-    TikTokAdvertiserService,
     TikTokReportService,
     TikTokReportAdgroupService,
     TikTokReportCampaignService,
@@ -46,9 +47,10 @@ import { FactAdgroupReportRepository } from "./repositories/fact/fact-report-adg
     DimAdgroupRepository,
     DimAdRepository,
     PrismaService,
+    MediaAdvertiserService,
+    MediaAdvertiserRepository,
   ],
   exports: [
-    TikTokAdvertiserService,
     TikTokReportService,
     TikTokReportAdgroupService,
     TikTokReportCampaignService,
@@ -68,6 +70,8 @@ import { FactAdgroupReportRepository } from "./repositories/fact/fact-report-adg
     DimCampaignRepository,
     DimAdgroupRepository,
     DimAdRepository,
+    MediaAdvertiserService,
+    MediaAdvertiserRepository,
   ],
 })
 export class TikTokModule {}
