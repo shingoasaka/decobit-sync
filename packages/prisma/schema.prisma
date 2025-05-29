@@ -18,75 +18,190 @@ enum AspType {
   SAMPLE_AFFILIATE
 }
 
-model AspActionLog {
-  id               Int      @id @default(autoincrement())
-  aspType          AspType
-  actionDateTime   DateTime?
-  affiliateLinkName String?
-  referrerUrl      String?
-  uid              String?
-  createdAt        DateTime?
-  updatedAt        DateTime?
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  @@unique([aspType, actionDateTime, affiliateLinkName])
+  users      User[]
+  adAccounts AdAccount[]
 }
 
-model AspClickLog {
-  id               Int      @id @default(autoincrement())
-  aspType          AspType
-  clickDateTime    DateTime
-  affiliateLinkName String
-  referrerUrl      String?
-  createdAt        DateTime?
-  updatedAt        DateTime?
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  firebase_uid  String   @unique
+  role          String   // "user" | "admin"
+  department_id Int
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 
-  @@unique([aspType, clickDateTime, affiliateLinkName])
+  department                Department @relation(fields: [department_id], references: [id])
+  displaySettingVisibilities UserDisplaySettingVisibility[]
+  permissions               UserPermission[]
+  permissionRequests        UserPermissionRequest[]
 }
 
-model ClickLogSnapshot {
-  id               Int      @id @default(autoincrement())
-  aspType          AspType
-  affiliateLinkName String
-  currentTotalClicks Int      // ASPから取得した現在の総クリック数
-  snapshotDate     DateTime
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+model Client {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  @@unique([aspType, affiliateLinkName, snapshotDate])
+  projects Project[]
 }
 
-model TikTokRawReportAd {
+model Project {
+  id        Int      @id @default(autoincrement())
+  name      String
+  client_id Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client     Client @relation(fields: [client_id], references: [id])
+  adAccounts AdAccount[]
+
+  @@unique([name, client_id])
+}
+
+model AdPlatform {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  adAccounts           AdAccount[]
+  displaySettings      AdPlatformDisplaySetting[]
+}
+
+model AdAccount {
   id                    Int      @id @default(autoincrement())
-  advertiser_id         String
-  ad_id                 String
-  stat_time_day         String?
-  budget                Int?
-  spend                 Int?
-  impressions           Int?
-  clicks                Int?
-  video_play_actions    Int?
-  video_watched_2s      Int?
-  video_watched_6s      Int?
-  video_views_p100      Int?
-  reach                 Int?
-  conversion            Int?
-  campaign_id           String
-  campaign_name         String?
-  adgroup_id            String
-  adgroup_name          String?
-  ad_name               String?
-  ad_url                String?
-  stat_time_day_dim     String?
-  ad_id_dim             String?
+  name                  String   @unique
+  ad_platform_account_id String
+  ad_platform_id        Int
+  department_id         Int?
+  project_id            Int?
   created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  adPlatform           AdPlatform @relation(fields: [ad_platform_id], references: [id])
+  department           Department? @relation(fields: [department_id], references: [id])
+  project              Project?    @relation(fields: [project_id], references: [id])
+  permissions          UserPermission[]
+  permissionRequests   UserPermissionRequest[]
+  campaigns            Campaign[]
+  adGroups             AdGroup[]
+  ads                  Ad[]
+  tikTokRawReportCampaigns TikTokRawReportCampaign[]
+  tikTokRawReportAdGroups  TikTokRawReportAdGroup[]
+  tikTokRawReportAds       TikTokRawReportAd[]
+  affiliateLinks           AffiliateLink[]
+  linkMatchers             LinkMatcher[]
+
+  @@unique([ad_platform_account_id, ad_platform_id])
 }
 
-model TikTokRawReportAdgroup {
-  id                   Int      @id @default(autoincrement()) 
-  stat_time_day        String   
-  advertiser_id        String   
-  adgroup_id           String
-  adgroup_name           String
+model AdPlatformDisplaySetting {
+  id              Int      @id @default(autoincrement())
+  ad_platform_id  Int
+  name            String
+  key             String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  adPlatform      AdPlatform @relation(fields: [ad_platform_id], references: [id])
+  visibilities    UserDisplaySettingVisibility[]
+}
+
+model UserDisplaySettingVisibility {
+  id                          Int      @id @default(autoincrement())
+  user_id                     Int
+  ad_platform_display_setting_id Int
+  is_visible                  Boolean
+  created_at                  DateTime @default(now())
+  updated_at                  DateTime @updatedAt
+
+  user                User @relation(fields: [user_id], references: [id])
+  displaySetting      AdPlatformDisplaySetting @relation(fields: [ad_platform_display_setting_id], references: [id])
+
+  @@unique([user_id, ad_platform_display_setting_id])
+}
+
+model UserPermission {
+  id                    Int      @id @default(autoincrement())
+  user_id               Int
+  ad_account_id         Int
+  can_manage_ad_account Boolean
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  user        User @relation(fields: [user_id], references: [id])
+  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+
+  @@unique([user_id, ad_account_id])
+}
+
+model UserPermissionRequest {
+  id                    Int      @id @default(autoincrement())
+  user_id               Int
+  ad_account_id         Int
+  can_manage_ad_account Boolean
+  status                String   // "pending" | "approved" | "rejected"
+  approved_by           Int?
+  rejected_by           Int?
+  requested_at          DateTime
+  approved_at           DateTime?
+  rejected_at           DateTime?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+
+  user        User @relation(fields: [user_id], references: [id])
+  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+}
+
+model Campaign {
+  id                    Int      @id @default(autoincrement())
+  ad_account_id         Int
+  platform_campaign_id  BigInt
+  platform_campaign_name String
+  created_at            DateTime @default(now())
+
+  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+  adGroups    AdGroup[]
+}
+
+model AdGroup {
+  id                    Int      @id @default(autoincrement())
+  ad_account_id         Int
+  campaign_id           Int
+  platform_adgroup_id   BigInt
+  platform_adgroup_name String
+  created_at            DateTime @default(now())
+
+  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+  campaign    Campaign @relation(fields: [campaign_id], references: [id])
+  ads         Ad[]
+}
+
+model Ad {
+  id                Int      @id @default(autoincrement())
+  ad_account_id     Int
+  adgroup_id        Int
+  platform_ad_id    Int
+  ad_name           String
+  created_at        DateTime @default(now())
+
+  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+  adGroup     AdGroup @relation(fields: [adgroup_id], references: [id])
+}
+
+model TikTokRawReportCampaign {
+  id                   Int      @id @default(autoincrement())
+  ad_account_id        Int?
+  stat_time_day        DateTime
+  ad_platform_account_id String
+  platform_campaign_id BigInt
   budget               Int
   spend                Int
   impressions          Int
@@ -98,16 +213,17 @@ model TikTokRawReportAdgroup {
   reach                Int
   conversion           Int
   created_at           DateTime @default(now())
-  stat_time_day_dim     String?
 
+  adAccount   AdAccount? @relation(fields: [ad_account_id], references: [id])
 }
 
-model TikTokRawReportCampaign {
-  id                   Int      @id @default(autoincrement()) 
-  stat_time_day        String   
-  advertiser_id        String   
-  campaign_id          String
-  campaign_name        String
+model TikTokRawReportAdGroup {
+  id                   Int      @id @default(autoincrement())
+  ad_account_id        Int?
+  stat_time_day        DateTime
+  ad_platform_account_id String
+  platform_adgroup_id  Int
+  budget               Int
   spend                Int
   impressions          Int
   clicks               Int
@@ -118,113 +234,106 @@ model TikTokRawReportCampaign {
   reach                Int
   conversion           Int
   created_at           DateTime @default(now())
-  stat_time_day_dim     String?
 
+  adAccount   AdAccount? @relation(fields: [ad_account_id], references: [id])
 }
 
-
-model TiktokFactReportAd {
-  advertiser_id         String
-  ad_id                 String
-  adgroup_id            String
-  campaign_id           String
-  stat_time_day         String
-  budget                Int?
-  spend                 Int?
-  impressions           Int?
-  clicks                Int?
-  video_play_actions    Int?
-  video_watched_2s      Int?
-  video_watched_6s      Int?
-  video_views_p100      Int?
-  reach                 Int?
-  campaign_name         String?
-  adgroup_name          String?
-  ad_name               String?
-  ad_url                String?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
-
-  campaign              TiktokDimensionCampaign @relation(fields: [campaign_id], references: [campaign_id])
-  @@id([stat_time_day, ad_id])
-}
-
-model TiktokFactReportAdgroup {
-  advertiser_id         String
-  adgroup_id            String
-  stat_time_day         String
-  budget                Int?
-  spend                 Int?
-  impressions           Int?
-  clicks                Int?
-  video_play_actions    Int?
-  video_watched_2s      Int?
-  video_watched_6s      Int?
-  video_views_p100      Int?
-  reach                 Int?
-  adgroup_name          String?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
-
-  @@id([stat_time_day, adgroup_id])
-}
-
-model TiktokFactReportCampaign {
-  advertiser_id         String
-  campaign_id            String
-  stat_time_day         String
-  spend                 Int?
-  impressions           Int?
-  clicks                Int?
-  video_play_actions    Int?
-  video_watched_2s      Int?
-  video_watched_6s      Int?
-  video_views_p100      Int?
-  reach                 Int?
-  campaign_name          String?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
-
-  @@id([stat_time_day, campaign_id])
-}
-
-model TiktokDimensionCampaign {
-  campaign_id    String           @id
-  advertiser_id  String
-  campaign_name  String?
-
-  adgroups       TiktokDimensionAdgroup[]
-  reports        TiktokFactReportAd[]
-}
-
-model TiktokDimensionAdgroup {
-  adgroup_id     String           @id
-  adgroup_name   String
-  advertiser_id  String
-  campaign_id    String
-
-  campaign        TiktokDimensionCampaign @relation(fields: [campaign_id], references: [campaign_id])
-  ads            TiktokDimensionAd[]
-}
-
-model TiktokDimensionAd {
-  ad_id          String           @id
-  ad_name        String
-  advertiser_id  String
-  adgroup_id     String
-
-  adgroup        TiktokDimensionAdgroup   @relation(fields: [adgroup_id], references: [adgroup_id])
-}
-
-model AdAccount {
-  id                    Int       @id @default(autoincrement())
-  name                  String    @unique
+model TikTokRawReportAd {
+  id                   Int      @id @default(autoincrement())
+  ad_account_id        Int?
+  stat_time_day        DateTime
   ad_platform_account_id String
-  ad_platform_id        Int
-  department_id         Int?
-  project_id            Int?
-  created_at            DateTime  @default(now())
-  updated_at            DateTime  @updatedAt
+  platform_campaign_id BigInt
+  platform_campaign_name String?
+  platform_adgroup_id  BigInt
+  platform_adgroup_name String?
+  platform_ad_id       BigInt
+  platform_ad_name     String?
+  ad_url               String?
+  budget               Int
+  spend                Int
+  impressions          Int
+  clicks               Int
+  video_play_actions   Int
+  video_watched_2s     Int
+  video_watched_6s     Int
+  video_views_p100     Int
+  reach                Int
+  conversion           Int
+  created_at           DateTime @default(now())
 
-  @@unique([ad_platform_account_id, ad_platform_id])
+  adAccount   AdAccount? @relation(fields: [ad_account_id], references: [id])
+}
+
+model AffiliateLink {
+  id              Int      @id @default(autoincrement())
+  ad_account_id   Int
+  asp_type        AspType
+  affiliate_name  String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  adAccount       AdAccount @relation(fields: [ad_account_id], references: [id])
+  linkMatchers    LinkMatcher[]
+  clickSnapshots  ClickLogSnapshot[]
+  actionLogs      AspActionLog[]
+  clickLogs       AspClickLog[]
+}
+
+model AspActionLog {
+  id                Int      @id @default(autoincrement())
+  affiliate_link_id Int?
+  asp_type          AspType
+  action_date_time  DateTime
+  affiliateLinkName String
+  referrerUrl       String?
+  uid               String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+}
+
+model AspClickLog {
+  id                Int      @id @default(autoincrement())
+  affiliate_link_id Int?
+  asp_type          AspType
+  click_date_time   DateTime
+  affiliateLinkName String
+  referrerUrl       String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+}
+
+model ClickLogSnapshot {
+  id                Int      @id @default(autoincrement())
+  affiliate_link_id Int?
+  asp_type          AspType
+  affiliateLinkName String
+  currentTotalClicks Int
+  snapshot_date     DateTime
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+
+  @@unique([asp_type, affiliateLinkName, snapshot_date])
+}
+
+model LinkMatcher {
+  id                Int      @id @default(autoincrement())
+  affiliate_link_id Int?
+  ad_account_id     Int
+  asp_type          AspType
+  match_type        String   // "AFFILIATE_LINK" | "REFERRER_URL"
+  target_dim        String   // "campaign_name" | "adgroup_name" | "ad_name"
+  media_level       String   // "Campaign" | "AdGroup" | "Ad"
+  regex_pattern     String   @db.Text
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+  adAccount         AdAccount      @relation(fields: [ad_account_id], references: [id])
 }

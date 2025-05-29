@@ -105,8 +105,8 @@ export class TikTokReportService {
 
           if (list?.length > 0) {
             // DTOからエンティティに変換
-            const records: TikTokRawReportAd[] = list.map((dto) =>
-              this.convertDtoToEntity(dto),
+            const records: TikTokRawReportAd[] = list.map(
+              (dto: TikTokReportDto) => this.convertDtoToEntity(dto),
             );
 
             // バッチ処理で一括保存

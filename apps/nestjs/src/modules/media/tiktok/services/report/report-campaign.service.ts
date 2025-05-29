@@ -80,25 +80,48 @@ export class TikTokReportCampaignService {
           const list = response.data?.data?.list || [];
 
           if (list?.length > 0) {
-            const records: TikTokRawReportCampaign[] = list.map((item) => ({
-              advertiser_id: item.metrics.advertiser_id,
-              campaign_id: item.dimensions.campaign_id,
-              stat_time_day: item.dimensions.stat_time_day,
-              spend: this.parseNumber(item.metrics.spend),
-              impressions: this.parseNumber(item.metrics.impressions),
-              clicks: this.parseNumber(item.metrics.clicks),
-              video_play_actions: this.parseNumber(
-                item.metrics.video_play_actions,
-              ),
-              campaign_name: item.metrics.campaign_name,
-              video_watched_2s: this.parseNumber(item.metrics.video_watched_2s),
-              video_watched_6s: this.parseNumber(item.metrics.video_watched_6s),
-              video_views_p100: this.parseNumber(item.metrics.video_views_p100),
-              reach: this.parseNumber(item.metrics.reach),
-              conversion: this.parseNumber(item.metrics.conversion),
-              stat_time_day_dim: item.dimensions.stat_time_day,
-              created_at: getNowJstForDB(),
-            }));
+            const records: TikTokRawReportCampaign[] = list.map(
+              (item: {
+                metrics: {
+                  advertiser_id: any;
+                  spend: string;
+                  impressions: string;
+                  clicks: string;
+                  video_play_actions: string;
+                  campaign_name: any;
+                  video_watched_2s: string;
+                  video_watched_6s: string;
+                  video_views_p100: string;
+                  reach: string;
+                  conversion: string;
+                };
+                dimensions: { campaign_id: any; stat_time_day: any };
+              }) => ({
+                advertiser_id: item.metrics.advertiser_id,
+                campaign_id: item.dimensions.campaign_id,
+                stat_time_day: item.dimensions.stat_time_day,
+                spend: this.parseNumber(item.metrics.spend),
+                impressions: this.parseNumber(item.metrics.impressions),
+                clicks: this.parseNumber(item.metrics.clicks),
+                video_play_actions: this.parseNumber(
+                  item.metrics.video_play_actions,
+                ),
+                campaign_name: item.metrics.campaign_name,
+                video_watched_2s: this.parseNumber(
+                  item.metrics.video_watched_2s,
+                ),
+                video_watched_6s: this.parseNumber(
+                  item.metrics.video_watched_6s,
+                ),
+                video_views_p100: this.parseNumber(
+                  item.metrics.video_views_p100,
+                ),
+                reach: this.parseNumber(item.metrics.reach),
+                conversion: this.parseNumber(item.metrics.conversion),
+                stat_time_day_dim: item.dimensions.stat_time_day,
+                created_at: getNowJstForDB(),
+              }),
+            );
 
             const saved = await this.reportRepository.save(records);
             total += saved;

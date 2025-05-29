@@ -19,6 +19,7 @@ export class TikTokReportDto {
     ad_url: string;
   };
   dimensions: {
+    [x: string]: any;
     ad_id: string;
     stat_time_day: string;
   };

@@ -7,6 +7,7 @@ import { TikTokRawReportAdgroup } from "../../interface/tiktok-report.interface"
 import { TikTokReportAdgroupRepository } from "../../repositories/report/tiktok-report-adgroup.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
 import { FactAdgroupReportService } from "../fact/fact-report-adgroup.service";
+import { TikTokReportDto } from "../../dto/tiktok-report.dto";
 @Injectable()
 export class TikTokReportAdgroupService {
   private readonly apiUrl =
@@ -91,27 +92,35 @@ export class TikTokReportAdgroupService {
           const list = response.data?.data?.list;
 
           if (list?.length > 0) {
-            const records: TikTokRawReportAdgroup[] = list.map((item) => ({
-              adgroup_id: item.dimensions.adgroup_id,
-              adgroup_name: item.metrics.adgroup_name,
-              advertiser_id: item.metrics.advertiser_id,
-              stat_time_day: item.dimensions.stat_time_day,
-              budget: this.parseNumber(item.metrics.budget),
-              spend: this.parseNumber(item.metrics.spend),
-              impressions: this.parseNumber(item.metrics.impressions),
-              clicks: this.parseNumber(item.metrics.clicks),
-              video_play_actions: this.parseNumber(
-                item.metrics.video_play_actions,
-              ),
-              video_watched_2s: this.parseNumber(item.metrics.video_watched_2s),
-              video_watched_6s: this.parseNumber(item.metrics.video_watched_6s),
-              video_views_p100: this.parseNumber(item.metrics.video_views_p100),
-              reach: this.parseNumber(item.metrics.reach),
-              conversion: this.parseNumber(item.metrics.conversion),
-              // 必須フィールドの追加
-              stat_time_day_dim: item.dimensions.stat_time_day,
-              created_at: getNowJstForDB(),
-            }));
+            const records: TikTokRawReportAdgroup[] = list.map(
+              (item: TikTokReportDto) => ({
+                adgroup_id: item.dimensions.adgroup_id,
+                adgroup_name: item.metrics.adgroup_name,
+                advertiser_id: item.metrics.advertiser_id,
+                stat_time_day: item.dimensions.stat_time_day,
+                budget: this.parseNumber(item.metrics.budget),
+                spend: this.parseNumber(item.metrics.spend),
+                impressions: this.parseNumber(item.metrics.impressions),
+                clicks: this.parseNumber(item.metrics.clicks),
+                video_play_actions: this.parseNumber(
+                  item.metrics.video_play_actions,
+                ),
+                video_watched_2s: this.parseNumber(
+                  item.metrics.video_watched_2s,
+                ),
+                video_watched_6s: this.parseNumber(
+                  item.metrics.video_watched_6s,
+                ),
+                video_views_p100: this.parseNumber(
+                  item.metrics.video_views_p100,
+                ),
+                reach: this.parseNumber(item.metrics.reach),
+                conversion: this.parseNumber(item.metrics.conversion),
+                // 必須フィールドの追加
+                stat_time_day_dim: item.dimensions.stat_time_day,
+                created_at: getNowJstForDB(),
+              }),
+            );
 
             // バッチ処理で一括保存
             const savedCount = await this.reportRepository.save(records);
