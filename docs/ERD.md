@@ -15,7 +15,7 @@ User {
 int id PK
 string email "UNIQUE"
 string firebase_uid "UNIQUE"
-string role "user | admin"
+Role role "user | admin"
 int department_id FK
 datetime created_at
 datetime updated_at
@@ -80,7 +80,7 @@ int id PK
 int user_id FK
 int ad_account_id FK
 boolean can_manage_ad_account
-string status "pending | approved | rejected"
+UserPermissionRequestStatus status "pending | approved | rejected"
 int approved_by FK
 int rejected_by FK
 datetime requested_at
@@ -92,25 +92,25 @@ datetime updated_at
 
 %% 媒体 ディメンション＆生レポート
 Campaign {
-int id PK "アプリ内 PK"
-int ad_account_id FK "AdAccount.id"
-int platform_campaign_id "媒体側のcampaignId"
+int id PK
+int ad_account_id FK
+bigint platform_campaign_id "媒体側のcampaignId"
 string platform_campaign_name
 datetime created_at
 }
 AdGroup {
-int id PK "アプリ内 PK"
-int ad_account_id FK "AdAccount.id"
-int campaign_id FK "Campaign.id"
-int platform_adgroup_id "媒体側のadgroupId"
+int id PK
+int ad_account_id FK
+int campaign_id FK
+bigint platform_adgroup_id "媒体側のadgroupId"
 string platform_adgroup_name
 datetime created_at
 }
 Ad {
 int id PK
-int ad_account_id FK "AdAccount.id"
-int adgroup_id FK "AdGroup.id"
-int platform_ad_id "媒体側のadId"
+int ad_account_id FK
+int adgroup_id FK
+bigint platform_ad_id "媒体側のadId"
 string ad_name
 datetime created_at
 }
@@ -119,7 +119,7 @@ int id PK
 int ad_account_id FK "AdAccount.id | NULLABLE"
 date stat_time_day
 string ad_platform_account_id
-int platform_campaign_id
+bigint platform_campaign_id
 int budget
 int spend
 int impressions
@@ -137,7 +137,7 @@ int id PK
 int ad_account_id FK "AdAccount.id | NULLABLE"
 date stat_time_day
 string ad_platform_account_id
-int platform_adgroup_id
+bigint platform_adgroup_id
 int budget
 int spend
 int impressions
@@ -155,11 +155,11 @@ int id PK
 int ad_account_id FK "AdAccount.id | NULLABLE"
 date stat_time_day
 string ad_platform_account_id
-int platform_campaign_id
+bigint platform_campaign_id
 string platform_campaign_name
-int platform_adgroup_id
+bigint platform_adgroup_id
 string platform_adgroup_name
-int platform_ad_id
+bigint platform_ad_id
 string platform_ad_name
 string ad_url
 int budget
@@ -178,38 +178,41 @@ datetime created_at
 %% ASP
 AffiliateLink {
 int id PK
-int ad_account_id FK "再利用するよう"
-string asp_type "METRON | CATS | LAD | ..."
-string affiliate_name
+AspType asp_type "METRON | CATS | LAD | MONKEY | FINEBIRD | HANIKAMU | RENTRACKS | SAMPLE_AFFILIATE"
+string affiliate_link_name
+datetime created_at
+datetime updated_at
+}
+ReferrerLink {
+int id PK
+creative_value TEXT NOT NULL
 datetime created_at
 datetime updated_at
 }
 AspActionLog {
 int id PK
-int affiliate_link_id FK "NULLABLE"
-enum asp_type "METRON | CATS | LAD | MONKEY | FINEBIRD | HANIKAMU | RENTRACKS | SAMPLE_AFFILIATE"
+int affiliate_link_id FK
+int referrer_link_id FK "NULLABLE"
+AspType asp_type
 datetime action_date_time
-string affiliateLinkName "スクレイピングでとってきた文字列"
-string referrerUrl
-string uid "METRONのみで必要"
+string uid
 datetime created_at
 datetime updated_at
 }
 AspClickLog {
 int id PK
-int affiliate_link_id FK "NULLABLE"
-enum asp_type "METRON | CATS | LAD | MONKEY | FINEBIRD | HANIKAMU | RENTRACKS | SAMPLE_AFFILIATE"
+int affiliate_link_id FK
+int referrer_link_id FK "NULLABLE"
+AspType asp_type
 datetime click_date_time
-string affiliateLinkName "スクレイピングでとってきた文字列"
-string referrerUrl
 datetime created_at
 datetime updated_at
 }
 ClickLogSnapshot {
 int id PK
-int affiliate_link_id FK "あった方が楽"
-enum asp_type "METRON | CATS | LAD | MONKEY | FINEBIRD | HANIKAMU | RENTRACKS | SAMPLE_AFFILIATE"
-string affiliateLinkName
+int affiliate_link_id FK
+int referrer_link_id FK "NULLABLE"
+AspType asp_type
 int currentTotalClicks
 datetime snapshot_date
 datetime created_at
@@ -217,14 +220,14 @@ datetime updated_at
 }
 
 LinkMatcher {
+int ad_account_id FK
 int id PK
-int affiliate_link_id FK "ASP側の突合キー | AffiliateLink.id NULLable"
-int ad_account_id FK "AdAccountごとに突合タイプが統一"
-string asp_type "ENUM METRON | CATS | LAD | MONKEY | FINEBIRD | HANIKAMU | RENTRACKS | SAMPLE_AFFILIATE"
-string match_type "AFFILIATE_LINK | REFERRER_URL"
-string target_dim "campaign_name | adgroup_name | ad_name"
-string media_level "Campaign | AdGroup | Ad"
-text regex_pattern "スクレイピングで来る生の文字列にマッチさせる正規表現"
+int affiliate_link_id FK "NULLABLE"
+int referrer_link_id FK "NULLABLE"
+AspType asp_type
+MatchType match_type "AFFILIATE_LINK | REFERRER_URL"
+MediaLevel media_level "Campaign | AdGroup | Ad"
+BigInt target_dim_id
 datetime created_at
 datetime updated_at
 }
@@ -258,8 +261,12 @@ LinkMatcher }o--|| AffiliateLink : "affiliate_link_id FK"
 
 ClickLogSnapshot }o--|| AffiliateLink : "affiliate_link_id FK"
 
-AspActionLog }|..o{ LinkMatcher : "match on affiliateLinkName via regex_pattern"
-AspClickLog }|..o{ LinkMatcher : "match on affiliateLinkName via regex_pattern"
+AffiliateLink ||--o{ AspActionLog : "affiliate_link_id"
+AffiliateLink ||--o{ AspClickLog : "affiliate_link_id"
+AffiliateLink ||--o{ ClickLogSnapshot : "affiliate_link_id"
+ReferrerLink ||--o{ AspActionLog : "referrer_link_id"
+ReferrerLink ||--o{ AspClickLog : "referrer_link_id"
+ReferrerLink ||--o{ ClickLogSnapshot : "referrer_link_id"
 
 Campaign ||--|{ AdGroup : "1 to many"
 AdGroup ||--|{ Ad : "1 to many"

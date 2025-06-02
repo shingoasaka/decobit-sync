@@ -6,7 +6,6 @@ import { MediaAdvertiserRepository } from "../../../accounts/advertiser.reposito
 import { TikTokRawReportCampaign } from "../../interface/tiktok-report.interface";
 import { TikTokReportCampaignRepository } from "../../repositories/report/tiktok-report-campaign.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
-import { FactCampaignReportService } from "../fact/fact-report-campaign.service";
 
 @Injectable()
 export class TikTokReportCampaignService {
@@ -18,7 +17,6 @@ export class TikTokReportCampaignService {
     private readonly http: HttpService,
     private readonly advertiserService: MediaAdvertiserService,
     private readonly reportRepository: TikTokReportCampaignRepository,
-    private readonly factCampaignReportService: FactCampaignReportService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -128,7 +126,6 @@ export class TikTokReportCampaignService {
             this.logger.log(
               `✅ ${saved}件のキャンペーンレポートを保存しました`,
             );
-            await this.factCampaignReportService.normalize(records);
           } else {
             this.logger.warn(`本日(${todayStr})のキャンペーンレポートが空です`);
           }

@@ -1,4 +1,11 @@
-import { PrismaClient, AspType } from "@prisma/client";
+import {
+  PrismaClient,
+  AspType,
+  MatchType,
+  MediaLevel,
+  Role,
+  UserPermissionRequestStatus,
+} from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
@@ -36,7 +43,7 @@ async function main() {
     create: {
       email: "test@example.com",
       firebase_uid: "test-uid-123",
-      role: "admin",
+      role: Role.admin,
       department_id: department.id,
     },
   });
@@ -63,7 +70,7 @@ async function main() {
   const campaign = await prisma.campaign.create({
     data: {
       ad_account_id: adAccount.id,
-      platform_campaign_id: 10010000,
+      platform_campaign_id: BigInt(10010000),
       platform_campaign_name: "サンプルキャンペーン",
     },
   });
@@ -73,7 +80,7 @@ async function main() {
     data: {
       ad_account_id: adAccount.id,
       campaign_id: campaign.id,
-      platform_adgroup_id: 20010000,
+      platform_adgroup_id: BigInt(20010000),
       platform_adgroup_name: "サンプルアドグループ",
     },
   });
@@ -83,7 +90,7 @@ async function main() {
     data: {
       ad_account_id: adAccount.id,
       adgroup_id: adGroup.id,
-      platform_ad_id: 30010000,
+      platform_ad_id: BigInt(30010000),
       ad_name: "サンプル広告",
     },
   });
@@ -94,7 +101,7 @@ async function main() {
       ad_account_id: adAccount.id,
       stat_time_day: new Date("2024-06-01"),
       ad_platform_account_id: "tiktok-acc-1",
-      platform_campaign_id: 10010000,
+      platform_campaign_id: BigInt(10010000),
       budget: 10000,
       spend: 5000,
       impressions: 1000,
@@ -114,7 +121,7 @@ async function main() {
       ad_account_id: adAccount.id,
       stat_time_day: new Date("2024-06-01"),
       ad_platform_account_id: "tiktok-acc-1",
-      platform_adgroup_id: 20010000,
+      platform_adgroup_id: BigInt(20010000),
       budget: 5000,
       spend: 2500,
       impressions: 500,
@@ -134,11 +141,11 @@ async function main() {
       ad_account_id: adAccount.id,
       stat_time_day: new Date("2024-06-01"),
       ad_platform_account_id: "tiktok-acc-1",
-      platform_campaign_id: 10010000,
+      platform_campaign_id: BigInt(10010000),
       platform_campaign_name: "サンプルキャンペーン",
-      platform_adgroup_id: 20010000,
+      platform_adgroup_id: BigInt(20010000),
       platform_adgroup_name: "サンプルアドグループ",
-      platform_ad_id: 30010000,
+      platform_ad_id: BigInt(30010000),
       platform_ad_name: "サンプル広告",
       ad_url: "https://example.com/ad",
       budget: 1000,
@@ -159,7 +166,7 @@ async function main() {
     data: {
       ad_account_id: adAccount.id,
       asp_type: AspType.METRON,
-      affiliate_name: "サンプルアフィリエイト",
+      affiliate_link_name: "サンプルアフィリエイト",
     },
   });
 
@@ -169,30 +176,19 @@ async function main() {
       ad_account_id: adAccount.id,
       affiliate_link_id: affiliateLink.id,
       asp_type: AspType.METRON,
-      match_type: "AFFILIATE_LINK",
-      target_dim: "campaign_name",
-      media_level: "Campaign",
-      regex_pattern: ".*サンプル.*",
+      match_type: MatchType.AFFILIATE_LINK,
+      media_level: MediaLevel.Campaign,
+      target_dim_id: 1, // 必要に応じて適切なIDを指定
+      created_at: new Date(),
+      updated_at: new Date(),
     },
   });
 
   // 12. ClickLogSnapshot
-  await prisma.clickLogSnapshot.upsert({
-    where: {
-      asp_type_affiliateLinkName_snapshot_date: {
-        asp_type: AspType.METRON,
-        affiliateLinkName: "sample-affiliate",
-        snapshot_date: new Date("2024-06-01"),
-      },
-    },
-    update: {
-      currentTotalClicks: 100,
-      updated_at: new Date("2024-06-01"),
-    },
-    create: {
+  await prisma.clickLogSnapshot.create({
+    data: {
       affiliate_link_id: affiliateLink.id,
       asp_type: AspType.METRON,
-      affiliateLinkName: "sample-affiliate",
       currentTotalClicks: 100,
       snapshot_date: new Date("2024-06-01"),
       created_at: new Date("2024-06-01"),
@@ -200,7 +196,30 @@ async function main() {
     },
   });
 
-  // 13. 権限・表示設定系（必要に応じて追加）
+  // 13. AspActionLog
+  await prisma.aspActionLog.create({
+    data: {
+      affiliate_link_id: affiliateLink.id,
+      asp_type: AspType.METRON,
+      action_date_time: new Date("2024-06-01T12:00:00Z"),
+      referrerUrl: "https://referrer.example.com",
+      uid: "sample-uid",
+      created_at: new Date("2024-06-01T12:00:00Z"),
+      updated_at: new Date("2024-06-01T12:00:00Z"),
+    },
+  });
+
+  // 14. AspClickLog
+  await prisma.aspClickLog.create({
+    data: {
+      affiliate_link_id: affiliateLink.id,
+      asp_type: AspType.METRON,
+      click_date_time: new Date("2024-06-01T12:05:00Z"),
+      referrerUrl: "https://referrer.example.com",
+      created_at: new Date("2024-06-01T12:05:00Z"),
+      updated_at: new Date("2024-06-01T12:05:00Z"),
+    },
+  });
 }
 
 main()

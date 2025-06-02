@@ -18,6 +18,28 @@ enum AspType {
   SAMPLE_AFFILIATE
 }
 
+enum Role {
+  user
+  admin
+}
+
+enum UserPermissionRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+enum MatchType {
+  AFFILIATE_LINK
+  REFERRER_URL
+}
+
+enum MediaLevel {
+  Campaign
+  AdGroup
+  Ad
+}
+
 model Department {
   id        Int      @id @default(autoincrement())
   name      String   @unique
@@ -32,7 +54,7 @@ model User {
   id            Int      @id @default(autoincrement())
   email         String   @unique
   firebase_uid  String   @unique
-  role          String   // "user" | "admin"
+  role          Role
   department_id Int
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
@@ -147,7 +169,7 @@ model UserPermissionRequest {
   user_id               Int
   ad_account_id         Int
   can_manage_ad_account Boolean
-  status                String   // "pending" | "approved" | "rejected"
+  status                UserPermissionRequestStatus
   approved_by           Int?
   rejected_by           Int?
   requested_at          DateTime
@@ -188,7 +210,7 @@ model Ad {
   id                Int      @id @default(autoincrement())
   ad_account_id     Int
   adgroup_id        Int
-  platform_ad_id    Int
+  platform_ad_id    BigInt
   ad_name           String
   created_at        DateTime @default(now())
 
@@ -198,7 +220,7 @@ model Ad {
 
 model TikTokRawReportCampaign {
   id                   Int      @id @default(autoincrement())
-  ad_account_id        Int?
+  ad_account_id        Int
   stat_time_day        DateTime
   ad_platform_account_id String
   platform_campaign_id BigInt
@@ -214,15 +236,15 @@ model TikTokRawReportCampaign {
   conversion           Int
   created_at           DateTime @default(now())
 
-  adAccount   AdAccount? @relation(fields: [ad_account_id], references: [id])
+  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
 }
 
 model TikTokRawReportAdGroup {
   id                   Int      @id @default(autoincrement())
-  ad_account_id        Int?
+  ad_account_id        Int
   stat_time_day        DateTime
   ad_platform_account_id String
-  platform_adgroup_id  Int
+  platform_adgroup_id  BigInt
   budget               Int
   spend                Int
   impressions          Int
@@ -235,12 +257,12 @@ model TikTokRawReportAdGroup {
   conversion           Int
   created_at           DateTime @default(now())
 
-  adAccount   AdAccount? @relation(fields: [ad_account_id], references: [id])
+  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
 }
 
 model TikTokRawReportAd {
   id                   Int      @id @default(autoincrement())
-  ad_account_id        Int?
+  ad_account_id        Int
   stat_time_day        DateTime
   ad_platform_account_id String
   platform_campaign_id BigInt
@@ -262,17 +284,18 @@ model TikTokRawReportAd {
   conversion           Int
   created_at           DateTime @default(now())
 
-  adAccount   AdAccount? @relation(fields: [ad_account_id], references: [id])
+  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
 }
 
 model AffiliateLink {
   id              Int      @id @default(autoincrement())
   ad_account_id   Int
   asp_type        AspType
-  affiliate_name  String
+  affiliate_link_name  String
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
+  @@unique([asp_type, affiliate_link_name]) 
   adAccount       AdAccount @relation(fields: [ad_account_id], references: [id])
   linkMatchers    LinkMatcher[]
   clickSnapshots  ClickLogSnapshot[]
@@ -282,58 +305,58 @@ model AffiliateLink {
 
 model AspActionLog {
   id                Int      @id @default(autoincrement())
-  affiliate_link_id Int?
+  affiliate_link_id Int
   asp_type          AspType
   action_date_time  DateTime
-  affiliateLinkName String
   referrerUrl       String?
   uid               String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+  affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
 }
 
 model AspClickLog {
   id                Int      @id @default(autoincrement())
-  affiliate_link_id Int?
+  affiliate_link_id Int
+  referrer_link_id  Int?
   asp_type          AspType
   click_date_time   DateTime
-  affiliateLinkName String
   referrerUrl       String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+  affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
 }
 
 model ClickLogSnapshot {
-  id                Int      @id @default(autoincrement())
-  affiliate_link_id Int?
-  asp_type          AspType
-  affiliateLinkName String
+  id                 Int      @id @default(autoincrement())
+  affiliate_link_id  Int
+  referrer_link_id   Int?
+  asp_type           AspType
   currentTotalClicks Int
-  snapshot_date     DateTime
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  snapshot_date      DateTime
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
 
-  affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+  affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
 
-  @@unique([asp_type, affiliateLinkName, snapshot_date])
+  @@unique([asp_type, affiliate_link_id, snapshot_date])
 }
 
 model LinkMatcher {
   id                Int      @id @default(autoincrement())
   affiliate_link_id Int?
+  referrer_link_id  Int?
   ad_account_id     Int
   asp_type          AspType
-  match_type        String   // "AFFILIATE_LINK" | "REFERRER_URL"
-  target_dim        String   // "campaign_name" | "adgroup_name" | "ad_name"
-  media_level       String   // "Campaign" | "AdGroup" | "Ad"
-  regex_pattern     String   @db.Text
+  match_type        MatchType
+  media_level       MediaLevel
+  target_dim_id     BigInt
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
+  @@unique([ad_account_id, asp_type,media_level, target_dim_id])
   affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
   adAccount         AdAccount      @relation(fields: [ad_account_id], references: [id])
 }

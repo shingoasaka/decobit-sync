@@ -5,8 +5,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "generate": "prisma generate",
+    "push": "prisma db push",
+    "seed": "ts-node --transpile-only ./seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.3.0"
@@ -15,8 +16,5 @@
     "prisma": "^6.3.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3"
-  },
-  "prisma": {
-    "seed": "ts-node --transpile-only ./seed.ts"
   }
 }

@@ -6,7 +6,6 @@ import { MediaAdvertiserRepository } from "../../../accounts/advertiser.reposito
 import { TikTokRawReportAdgroup } from "../../interface/tiktok-report.interface";
 import { TikTokReportAdgroupRepository } from "../../repositories/report/tiktok-report-adgroup.repository";
 import { getNowJstForDB } from "src/libs/date-utils";
-import { FactAdgroupReportService } from "../fact/fact-report-adgroup.service";
 import { TikTokReportDto } from "../../dto/tiktok-report.dto";
 @Injectable()
 export class TikTokReportAdgroupService {
@@ -18,7 +17,6 @@ export class TikTokReportAdgroupService {
     private readonly http: HttpService,
     private readonly advertiserService: MediaAdvertiserService,
     private readonly reportRepository: TikTokReportAdgroupRepository,
-    private readonly factAdgroupReportService: FactAdgroupReportService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -125,8 +123,6 @@ export class TikTokReportAdgroupService {
             // バッチ処理で一括保存
             const savedCount = await this.reportRepository.save(records);
             totalRecords += savedCount;
-            //ファクトテーブル更新
-            await this.factAdgroupReportService.normalize(records);
 
             this.logger.log(
               `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`,

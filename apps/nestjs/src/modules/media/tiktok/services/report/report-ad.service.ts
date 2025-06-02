@@ -1,7 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { FactAdReportService } from "../fact/fact-report-ad.service";
 import { DimExecService } from "../dimensions/dim-exec.service";
 import { TikTokReportDto } from "../../dto/tiktok-report.dto";
 import { TikTokRawReportAd } from "../../interface/tiktok-report.interface";
@@ -19,7 +18,6 @@ export class TikTokReportService {
   constructor(
     private readonly http: HttpService,
     private readonly reportRepository: TikTokReportRepository,
-    private readonly factAdReportService: FactAdReportService,
     private readonly dimExecService: DimExecService,
     private readonly advertiserService: MediaAdvertiserService,
     // private readonly advertiserRepository: MediaAdvertiserRepository
@@ -114,8 +112,6 @@ export class TikTokReportService {
             totalRecords += savedCount;
             //ディメンションテーブル更新
             await this.dimExecService.execute(records);
-            //ファクトテーブル更新
-            await this.factAdReportService.normalize(records);
 
             this.logger.log(
               `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`,
