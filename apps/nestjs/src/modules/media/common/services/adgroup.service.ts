@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { DimAdgroupRepository } from "../../repositories/dimensions/dim-adgroup.repository";
+import { DimAdgroupRepository } from "../repositories/adgroup.repository";
 
 @Injectable()
 export class DimAdgroupService {

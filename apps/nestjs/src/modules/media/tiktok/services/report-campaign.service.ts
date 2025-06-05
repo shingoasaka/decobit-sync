@@ -1,56 +1,67 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { DimExecService } from "../dimensions/dim-exec.service";
-import { TikTokReportDto } from "../../dto/tiktok-report.dto";
-import { TikTokRawReportAd } from "../../interface/tiktok-report.interface";
-import { TikTokReportRepository } from "../../repositories/report/tiktok-report-ad.repository";
+import { TikTokCampaignRepository } from "../repositories/report-campaign.repository";
+import { TikTokCampaignReport } from "../interfaces/report-campaign.interface";
+import { TikTokReportDto } from "../dtos/tiktok-report.dto";
+import { TikTokAccountService } from "./account.service";
 import { getNowJstForDB } from "src/libs/date-utils";
-import { MediaAdvertiserService } from "../../../accounts/advertiser.service";
-import { MediaAdvertiserRepository } from "../../../accounts/advertiser.repository";
+import { PrismaService } from "@prismaService";
 
 @Injectable()
-export class TikTokReportService {
+export class TikTokCampaignReportService {
   private readonly apiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
-  private readonly logger = new Logger(TikTokReportService.name);
+  private readonly logger = new Logger(TikTokCampaignReportService.name);
 
   constructor(
+    private readonly campaignRepository: TikTokCampaignRepository,
     private readonly http: HttpService,
-    private readonly reportRepository: TikTokReportRepository,
-    private readonly dimExecService: DimExecService,
-    private readonly advertiserService: MediaAdvertiserService,
-    // private readonly advertiserRepository: MediaAdvertiserRepository
+    private readonly prisma: PrismaService,
+    private readonly tikTokAccountService: TikTokAccountService,
   ) {}
+
+  async saveReports(reports?: TikTokCampaignReport[]): Promise<number> {
+    if (!reports || reports.length === 0) {
+      this.logger.debug("処理対象のデータがありません");
+      return 0;
+    }
+
+    try {
+      const savedCount = await this.campaignRepository.save(reports);
+      this.logger.log(
+        `✅ ${savedCount} 件のキャンペーンレポートを保存しました`,
+      );
+      return savedCount;
+    } catch (error) {
+      this.logger.error(
+        "キャンペーンレポートの保存に失敗しました",
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
     try {
       const startTime = Date.now();
 
-      // 広告主情報を取得,保存
-      await this.advertiserService.fetchAndSaveAllPlatformAdvertisers();
-
       // テーブルから広告主IDを取得
-      let advertiserIds =
-        await this.advertiserService.getAdvertisersByPlatform(1); //Todo
-
-      if (!advertiserIds || advertiserIds.length === 0) {
-        this.logger.warn("No advertiser IDs found");
+      const advertiserIds = await this.tikTokAccountService.getAccountIds();
+      if (advertiserIds.length === 0) {
+        this.logger.warn("TikTokの広告主IDが見つかりません");
         return 0;
       }
 
-      // 日付範囲を計算 - TikTokは日付単位のAPIなので、今日のデータのみを取得
-      // 3分ごとの実行なので、前回の実行から変更があった場合も今日のデータを更新する
+      // 日付範囲を計算
       const today = new Date();
       const todayStr = this.formatDate(today);
-
-      // 3分ごとの実行なので今日のデータだけを取得
       const startDate = todayStr;
       const endDate = todayStr;
 
       this.logger.log(`本日(${todayStr})のデータを取得します`);
 
-      let totalRecords = 0;
+      let totalSaved = 0;
 
       for (const advertiserId of advertiserIds) {
         const headers = {
@@ -61,27 +72,21 @@ export class TikTokReportService {
         const params = {
           advertiser_id: advertiserId,
           report_type: "BASIC",
-          dimensions: JSON.stringify(["ad_id", "stat_time_day"]),
+          dimensions: JSON.stringify(["campaign_id", "stat_time_day"]),
           metrics: JSON.stringify([
-            "budget",
             "spend",
             "impressions",
-            "clicks",
             "video_play_actions",
             "video_watched_2s",
             "video_watched_6s",
             "video_views_p100",
+            "clicks",
             "reach",
             "conversion",
             "advertiser_id",
-            "campaign_id",
             "campaign_name",
-            "adgroup_id",
-            "adgroup_name",
-            "ad_name",
-            "ad_url",
           ]),
-          data_level: "AUCTION_AD",
+          data_level: "AUCTION_CAMPAIGN",
           start_date: startDate,
           end_date: endDate,
           primary_status: "STATUS_ALL",
@@ -102,16 +107,12 @@ export class TikTokReportService {
           const list = response.data?.data?.list;
 
           if (list?.length > 0) {
-            // DTOからエンティティに変換
-            const records: TikTokRawReportAd[] = list.map(
+            const records: TikTokCampaignReport[] = list.map(
               (dto: TikTokReportDto) => this.convertDtoToEntity(dto),
             );
 
-            // バッチ処理で一括保存
-            const savedCount = await this.reportRepository.save(records);
-            totalRecords += savedCount;
-            //ディメンションテーブル更新
-            await this.dimExecService.execute(records);
+            const savedCount = await this.saveReports(records);
+            totalSaved += savedCount;
 
             this.logger.log(
               `✅ ${savedCount}件のレコードをDBに保存しました (advertiser_id: ${advertiserId})`,
@@ -126,16 +127,17 @@ export class TikTokReportService {
             `❌ APIリクエストエラー (advertiser_id: ${advertiserId})`,
             error instanceof Error ? error.stack : String(error),
           );
-          // 処理は継続
+          // エラーが発生しても次のアカウントの処理を続行
+          continue;
         }
       }
 
       const processingTime = (Date.now() - startTime) / 1000;
       this.logger.log(
-        `処理完了: ${totalRecords}件のデータを${processingTime}秒で取得しました`,
+        `処理完了: ${totalSaved}件のデータを${processingTime}秒で取得しました`,
       );
 
-      return totalRecords;
+      return totalSaved;
     } catch (error) {
       this.logger.error(
         `❌ TikTokレポート取得処理中にエラーが発生しました`,
@@ -147,12 +149,13 @@ export class TikTokReportService {
     }
   }
 
-  private convertDtoToEntity(dto: TikTokReportDto): TikTokRawReportAd {
+  private convertDtoToEntity(dto: TikTokReportDto): TikTokCampaignReport {
     const now = getNowJstForDB();
     return {
-      advertiser_id: dto.metrics.advertiser_id,
-      ad_id: dto.dimensions.ad_id,
-      stat_time_day: dto.dimensions.stat_time_day,
+      ad_account_id: Number(dto.metrics.advertiser_id),
+      ad_platform_account_id: dto.metrics.advertiser_id,
+      platform_campaign_id: BigInt(dto.dimensions.campaign_id),
+      stat_time_day: new Date(dto.dimensions.stat_time_day),
       budget: this.parseNumber(dto.metrics.budget),
       spend: this.parseNumber(dto.metrics.spend),
       impressions: this.parseNumber(dto.metrics.impressions),
@@ -163,24 +166,15 @@ export class TikTokReportService {
       video_views_p100: this.parseNumber(dto.metrics.video_views_p100),
       reach: this.parseNumber(dto.metrics.reach),
       conversion: this.parseNumber(dto.metrics.conversion),
-      campaign_id: dto.metrics.campaign_id,
-      campaign_name: dto.metrics.campaign_name,
-      adgroup_id: dto.metrics.adgroup_id,
-      adgroup_name: dto.metrics.adgroup_name,
-      ad_name: dto.metrics.ad_name,
-      ad_url: dto.metrics.ad_url,
-      stat_time_day_dim: dto.dimensions.stat_time_day,
-      ad_id_dim: dto.dimensions.ad_id,
+      created_at: now,
     };
   }
 
-  // 文字列を数値に変換（数値に変換できない場合は0を返す）
   private parseNumber(value: string): number {
     const parsedValue = parseFloat(value);
     return isNaN(parsedValue) ? 0 : parsedValue;
   }
 
-  // 日付を YYYY-MM-DD 形式に変換
   private formatDate(date: Date): string {
     return date.toISOString().split("T")[0];
   }

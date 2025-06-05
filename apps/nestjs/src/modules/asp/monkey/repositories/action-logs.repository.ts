@@ -16,28 +16,77 @@ export class MonkeyActionLogRepository extends BaseActionLogRepository {
     super(prisma, AspType.MONKEY);
   }
 
-  private formatData(item: RawMonkeyData) {
-    const actionDateTime = parseToJst(item["成果日時"]);
-    if (!actionDateTime) {
-      throw new Error("成果日時が必須です");
-    }
-
-    const affiliateLinkName = item["タグ"];
-    if (!affiliateLinkName) {
-      throw new Error("タグ名が必須です");
-    }
-
-    return {
-      actionDateTime,
-      affiliateLinkName,
-      referrerUrl: item["リファラ"] || null,
-    };
-  }
-
   async save(logs: RawMonkeyData[]): Promise<number> {
     try {
-      const formatted = logs.map((item) => this.formatData(item));
-      return await this.saveToCommonTable(formatted);
+      const formatted = await Promise.all(
+        logs
+          .filter((item) => {
+            if (!item["成果日時"] || !item["タグ"]) {
+              this.logger.warn(
+                `Skipping invalid record: ${JSON.stringify(item)}`,
+              );
+              return false;
+            }
+            return true;
+          })
+          .map(async (item) => {
+            try {
+              const actionDateTime = parseToJst(item["成果日時"]);
+              const affiliateLinkName = item["タグ"]?.trim();
+              const referrerUrl = item["リファラ"] || null;
+
+              if (!actionDateTime) {
+                this.logger.warn(`Invalid date format: ${item["成果日時"]}`);
+                return null;
+              }
+
+              if (!affiliateLinkName) {
+                this.logger.warn("タグ名が空です");
+                return null;
+              }
+
+              // 名前→ID変換
+              const affiliateLink = await this.prisma.affiliateLink.upsert({
+                where: {
+                  asp_type_affiliate_link_name: {
+                    asp_type: this.aspType,
+                    affiliate_link_name: affiliateLinkName,
+                  },
+                },
+                update: {},
+                create: {
+                  asp_type: this.aspType,
+                  affiliate_link_name: affiliateLinkName,
+                },
+              });
+
+              return {
+                actionDateTime,
+                affiliate_link_id: affiliateLink.id,
+                referrer_link_id: null,
+                referrerUrl,
+                uid: null,
+              };
+            } catch (error) {
+              this.logger.error(
+                `Error processing record: ${JSON.stringify(item)}`,
+                error,
+              );
+              return null;
+            }
+          }),
+      );
+
+      const validRecords = formatted.filter(
+        (record): record is NonNullable<typeof record> => record !== null,
+      );
+
+      if (validRecords.length === 0) {
+        this.logger.warn("No valid records to save");
+        return 0;
+      }
+
+      return await this.saveToCommonTable(validRecords);
     } catch (error) {
       this.logger.error("Error saving Monkey action logs:", error);
       throw error;

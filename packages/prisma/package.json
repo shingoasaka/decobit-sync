@@ -7,7 +7,8 @@
     "build": "tsc",
     "generate": "prisma generate",
     "push": "prisma db push",
-    "seed": "ts-node --transpile-only ./seed.ts"
+    "seed": "ts-node --transpile-only ./seed.ts",
+    "migrate": "prisma migrate dev"
   },
   "dependencies": {
     "@prisma/client": "^6.3.0"

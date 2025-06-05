@@ -118,9 +118,8 @@ model AdAccount {
   tikTokRawReportCampaigns TikTokRawReportCampaign[]
   tikTokRawReportAdGroups  TikTokRawReportAdGroup[]
   tikTokRawReportAds       TikTokRawReportAd[]
-  affiliateLinks           AffiliateLink[]
   linkMatchers             LinkMatcher[]
-
+  
   @@unique([ad_platform_account_id, ad_platform_id])
 }
 
@@ -289,18 +288,30 @@ model TikTokRawReportAd {
 
 model AffiliateLink {
   id              Int      @id @default(autoincrement())
-  ad_account_id   Int
   asp_type        AspType
   affiliate_link_name  String
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
   @@unique([asp_type, affiliate_link_name]) 
-  adAccount       AdAccount @relation(fields: [ad_account_id], references: [id])
   linkMatchers    LinkMatcher[]
   clickSnapshots  ClickLogSnapshot[]
   actionLogs      AspActionLog[]
   clickLogs       AspClickLog[]
+}
+
+model ReferrerLink {
+  id             Int      @id @default(autoincrement())
+  creative_value String
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  @@unique([creative_value])
+
+  linkMatchers   LinkMatcher[]
+  clickSnapshots ClickLogSnapshot[]
+  actionLogs     AspActionLog[]
+  clickLogs      AspClickLog[]
 }
 
 model AspActionLog {
@@ -308,55 +319,60 @@ model AspActionLog {
   affiliate_link_id Int
   asp_type          AspType
   action_date_time  DateTime
-  referrerUrl       String?
+  referrer_link_id  Int?
+  referrer_url      String?
   uid               String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
+  referrerLink      ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
   affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
 }
 
 model AspClickLog {
   id                Int      @id @default(autoincrement())
   affiliate_link_id Int
-  referrer_link_id  Int?
   asp_type          AspType
   click_date_time   DateTime
-  referrerUrl       String?
+  referrer_link_id  Int?
+  referrer_url      String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
+  referrerLink      ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
   affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
 }
 
 model ClickLogSnapshot {
   id                 Int      @id @default(autoincrement())
   affiliate_link_id  Int
-  referrer_link_id   Int?
   asp_type           AspType
   currentTotalClicks Int
   snapshot_date      DateTime
+  referrer_link_id   Int?
   created_at         DateTime @default(now())
   updated_at         DateTime @updatedAt
 
   affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
+  referrerLink       ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
 
   @@unique([asp_type, affiliate_link_id, snapshot_date])
 }
 
 model LinkMatcher {
   id                Int      @id @default(autoincrement())
-  affiliate_link_id Int?
-  referrer_link_id  Int?
   ad_account_id     Int
   asp_type          AspType
   match_type        MatchType
   media_level       MediaLevel
   target_dim_id     BigInt
+  affiliate_link_id Int?
+  referrer_link_id  Int?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
   @@unique([ad_account_id, asp_type,media_level, target_dim_id])
   affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+  referrerLink      ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
   adAccount         AdAccount      @relation(fields: [ad_account_id], references: [id])
 }

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { DimCampaignRepository } from "../../repositories/dimensions/dim-campaign.repository";
+import { DimCampaignRepository } from "../repositories/campaign.repository";
 
 @Injectable()
 export class DimCampaignService {

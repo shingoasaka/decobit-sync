@@ -1,8 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { TikTokReportService } from "../../media/tiktok/services/report/report-ad.service";
-import { TikTokReportAdgroupService } from "../../media/tiktok/services/report/report-adgroup.service";
-import { TikTokReportCampaignService } from "../../media/tiktok/services/report/report-campaign.service";
+import { TikTokAdReportService } from "../../media/tiktok/services/report-ad.service";
+import { TikTokAdgroupReportService } from "../../media/tiktok/services/report-adgroup.service";
+import { TikTokCampaignReportService } from "../../media/tiktok/services/report-campaign.service";
 import { CommonLogService } from "@logs/common-log.service";
 
 // 実行結果の型定義
@@ -54,9 +54,9 @@ export class MediaCronService {
   private readonly MAX_RETRIES = 1; // リトライ回数
 
   constructor(
-    private readonly tikTokReportService: TikTokReportService,
-    private readonly tikTokReportAdgroupService: TikTokReportAdgroupService,
-    private readonly tikTokReportCampaignService: TikTokReportCampaignService,
+    private readonly tikTokAdReportService: TikTokAdReportService,
+    private readonly tikTokAdgroupReportService: TikTokAdgroupReportService,
+    private readonly tikTokCampaignReportService: TikTokCampaignReportService,
     private readonly commonLog: CommonLogService,
   ) {
     // 同時実行数の設定
@@ -88,14 +88,14 @@ export class MediaCronService {
     try {
       // メディアサービスのリスト定義
       const mediaServices = [
-        { name: "TikTok-Report", service: this.tikTokReportService },
+        { name: "TikTok-Report", service: this.tikTokAdReportService },
         {
           name: "TikTok-Report-adgroup",
-          service: this.tikTokReportAdgroupService,
+          service: this.tikTokAdgroupReportService,
         },
         {
           name: "TikTok-Report-campaign",
-          service: this.tikTokReportCampaignService,
+          service: this.tikTokCampaignReportService,
         },
         // 他のメディアサービスを今後追加
       ];
@@ -118,7 +118,7 @@ export class MediaCronService {
             const count = await this.executeWithRetry(
               async () =>
                 await this.executeWithTimeout(
-                  async () => await service.fetchAndInsertLogs(),
+                  async () => await service.saveReports(),
                   this.TIMEOUT_MS,
                   `${name} がタイムアウトしました（${this.TIMEOUT_MS}ms）`,
                 ),
