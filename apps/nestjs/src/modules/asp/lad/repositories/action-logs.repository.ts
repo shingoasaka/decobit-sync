@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
-import { BaseActionLogRepository } from "../../base/repository.base";
+import {
+  BaseActionLogRepository,
+  processReferrerLink,
+} from "../../base/repository.base";
 import { parseToJst } from "src/libs/date-utils";
 
 // LAD固有のカラム名を持つインターフェース・個別形式
@@ -9,17 +12,6 @@ interface RawLadData {
   成果日時?: string;
   遷移広告URL名?: string;
   "リファラ(クリック)"?: string;
-}
-
-function extractUtmCreative(referrerUrl: string | null): string | null {
-  if (!referrerUrl) return null;
-  try {
-    const url = new URL(referrerUrl);
-    return url.searchParams.get("utm_creative");
-  } catch (error) {
-    // URLのパースに失敗した場合は、リファラURL自体を返す
-    return referrerUrl;
-  }
 }
 
 @Injectable()
@@ -46,7 +38,6 @@ export class LadActionLogRepository extends BaseActionLogRepository {
               const actionDateTime = parseToJst(item["成果日時"]);
               const affiliateLinkName = item["遷移広告URL名"]?.trim();
               const referrerUrl = item["リファラ(クリック)"]?.trim() || null;
-              const creativeValue = extractUtmCreative(referrerUrl);
 
               if (!actionDateTime) {
                 this.logger.warn(`Invalid date format: ${item["成果日時"]}`);
@@ -76,40 +67,18 @@ export class LadActionLogRepository extends BaseActionLogRepository {
               });
 
               // リファラリンクの処理
-              let referrerLinkId = null;
-              if (creativeValue) {
-                try {
-                  // まず既存のレコードを検索
-                  const existingLink = await this.prisma.referrerLink.findUnique({
-                    where: {
-                      creative_value: creativeValue,
-                    },
-                  });
-
-                  if (existingLink) {
-                    referrerLinkId = existingLink.id;
-                  } else {
-                    // 存在しない場合のみ新規作成
-                    const newLink = await this.prisma.referrerLink.create({
-                      data: {
-                        creative_value: creativeValue,
-                      },
-                    });
-                    referrerLinkId = newLink.id;
-                  }
-                } catch (error) {
-                  this.logger.warn(
-                    `Failed to process referrer link for creative value: ${creativeValue}`,
-                    error,
-                  );
-                }
-              }
+              const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+                await processReferrerLink(
+                  this.prisma,
+                  this.logger,
+                  referrerUrl,
+                );
 
               return {
                 actionDateTime,
                 affiliate_link_id: affiliateLink.id,
                 referrer_link_id: referrerLinkId,
-                referrerUrl,
+                referrerUrl: processedReferrerUrl,
                 uid: null,
               };
             } catch (error) {

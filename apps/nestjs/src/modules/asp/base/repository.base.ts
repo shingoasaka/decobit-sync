@@ -38,6 +38,61 @@ export function extractUtmCreative(referrerUrl: string | null): string | null {
   }
 }
 
+export async function processReferrerLink(
+  prisma: PrismaService,
+  logger: Logger,
+  referrerUrl: string | null,
+): Promise<{ referrerLinkId: number | null; referrerUrl: string | null }> {
+  if (!referrerUrl) {
+    return { referrerLinkId: null, referrerUrl: null };
+  }
+
+  const creativeValue = extractUtmCreative(referrerUrl);
+  if (!creativeValue) {
+    return { referrerLinkId: null, referrerUrl };
+  }
+
+  try {
+    // まず既存のレコードを検索
+    const existingLink = await prisma.referrerLink.findUnique({
+      where: {
+        creative_value: creativeValue,
+      },
+    });
+
+    if (existingLink) {
+      return { referrerLinkId: existingLink.id, referrerUrl };
+    }
+
+    // 存在しない場合のみ新規作成
+    const newLink = await prisma.referrerLink.create({
+      data: {
+        creative_value: creativeValue,
+      },
+    });
+
+    return { referrerLinkId: newLink.id, referrerUrl };
+  } catch (error: any) {
+    // 作成時に競合が発生した場合（他のプロセスが同時に作成した場合）
+    if (error.code === "P2002") {
+      // 再度検索して既存のレコードを取得
+      const existingLink = await prisma.referrerLink.findUnique({
+        where: {
+          creative_value: creativeValue,
+        },
+      });
+      if (existingLink) {
+        return { referrerLinkId: existingLink.id, referrerUrl };
+      }
+    }
+    logger.warn(
+      `Failed to process referrer link for creative value: ${creativeValue}`,
+      error,
+    );
+    return { referrerLinkId: null, referrerUrl };
+  }
+}
+
 @Injectable()
 export abstract class BaseActionLogRepository {
   protected readonly logger: Logger;

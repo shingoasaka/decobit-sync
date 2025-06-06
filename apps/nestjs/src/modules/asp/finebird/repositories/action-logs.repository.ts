@@ -1,10 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
-import { BaseActionLogRepository } from "../../base/repository.base";
+import {
+  BaseActionLogRepository,
+  processReferrerLink,
+} from "../../base/repository.base";
 import { parseToJst } from "src/libs/date-utils";
 
-// 入力データの型定義
+// Finebird固有のカラム名を持つインターフェース・合計値形式
 interface RawFinebirdData {
   注文日時?: string;
   サイト名?: string;
@@ -61,11 +64,19 @@ export class FinebirdActionLogRepository extends BaseActionLogRepository {
                 },
               });
 
+              // リファラリンクの処理
+              const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+                await processReferrerLink(
+                  this.prisma,
+                  this.logger,
+                  referrerUrl,
+                );
+
               return {
                 actionDateTime,
                 affiliate_link_id: affiliateLink.id,
-                referrer_link_id: null,
-                referrerUrl,
+                referrer_link_id: referrerLinkId,
+                referrerUrl: processedReferrerUrl,
                 uid: null,
               };
             } catch (error) {

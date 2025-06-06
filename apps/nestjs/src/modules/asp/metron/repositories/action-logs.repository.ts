@@ -3,15 +3,23 @@ import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
 import {
   BaseActionLogRepository,
-  extractUtmCreative,
+  processReferrerLink,
 } from "../../base/repository.base";
 import { parseToJst } from "src/libs/date-utils";
 
+/**
+ * Metronのアクションログデータ形式
+ *
+ * Metronの特徴：
+ * - アクションログでは直接リファラ情報を取得できない
+ * - 代わりにsessionIdを使って、対応するクリックログからリファラ情報を取得する必要がある
+ * - クリックログとアクションログはsessionIdで紐付けられる
+ */
 interface RawMetronData {
   actionDateTime?: string;
   siteName?: string;
-  actionReferrer?: string;
-  sessionId?: string;
+  referrerUrl?: string; // sessionIDが同じクリックログのリファラを入れる
+  sessionId?: string; // クリックログとの紐付けに使用
   clientInfo?: string;
 }
 
@@ -19,6 +27,47 @@ interface RawMetronData {
 export class MetronActionLogRepository extends BaseActionLogRepository {
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, AspType.METRON);
+  }
+
+  /**
+   * sessionIdを使ってクリックログからリファラ情報を取得
+   *
+   * Metronの特殊な仕様に対応するため：
+   * 1. sessionIdを使って対応するクリックログを検索
+   * 2. クリックログからリファラURLを取得
+   * 3. リファラURLからReferrerLinkを生成または取得
+   *
+   * @param sessionId クリックログとアクションログを紐付けるID
+   * @returns リファラリンクIDとリファラURL
+   */
+  private async getReferrerFromClickLog(
+    sessionId: string | null,
+  ): Promise<{ referrerLinkId: number | null; referrerUrl: string | null }> {
+    if (!sessionId) {
+      return { referrerLinkId: null, referrerUrl: null };
+    }
+
+    // クリックログからsessionIdに一致するレコードを検索
+    const clickLog = await this.prisma.aspClickLog.findFirst({
+      where: {
+        asp_type: this.aspType,
+        referrer_url: {
+          not: null,
+          contains: `sessionId=${sessionId}`,
+        },
+      },
+      select: { referrer_url: true },
+      orderBy: {
+        click_date_time: "desc", // 最新のクリックログを取得
+      },
+    });
+
+    if (!clickLog?.referrer_url) {
+      return { referrerLinkId: null, referrerUrl: null };
+    }
+
+    // クリックログのリファラURLを使ってReferrerLinkを処理
+    return processReferrerLink(this.prisma, this.logger, clickLog.referrer_url);
   }
 
   async save(logs: RawMetronData[]): Promise<number> {
@@ -38,8 +87,7 @@ export class MetronActionLogRepository extends BaseActionLogRepository {
             try {
               const actionDateTime = parseToJst(item.actionDateTime);
               const affiliateLinkName = item.siteName?.trim();
-              const referrerUrl = item.actionReferrer || null;
-              const creativeValue = extractUtmCreative(referrerUrl);
+              const sessionId = item.sessionId || null;
 
               if (!actionDateTime) {
                 this.logger.warn(`Invalid date format: ${item.actionDateTime}`);
@@ -66,20 +114,9 @@ export class MetronActionLogRepository extends BaseActionLogRepository {
                 },
               });
 
-              // リファラリンクの処理
-              let referrerLinkId = null;
-              if (creativeValue) {
-                const referrerLink = await this.prisma.referrerLink.upsert({
-                  where: {
-                    creative_value: creativeValue,
-                  },
-                  update: {},
-                  create: {
-                    creative_value: creativeValue,
-                  },
-                });
-                referrerLinkId = referrerLink.id;
-              }
+              // クリックログからリファラ情報を取得
+              const { referrerLinkId, referrerUrl } =
+                await this.getReferrerFromClickLog(sessionId);
 
               // uidの取得
               let uid: string | null = null;

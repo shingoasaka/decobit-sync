@@ -3,7 +3,7 @@ import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
 import {
   BaseAspRepository,
-  extractUtmCreative,
+  processReferrerLink,
 } from "../../base/repository.base";
 import { getNowJst, parseToJst } from "src/libs/date-utils";
 
@@ -41,7 +41,7 @@ export class MetronClickLogRepository extends BaseAspRepository {
               const clickDateTime = parseToJst(item.clickDateTime);
               const affiliateLinkName = item.siteName?.trim();
               const referrerUrl = item.referrer || null;
-              const creativeValue = extractUtmCreative(referrerUrl);
+              const sessionId = item.sessionId || null;
 
               if (!clickDateTime) {
                 this.logger.warn(`Invalid date format: ${item.clickDateTime}`);
@@ -54,40 +54,101 @@ export class MetronClickLogRepository extends BaseAspRepository {
               }
 
               // 名前→ID変換
-              const affiliateLink = await this.prisma.affiliateLink.upsert({
+              const affiliateLink = await this.prisma.affiliateLink.findUnique({
                 where: {
                   asp_type_affiliate_link_name: {
                     asp_type: this.aspType,
                     affiliate_link_name: affiliateLinkName,
                   },
                 },
-                update: {},
-                create: {
-                  asp_type: this.aspType,
-                  affiliate_link_name: affiliateLinkName,
-                },
               });
 
-              // リファラリンクの処理
-              let referrerLinkId = null;
-              if (creativeValue) {
-                const referrerLink = await this.prisma.referrerLink.upsert({
-                  where: {
-                    creative_value: creativeValue,
-                  },
-                  update: {},
-                  create: {
-                    creative_value: creativeValue,
-                  },
-                });
-                referrerLinkId = referrerLink.id;
+              if (!affiliateLink) {
+                try {
+                  const newLink = await this.prisma.affiliateLink.create({
+                    data: {
+                      asp_type: this.aspType,
+                      affiliate_link_name: affiliateLinkName,
+                    },
+                  });
+                  // リファラリンクの処理
+                  const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+                    await processReferrerLink(
+                      this.prisma,
+                      this.logger,
+                      referrerUrl,
+                    );
+
+                  // sessionIdを含めたリファラURLを保存
+                  const finalReferrerUrl = sessionId
+                    ? `${processedReferrerUrl || ""}${processedReferrerUrl ? "&" : "?"}sessionId=${sessionId}`
+                    : processedReferrerUrl;
+
+                  return {
+                    clickDateTime,
+                    affiliate_link_id: newLink.id,
+                    referrer_link_id: referrerLinkId,
+                    referrerUrl: finalReferrerUrl,
+                  };
+                } catch (error: any) {
+                  // 作成時に競合が発生した場合（他のプロセスが同時に作成した場合）
+                  if (error.code === "P2002") {
+                    // 再度検索して既存のレコードを取得
+                    const existingLink =
+                      await this.prisma.affiliateLink.findUnique({
+                        where: {
+                          asp_type_affiliate_link_name: {
+                            asp_type: this.aspType,
+                            affiliate_link_name: affiliateLinkName,
+                          },
+                        },
+                      });
+                    if (existingLink) {
+                      // リファラリンクの処理
+                      const {
+                        referrerLinkId,
+                        referrerUrl: processedReferrerUrl,
+                      } = await processReferrerLink(
+                        this.prisma,
+                        this.logger,
+                        referrerUrl,
+                      );
+
+                      // sessionIdを含めたリファラURLを保存
+                      const finalReferrerUrl = sessionId
+                        ? `${processedReferrerUrl || ""}${processedReferrerUrl ? "&" : "?"}sessionId=${sessionId}`
+                        : processedReferrerUrl;
+
+                      return {
+                        clickDateTime,
+                        affiliate_link_id: existingLink.id,
+                        referrer_link_id: referrerLinkId,
+                        referrerUrl: finalReferrerUrl,
+                      };
+                    }
+                  }
+                  throw error;
+                }
               }
+
+              // リファラリンクの処理
+              const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+                await processReferrerLink(
+                  this.prisma,
+                  this.logger,
+                  referrerUrl,
+                );
+
+              // sessionIdを含めたリファラURLを保存
+              const finalReferrerUrl = sessionId
+                ? `${processedReferrerUrl || ""}${processedReferrerUrl ? "&" : "?"}sessionId=${sessionId}`
+                : processedReferrerUrl;
 
               return {
                 clickDateTime,
                 affiliate_link_id: affiliateLink.id,
                 referrer_link_id: referrerLinkId,
-                referrerUrl,
+                referrerUrl: finalReferrerUrl,
               };
             } catch (error) {
               this.logger.error(

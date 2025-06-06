@@ -45,17 +45,36 @@ export class TryActionLogService implements LogService {
 
       // 今日の日付を取得
       const today = getNowJstForDisplay();
-      const formattedDate = today.getDate().toString().padStart(2, "0");
-
+      const formattedDate = today.getDate().toString();
       await page.locator('#search input[name="start_date"]').click();
-      await page
-        .getByRole("cell", { name: `${formattedDate}`, exact: true })
-        .click();
+
+      await page.waitForSelector(".datepicker-days", { timeout: 10000 });
+      const startCalendar = page.locator(".datepicker-days").first();
+
+      await startCalendar
+        .locator("td.day")
+        .first()
+        .waitFor({ state: "attached", timeout: 10000 });
+
+      await startCalendar
+        .locator("td.day:not(.old):not(.new)", {
+          hasText: new RegExp(`^${formattedDate}$`),
+        })
+        .click({ timeout: 10000 });
+
       await page.locator('#search input[name="end_date"]').click();
-      await page
-        .getByRole("cell", { name: `${formattedDate}`, exact: true })
+
+      const endCalendar = page.locator(".datepicker-days").nth(1);
+      await endCalendar
+        .locator("td.day")
         .nth(1)
-        .click();
+        .waitFor({ state: "attached", timeout: 10000 });
+
+      await endCalendar
+        .locator("td.day:not(.old):not(.new)", {
+          hasText: new RegExp(`^${formattedDate}$`),
+        })
+        .click({ timeout: 10000 });
 
       await page.locator("label").filter({ hasText: "成果発生日" }).click();
 

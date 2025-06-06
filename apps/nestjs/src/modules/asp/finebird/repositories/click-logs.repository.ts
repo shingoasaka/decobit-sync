@@ -1,13 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
-import { BaseAspRepository } from "../../base/repository.base";
+import {
+  BaseAspRepository,
+  processReferrerLink,
+} from "../../base/repository.base";
 import { getNowJst } from "src/libs/date-utils";
 
 // Finebird固有のカラム名を持つインターフェース・合計値形式
 interface RawFinebirdData {
   サイト名?: string;
   総クリック?: string;
+  リファラ?: string;
 }
 
 @Injectable()
@@ -46,6 +50,8 @@ export class FinebirdClickLogRepository extends BaseAspRepository {
           .map(async (item) => {
             try {
               const affiliateLinkName = item["サイト名"]?.trim();
+              const referrerUrl = item["リファラ"] || null;
+
               if (!affiliateLinkName) {
                 this.logger.warn("サイト名が空です");
                 return null;
@@ -68,11 +74,19 @@ export class FinebirdClickLogRepository extends BaseAspRepository {
                 },
               });
 
+              // リファラリンクの処理
+              const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+                await processReferrerLink(
+                  this.prisma,
+                  this.logger,
+                  referrerUrl,
+                );
+
               return {
                 affiliate_link_id: affiliateLink.id,
                 currentTotalClicks,
-                referrer_link_id: null,
-                referrerUrl: null,
+                referrer_link_id: referrerLinkId,
+                referrerUrl: processedReferrerUrl,
               };
             } catch (error) {
               this.logger.error(
