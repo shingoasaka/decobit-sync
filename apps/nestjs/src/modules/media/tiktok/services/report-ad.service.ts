@@ -7,7 +7,11 @@ import { TikTokAdRepository } from "../repositories/report-ad.repository";
 import { TikTokAccountService } from "./account.service";
 import { PrismaService } from "@prismaService";
 import { TikTokReportBase } from "../base/tiktok-report.base";
-import { MediaError, ErrorType, ERROR_CODES } from "../../common/errors/media.error";
+import {
+  MediaError,
+  ErrorType,
+  ERROR_CODES,
+} from "../../common/errors/media.error";
 import { ERROR_MESSAGES } from "../../common/errors/media.error";
 
 @Injectable()
