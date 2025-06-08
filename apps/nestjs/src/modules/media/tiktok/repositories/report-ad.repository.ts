@@ -4,6 +4,9 @@ import { TikTokAdReport } from "../interfaces/report-ad.interface";
 
 @Injectable()
 export class TikTokAdRepository {
+  saveReports(records: TikTokAdReport[]) {
+    throw new Error("Method not implemented.");
+  }
   private readonly logger = new Logger(TikTokAdRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}

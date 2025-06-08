@@ -118,7 +118,7 @@ export class MediaCronService {
             const count = await this.executeWithRetry(
               async () =>
                 await this.executeWithTimeout(
-                  async () => await service.saveReports(),
+                  async () => await service.fetchAndInsertLogs(),
                   this.TIMEOUT_MS,
                   `${name} がタイムアウトしました（${this.TIMEOUT_MS}ms）`,
                 ),

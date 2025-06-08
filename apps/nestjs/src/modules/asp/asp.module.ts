@@ -10,24 +10,24 @@ import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module
 
 @Module({
   imports: [
-    // CatsModule,
-    // FinebirdModule,
+    CatsModule,
+    FinebirdModule,
     HanikamuModule,
-    // LadModule,
+    LadModule,
     metronModule,
-    // MonkeyModule,
-    // RentracksModule,
-    // SampleAffiliateModule,
+    MonkeyModule,
+    RentracksModule,
+    SampleAffiliateModule,
   ],
   exports: [
-    // CatsModule,
-    // FinebirdModule,
+    CatsModule,
+    FinebirdModule,
     HanikamuModule,
-    // LadModule,
+    LadModule,
     metronModule,
-    // MonkeyModule,
-    // RentracksModule,
-    // SampleAffiliateModule,
+    MonkeyModule,
+    RentracksModule,
+    SampleAffiliateModule,
   ],
 })
 export class AspModule {}
