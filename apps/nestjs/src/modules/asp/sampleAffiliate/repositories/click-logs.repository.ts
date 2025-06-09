@@ -4,7 +4,7 @@ import { AspType } from "@operate-ad/prisma";
 import { BaseAspRepository } from "../../base/repository.base";
 import { getNowJst } from "src/libs/date-utils";
 
-// 入力データの型定義
+// 入力データの型定義・合計値形式
 interface RawSampleAffiliateData {
   [key: string]: string | null | undefined;
   クリック日時?: string;
@@ -32,24 +32,70 @@ export class SampleAffiliateClickLogRepository extends BaseAspRepository {
     }
   }
 
-  private formatData(item: RawSampleAffiliateData) {
-    const affiliateLinkName = item.メディア?.trim();
-    if (!affiliateLinkName) {
-      throw new Error("メディアが必須です");
-    }
-
-    const currentTotalClicks = this.toInt(item["アクセス数[件]"]);
-    return {
-      affiliateLinkName,
-      currentTotalClicks,
-      referrerUrl: null,
-    };
-  }
-
   async save(clickData: RawSampleAffiliateData[]): Promise<number> {
     try {
-      const formatted = clickData.map((item) => this.formatData(item));
-      return await this.saveToCommonTable(formatted);
+      const formatted = await Promise.all(
+        clickData
+          .filter((item) => {
+            if (!item.メディア) {
+              this.logger.warn(
+                `Skipping invalid record: ${JSON.stringify(item)}`,
+              );
+              return false;
+            }
+            return true;
+          })
+          .map(async (item) => {
+            try {
+              const affiliateLinkName = item.メディア?.trim();
+              if (!affiliateLinkName) {
+                this.logger.warn("メディアが空です");
+                return null;
+              }
+
+              const currentTotalClicks = this.toInt(item["アクセス数[件]"]);
+
+              // 名前→ID変換
+              const affiliateLink = await this.prisma.affiliateLink.upsert({
+                where: {
+                  asp_type_affiliate_link_name: {
+                    asp_type: this.aspType,
+                    affiliate_link_name: affiliateLinkName,
+                  },
+                },
+                update: {},
+                create: {
+                  asp_type: this.aspType,
+                  affiliate_link_name: affiliateLinkName,
+                },
+              });
+
+              return {
+                affiliate_link_id: affiliateLink.id,
+                currentTotalClicks,
+                referrer_link_id: null,
+                referrerUrl: null,
+              };
+            } catch (error) {
+              this.logger.error(
+                `Error processing record: ${JSON.stringify(item)}`,
+                error,
+              );
+              return null;
+            }
+          }),
+      );
+
+      const validRecords = formatted.filter(
+        (record): record is NonNullable<typeof record> => record !== null,
+      );
+
+      if (validRecords.length === 0) {
+        this.logger.warn("No valid records to save");
+        return 0;
+      }
+
+      return await this.saveToCommonTable(validRecords);
     } catch (error) {
       this.logger.error("Error saving SampleAffiliate click data:", error);
       throw error;

@@ -30,7 +30,7 @@ export function parseToJst(dateStr: string | null | undefined): Date | null {
   try {
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) return null;
-    return toZonedTime(date, TIMEZONE);
+    return addHours(date, 9);
   } catch (error) {
     console.error("Date parsing error:", error);
     return null;
@@ -44,7 +44,7 @@ export function formatDateTimeJapanese(d: Date): string {
 
 // 標準的な日付フォーマット（yyyy-MM-dd HH:mm:ss）
 export function formatDateTime(d: Date): string {
-  return format(d, "yyyy-MM-dd HH:mm:ss");
+  return format(d, "yyyy-MM-dd HH:mm");
 }
 
 // Rentracks用の日付フォーマット（yyyy/MM/dd）

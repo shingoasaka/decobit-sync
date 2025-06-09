@@ -45,21 +45,38 @@ export class TryClickLogService implements LogService {
 
       // 今日の日付を取得
       const today = getNowJstForDisplay();
-      const formattedDate = today.getDate().toString().padStart(2, "0");
-      console.log("formattedDate", formattedDate);
+      const formattedDate = today.getDate().toString();
 
       try {
-        // 日付を設定
         await page.locator('#search input[name="start_date"]').click();
-        await page
-          .getByRole("cell", { name: `${formattedDate}`, exact: true })
-          .nth(2)
-          .click();
+        await page.waitForSelector(".datepicker-days", { timeout: 10000 });
+        const startCalendar = page.locator(".datepicker-days").first();
+
+        await startCalendar
+          .locator("td.day")
+          .first()
+          .waitFor({ state: "attached", timeout: 10000 });
+
+        await startCalendar
+          .locator("td.day:not(.old):not(.new)", {
+            hasText: new RegExp(`^${formattedDate}$`),
+          })
+          .click({ timeout: 10000 });
+
         await page.locator('#search input[name="end_date"]').click();
-        await page
-          .getByRole("cell", { name: `${formattedDate}`, exact: true })
-          .nth(3)
-          .click();
+
+        const endCalendar = page.locator(".datepicker-days").nth(1);
+        await endCalendar
+          .locator("td.day")
+          .nth(1)
+          .waitFor({ state: "attached", timeout: 10000 });
+
+        await endCalendar
+          .locator("td.day:not(.old):not(.new)", {
+            hasText: new RegExp(`^${formattedDate}$`),
+          })
+          .click({ timeout: 10000 });
+
         // 日付入力後のページ更新を待つ
         await page.waitForLoadState("networkidle");
 

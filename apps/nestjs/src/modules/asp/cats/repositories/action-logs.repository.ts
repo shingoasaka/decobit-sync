@@ -10,6 +10,13 @@ interface RawCatsData {
   遷移広告URL名?: string;
 }
 
+interface FormattedCatsData {
+  actionDateTime: Date | null;
+  affiliateLinkName: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
 @Injectable()
 export class CatsActionLogRepository extends BaseActionLogRepository {
   constructor(protected readonly prisma: PrismaService) {
@@ -24,27 +31,37 @@ export class CatsActionLogRepository extends BaseActionLogRepository {
     return item[key] ?? null;
   }
 
-  private formatData(item: RawCatsData) {
-    const actionDateTime = parseToJst(this.getValue(item, "成果日時"));
-    if (!actionDateTime) {
-      throw new Error("成果日時が必須です");
-    }
-
-    const affiliateLinkName = this.getValue(item, "遷移広告URL名");
-    if (!affiliateLinkName) {
-      throw new Error("遷移広告URL名が必須です");
-    }
-
-    return {
-      actionDateTime,
-      affiliateLinkName,
-      referrerUrl: null,
-    };
-  }
-
   async save(conversionData: RawCatsData[]): Promise<number> {
     try {
-      const formatted = conversionData.map((item) => this.formatData(item));
+      const formatted = await Promise.all(
+        conversionData.map(async (item) => {
+          const actionDateTime = parseToJst(item["成果日時"]);
+          const affiliateLinkName = item["遷移広告URL名"];
+
+          // 名前→ID変換
+          const affiliateLink = await this.prisma.affiliateLink.upsert({
+            where: {
+              asp_type_affiliate_link_name: {
+                asp_type: this.aspType,
+                affiliate_link_name: affiliateLinkName!,
+              },
+            },
+            update: {},
+            create: {
+              asp_type: this.aspType,
+              affiliate_link_name: affiliateLinkName!,
+            },
+          });
+
+          return {
+            actionDateTime: actionDateTime!,
+            affiliate_link_id: affiliateLink.id,
+            referrer_link_id: null, // CATSは常にnull
+            referrerUrl: null,
+            uid: null, // CATSは常にnull
+          };
+        }),
+      );
       return await this.saveToCommonTable(formatted);
     } catch (error) {
       this.logger.error("Error saving conversion data:", error);
