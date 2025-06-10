@@ -1,24 +1,21 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { TikTokAdReport } from "../interfaces/report-ad.interface";
+import { TikTokCampaignReport } from "../../interfaces/report-campaign.interface";
 
 @Injectable()
-export class TikTokAdRepository {
-  saveReports(records: TikTokAdReport[]) {
-    throw new Error("Method not implemented.");
-  }
-  private readonly logger = new Logger(TikTokAdRepository.name);
+export class TikTokCampaignRepository {
+  private readonly logger = new Logger(TikTokCampaignRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async save(records: TikTokAdReport[]): Promise<number> {
+  async save(records: TikTokCampaignReport[]): Promise<number> {
     if (records.length === 0) {
       this.logger.debug("処理対象のデータがありません");
       return 0;
     }
 
     try {
-      const result = await this.prisma.tikTokRawReportAd.createMany({
+      const result = await this.prisma.tikTokRawReportCampaign.createMany({
         data: records,
         skipDuplicates: true,
       });

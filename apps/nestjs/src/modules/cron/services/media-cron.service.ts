@@ -1,8 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { TikTokAdReportService } from "../../media/tiktok/services/report-ad.service";
-import { TikTokAdgroupReportService } from "../../media/tiktok/services/report-adgroup.service";
-import { TikTokCampaignReportService } from "../../media/tiktok/services/report-campaign.service";
+import { TikTokAdReportService } from "../../media/tiktok/services/report/report-ad.service";
+import { TikTokAdgroupReportService } from "../../media/tiktok/services/report/report-adgroup.service";
+import { TikTokCampaignReportService } from "../../media/tiktok/services/report/report-campaign.service";
 import { CommonLogService } from "@logs/common-log.service";
 
 // 実行結果の型定義

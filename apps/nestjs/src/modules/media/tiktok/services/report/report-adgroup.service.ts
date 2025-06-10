@@ -1,18 +1,18 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokAdgroupRepository } from "../repositories/report-adgroup.repository";
-import { TikTokAdgroupReport } from "../interfaces/report-adgroup.interface";
-import { TikTokReportDto } from "../dtos/tiktok-report.dto";
+import { TikTokAdgroupRepository } from "../../repositories/report/report-adgroup.repository";
+import { TikTokAdgroupReport } from "../../interfaces/report-adgroup.interface";
+import { TikTokReportDto } from "../../dtos/tiktok-report.dto";
 import { getNowJstForDB } from "src/libs/date-utils";
-import { TikTokAccountService } from "./account.service";
+import { TikTokAccountService } from "../account.service";
 import { PrismaService } from "@prismaService";
-import { TikTokReportBase } from "../base/tiktok-report.base";
+import { TikTokReportBase } from "../../base/tiktok-report.base";
 import {
   MediaError,
   ErrorType,
   ERROR_CODES,
-} from "../../common/errors/media.error";
-import { ERROR_MESSAGES } from "../../common/errors/media.error";
+} from "../../../common/errors/media.error";
+import { ERROR_MESSAGES } from "../../../common/errors/media.error";
 
 @Injectable()
 export class TikTokAdgroupReportService extends TikTokReportBase {
