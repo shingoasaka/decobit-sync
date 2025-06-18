@@ -6,7 +6,7 @@ import { startOfDay } from "date-fns";
 
 /**
  * 共通のデータベース保存形式
- * 
+ *
  * @interface IndividualClickLog
  * @property {Date} clickDateTime - クリックが発生した日時
  * @property {number} affiliate_link_id - アフィリエイトリンクのID
@@ -37,7 +37,7 @@ interface ActionLog {
 
 /**
  * UTMパラメータからクリエイティブ値を抽出する
- * 
+ *
  * @param {string | null} referrerUrl - リファラURL
  * @returns {string | null} 抽出されたクリエイティブ値、またはnull
  * @throws {Error} URLのパースに失敗した場合
@@ -56,7 +56,7 @@ export function extractUtmCreative(referrerUrl: string | null): string | null {
 
 /**
  * リファラリンクを処理し、IDとURLを返す
- * 
+ *
  * @param {PrismaService} prisma - Prismaサービスインスタンス
  * @param {Logger} logger - ロガーインスタンス
  * @param {string | null} referrerUrl - 処理対象のリファラURL
@@ -259,7 +259,7 @@ export abstract class BaseAspRepository {
 
   /**
    * 共通テーブルにデータを保存する
-   * 
+   *
    * @param {ActionLog[] | IndividualClickLog[] | TotalClickLog[]} data - 保存するデータ
    * @returns {Promise<number>} 保存されたレコード数
    * @throws {Error} 保存処理に失敗した場合
