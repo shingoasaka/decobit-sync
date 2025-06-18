@@ -179,7 +179,7 @@ export class TikTokAdReportService extends TikTokReportBase {
           accountIdMap,
         );
       } catch (error) {
-        this.logError('マージ処理でエラーが発生しました', error);
+        this.logError("マージ処理でエラーが発生しました", error);
         throw error;
       }
 
@@ -308,7 +308,12 @@ export class TikTokAdReportService extends TikTokReportBase {
     const params = {
       advertiser_id: advertiserId,
       page_size: 1000,
-      fields: JSON.stringify(["ad_id", "secondary_status", "operation_status", "modify_time"]),
+      fields: JSON.stringify([
+        "ad_id",
+        "secondary_status",
+        "operation_status",
+        "modify_time",
+      ]),
     };
 
     try {
@@ -324,15 +329,25 @@ export class TikTokAdReportService extends TikTokReportBase {
       );
 
       // レスポンスの構造を確認
-      if (response?.data?.data?.list && Array.isArray(response.data.data.list)) {
-        this.logInfo(`ステータスAPI 成功: advertiser=${advertiserId}, list.length=${response.data.data.list.length}`);
+      if (
+        response?.data?.data?.list &&
+        Array.isArray(response.data.data.list)
+      ) {
+        this.logInfo(
+          `ステータスAPI 成功: advertiser=${advertiserId}, list.length=${response.data.data.list.length}`,
+        );
         return response.data.data.list;
       } else {
-        this.logWarn(`ステータスAPI レスポンスが不正: advertiser=${advertiserId}`);
+        this.logWarn(
+          `ステータスAPI レスポンスが不正: advertiser=${advertiserId}`,
+        );
         return [];
       }
     } catch (error) {
-      this.logError(`ステータスデータの取得に失敗: advertiser=${advertiserId}`, error);
+      this.logError(
+        `ステータスデータの取得に失敗: advertiser=${advertiserId}`,
+        error,
+      );
       // ステータス取得に失敗してもレポートデータは処理を継続
       return [];
     }
@@ -358,7 +373,9 @@ export class TikTokAdReportService extends TikTokReportBase {
           statusMap.set(status.ad_id, status);
         }
       } else {
-        this.logWarn(`ステータスデータが配列ではありません: advertiser=${advertiserId}, type=${typeof statusList}`);
+        this.logWarn(
+          `ステータスデータが配列ではありません: advertiser=${advertiserId}, type=${typeof statusList}`,
+        );
       }
     }
 
@@ -368,13 +385,13 @@ export class TikTokAdReportService extends TikTokReportBase {
 
     for (let i = 0; i < reportData.length; i += batchSize) {
       const batch = reportData.slice(i, i + batchSize);
-      
+
       try {
         const batchRecords = batch.map((dto) => {
           const status = statusMap.get(dto.dimensions.ad_id);
           return this.convertDtoToEntity(dto, accountIdMap, status);
         });
-        
+
         mergedRecords.push(...batchRecords);
       } catch (error) {
         this.logError(`バッチ処理エラー (${i}-${i + batch.length}件目)`, error);
