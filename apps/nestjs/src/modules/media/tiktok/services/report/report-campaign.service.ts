@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokCampaignRepository } from "../../repositories/report/report-campaign.repository";
-import { TikTokCampaignReport } from "../../interfaces/report-campaign.interface";
-import { TikTokReportDto } from "../../dtos/tiktok-report.dto";
+import { TikTokCampaignReportDto } from "../../dtos/tiktok-report.dto";
 import { TikTokAccountService } from "../account.service";
+import { TikTokReportBase } from "src/modules/media/tiktok/base/tiktok-report.base";
+import { TikTokCampaignRepository } from "src/modules/media/tiktok/repositories/report/report-campaign.repository";
+import { TikTokCampaignReport } from "src/modules/media/tiktok/interfaces/report.interface";
 import { getNowJstForDB } from "src/libs/date-utils";
 import { PrismaService } from "@prismaService";
-import { TikTokReportBase } from "../../base/tiktok-report.base";
 import {
   MediaError,
   ErrorType,
@@ -71,8 +71,13 @@ export class TikTokCampaignReportService extends TikTokReportBase {
         },
       });
 
-      const accountIdMap = new Map(
-        accountMapping.map((acc) => [acc.ad_platform_account_id, acc.id]),
+      const accountIdMap = new Map<string, number>(
+        accountMapping.map(
+          (acc: { ad_platform_account_id: string; id: number }) => [
+            acc.ad_platform_account_id,
+            acc.id,
+          ],
+        ),
       );
 
       const today = new Date();
@@ -125,10 +130,10 @@ export class TikTokCampaignReportService extends TikTokReportBase {
 
             const list = response.list ?? [];
             if (list.length > 0) {
-              const records: TikTokCampaignReport[] = list.map(
-                (dto: TikTokReportDto) =>
-                  this.convertDtoToEntity(dto, accountIdMap),
-              );
+              const records: TikTokCampaignReport[] = list.map((dto) => {
+                const campaignDto = dto as TikTokCampaignReportDto;
+                return this.convertDtoToEntity(campaignDto, accountIdMap);
+              });
 
               const savedCount = await this.saveReports(records);
               totalSaved += savedCount;
@@ -162,12 +167,11 @@ export class TikTokCampaignReportService extends TikTokReportBase {
   }
 
   private convertDtoToEntity(
-    dto: TikTokReportDto,
+    dto: TikTokCampaignReportDto,
     accountIdMap: Map<string, number>,
   ): TikTokCampaignReport {
     const now = getNowJstForDB();
-    const advertiserId =
-      dto.dimensions.advertiser_id ?? dto.metrics.advertiser_id;
+    const advertiserId = dto.metrics.advertiser_id;
     const adAccountId = accountIdMap.get(advertiserId);
 
     if (!adAccountId) {
@@ -178,6 +182,7 @@ export class TikTokCampaignReportService extends TikTokReportBase {
       ad_account_id: adAccountId ?? 0,
       ad_platform_account_id: advertiserId,
       platform_campaign_id: this.safeBigInt(dto.dimensions.campaign_id),
+      campaign_name: dto.metrics.campaign_name,
       stat_time_day: new Date(dto.dimensions.stat_time_day),
       budget: this.parseNumber(dto.metrics.budget),
       spend: this.parseNumber(dto.metrics.spend),

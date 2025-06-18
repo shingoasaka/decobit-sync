@@ -1,18 +1,18 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokAdgroupRepository } from "../../repositories/report/report-adgroup.repository";
-import { TikTokAdgroupReport } from "../../interfaces/report-adgroup.interface";
-import { TikTokReportDto } from "../../dtos/tiktok-report.dto";
+import { TikTokAdGroupRepository } from "../../repositories/report/report-adgroup.repository";
+import { TikTokAdgroupReport } from "../../interfaces/report.interface";
+import { TikTokAdgroupReportDto } from "../../dtos/tiktok-report.dto";
 import { getNowJstForDB } from "src/libs/date-utils";
 import { TikTokAccountService } from "../account.service";
 import { PrismaService } from "@prismaService";
 import { TikTokReportBase } from "../../base/tiktok-report.base";
 import {
   MediaError,
-  ErrorType,
+  ERROR_MESSAGES,
   ERROR_CODES,
+  ErrorType,
 } from "../../../common/errors/media.error";
-import { ERROR_MESSAGES } from "../../../common/errors/media.error";
 
 @Injectable()
 export class TikTokAdgroupReportService extends TikTokReportBase {
@@ -20,7 +20,7 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
     "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
 
   constructor(
-    private readonly adgroupRepository: TikTokAdgroupRepository,
+    private readonly adgroupRepository: TikTokAdGroupRepository,
     http: HttpService,
     private readonly tikTokAccountService: TikTokAccountService,
     private readonly prisma: PrismaService,
@@ -70,8 +70,13 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
         },
       });
 
-      const accountIdMap = new Map(
-        accountMapping.map((acc) => [acc.ad_platform_account_id, acc.id]),
+      const accountIdMap = new Map<string, number>(
+        accountMapping.map(
+          (acc: { ad_platform_account_id: string; id: number }) => [
+            acc.ad_platform_account_id,
+            acc.id,
+          ],
+        ),
       );
 
       const today = new Date();
@@ -125,10 +130,10 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
 
             const list = response.list ?? [];
             if (list.length > 0) {
-              const records: TikTokAdgroupReport[] = list.map(
-                (dto: TikTokReportDto) =>
-                  this.convertDtoToEntity(dto, accountIdMap),
-              );
+              const records: TikTokAdgroupReport[] = list.map((dto) => {
+                const adgroupDto = dto as TikTokAdgroupReportDto;
+                return this.convertDtoToEntity(adgroupDto, accountIdMap);
+              });
 
               const savedCount = await this.saveReports(records);
               totalSaved += savedCount;
@@ -162,12 +167,11 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
   }
 
   private convertDtoToEntity(
-    dto: TikTokReportDto,
+    dto: TikTokAdgroupReportDto,
     accountIdMap: Map<string, number>,
   ): TikTokAdgroupReport {
     const now = getNowJstForDB();
-    const advertiserId =
-      dto.dimensions.advertiser_id ?? dto.metrics.advertiser_id;
+    const advertiserId = dto.metrics.advertiser_id;
     const adAccountId = accountIdMap.get(advertiserId);
 
     if (!adAccountId) {
@@ -178,6 +182,7 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
       ad_account_id: adAccountId ?? 0,
       ad_platform_account_id: advertiserId,
       platform_adgroup_id: this.safeBigInt(dto.dimensions.adgroup_id),
+      adgroup_name: dto.metrics.adgroup_name,
       stat_time_day: new Date(dto.dimensions.stat_time_day),
       budget: this.parseNumber(dto.metrics.budget),
       spend: this.parseNumber(dto.metrics.spend),

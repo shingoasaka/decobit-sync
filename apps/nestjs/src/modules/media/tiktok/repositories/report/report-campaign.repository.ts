@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { TikTokCampaignReport } from "../../interfaces/report-campaign.interface";
+import { TikTokCampaignReport } from "../../interfaces/report.interface";
 
 @Injectable()
 export class TikTokCampaignRepository {
@@ -15,11 +15,11 @@ export class TikTokCampaignRepository {
     }
 
     try {
-      const result = await this.prisma.tikTokRawReportCampaign.createMany({
+      await this.prisma.tikTokRawReportCampaign.createMany({
         data: records,
         skipDuplicates: true,
       });
-      return result.count;
+      return records.length;
     } catch (error) {
       this.logger.error(
         "データの保存に失敗しました",

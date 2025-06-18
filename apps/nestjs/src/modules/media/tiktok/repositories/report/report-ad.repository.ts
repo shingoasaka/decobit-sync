@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { TikTokAdReport } from "../../interfaces/report-ad.interface";
+import { TikTokAdReport } from "../../interfaces/report.interface";
 
 @Injectable()
 export class TikTokAdRepository {

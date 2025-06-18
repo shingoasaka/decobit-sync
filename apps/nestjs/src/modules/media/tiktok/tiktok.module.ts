@@ -1,30 +1,31 @@
-import { Module, forwardRef } from "@nestjs/common";
-import { PrismaModule } from "src/prisma/prisma.module";
-import { TikTokCampaignRepository } from "./repositories/report/report-campaign.repository";
-import { TikTokAdgroupRepository } from "./repositories/report/report-adgroup.repository";
-import { TikTokAdRepository } from "./repositories/report/report-ad.repository";
-import { TikTokCampaignReportService } from "./services/report/report-campaign.service";
-import { TikTokAdgroupReportService } from "./services/report/report-adgroup.service";
-import { TikTokAdReportService } from "./services/report/report-ad.service";
+import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
-import { MediaModule } from "../media.module";
+import { TikTokAdGroupRepository } from "./repositories/report/report-adgroup.repository";
+import { TikTokAdRepository } from "./repositories/report/report-ad.repository";
+import { TikTokCampaignRepository } from "./repositories/report/report-campaign.repository";
+import { TikTokAdReportService } from "./services/report/report-ad.service";
+import { TikTokAdgroupReportService } from "./services/report/report-adgroup.service";
+import { TikTokCampaignReportService } from "./services/report/report-campaign.service";
 import { TikTokAccountService } from "./services/account.service";
+import { PrismaService } from "@prismaService";
 
 @Module({
-  imports: [PrismaModule, HttpModule, forwardRef(() => MediaModule)],
+  imports: [HttpModule],
   providers: [
-    TikTokCampaignRepository,
-    TikTokAdgroupRepository,
-    TikTokAdRepository,
-    TikTokCampaignReportService,
-    TikTokAdgroupReportService,
     TikTokAdReportService,
+    TikTokAdgroupReportService,
+    TikTokCampaignReportService,
     TikTokAccountService,
+    TikTokAdRepository,
+    TikTokAdGroupRepository,
+    TikTokCampaignRepository,
+    PrismaService,
   ],
   exports: [
-    TikTokCampaignReportService,
-    TikTokAdgroupReportService,
     TikTokAdReportService,
+    TikTokAdgroupReportService,
+    TikTokCampaignReportService,
+    TikTokAccountService,
   ],
 })
 export class TikTokModule {}

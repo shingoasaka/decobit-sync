@@ -1,10 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { TikTokAdgroupReport } from "../../interfaces/report-adgroup.interface";
+import { TikTokAdgroupReport } from "../../interfaces/report.interface";
 
 @Injectable()
-export class TikTokAdgroupRepository {
-  private readonly logger = new Logger(TikTokAdgroupRepository.name);
+export class TikTokAdGroupRepository {
+  private readonly logger = new Logger(TikTokAdGroupRepository.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
