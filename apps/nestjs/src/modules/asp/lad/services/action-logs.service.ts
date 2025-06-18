@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser } from "playwright";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
@@ -7,11 +7,21 @@ import { PrismaService } from "@prismaService";
 import { LogService } from "src/modules/logs/types";
 import dotenv from "dotenv";
 import { LadActionLogRepository } from "../repositories/action-logs.repository";
+import { processReferrerLink } from "../../base/repository.base";
+import { parseToJst } from "src/libs/date-utils";
 
 dotenv.config();
 
+interface RawLadData {
+  成果日時?: string;
+  遷移広告URL名?: string;
+  "リファラ(クリック)"?: string;
+}
+
 @Injectable()
 export class LadActionLogService implements LogService {
+  private readonly logger = new Logger(LadActionLogService.name);
+
   constructor(
     private readonly repository: LadActionLogRepository,
     private readonly prisma: PrismaService,
@@ -23,7 +33,7 @@ export class LadActionLogService implements LogService {
     try {
       browser = await chromium.launch({
         headless: true,
-        timeout: 30000, // ブラウザ起動のタイムアウトを30秒に設定
+        timeout: 30000,
       });
       const context = await browser.newContext({
         acceptDownloads: true,
@@ -31,9 +41,8 @@ export class LadActionLogService implements LogService {
       });
       const page = await context.newPage();
 
-      // ナビゲーションのタイムアウトを45秒に設定（短縮）
       page.setDefaultNavigationTimeout(45000);
-      page.setDefaultTimeout(30000); // その他のアクションのタイムアウトを30秒に設定
+      page.setDefaultTimeout(30000);
 
       await page.goto("https://admin038.l-ad.net/front/login/", {
         waitUntil: "domcontentloaded",
@@ -47,7 +56,6 @@ export class LadActionLogService implements LogService {
         .fill(process.env.LAD_PASSWORD ?? "");
       await page.getByRole("button", { name: "ログイン" }).click();
 
-      // ログイン後のページ読み込み完了を待機
       await page.waitForLoadState("domcontentloaded");
 
       await page.getByRole("link", { name: "ログ集計" }).click();
@@ -58,7 +66,6 @@ export class LadActionLogService implements LogService {
 
       await page.getByRole("button", { name: "本日" }).click();
 
-      // より短いタイムアウトでレスポンスを待機
       await page
         .waitForResponse(
           (response) =>
@@ -67,10 +74,9 @@ export class LadActionLogService implements LogService {
           { timeout: 20000 },
         )
         .catch(() =>
-          console.log("レスポンス待機タイムアウト、処理を継続します"),
+          this.logger.warn("レスポンス待機タイムアウト、処理を継続します"),
         );
 
-      // CSV生成のクリック
       await page.getByRole("button", { name: " CSV生成" }).click();
 
       await page.waitForTimeout(60000);
@@ -79,67 +85,133 @@ export class LadActionLogService implements LogService {
         waitUntil: "domcontentloaded",
       });
 
-      // ダウンロードの実行（Promise.allパターン使用）- タイムアウトを45秒に短縮
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 45000 }),
         page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
       ]).catch((error) => {
-        console.error("ダウンロード待機中にエラーが発生しました:", error);
+        this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
         return [null];
       });
 
       if (!download) {
-        console.log(
+        this.logger.warn(
           "ダウンロードイベントが取得できませんでした。処理を中止します。",
         );
         return 0;
       }
 
-      // ダウンロードの完了を待機（30秒タイムアウト）
       const downloadPath = await download.path().catch((error) => {
-        console.error("ダウンロードパスの取得に失敗しました:", error);
+        this.logger.error("ダウンロードパスの取得に失敗しました:", error);
         return null;
       });
 
       if (!downloadPath) {
-        console.log("ダウンロードパスが取得できません。処理を中止します。");
+        this.logger.warn(
+          "ダウンロードパスが取得できません。処理を中止します。",
+        );
         return 0;
       }
 
-      return await this.processCsvAndSave(downloadPath);
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
     } catch (error) {
-      console.error("Ladログ取得エラー:", error);
+      this.logger.error("Ladログ取得エラー:", error);
       return 0;
     } finally {
       if (browser) {
         try {
           await browser.close();
         } catch (error) {
-          console.error("ブラウザのクローズに失敗しました:", error);
+          this.logger.error("ブラウザのクローズに失敗しました:", error);
         }
       }
     }
   }
 
-  private async processCsvAndSave(filePath: string): Promise<number> {
-    const buffer = fs.readFileSync(filePath);
-    const utf8Data = iconv.decode(buffer, "Shift_JIS");
-
-    const records = parse(utf8Data, {
-      columns: true,
-      skip_empty_lines: true,
-      relax_column_count: true,
-    });
-
-    await this.repository.save(records);
-
-    // 一時ファイルの削除
+  private async processCsv(filePath: string): Promise<RawLadData[]> {
     try {
-      fs.unlinkSync(filePath);
-    } catch (error) {
-      console.error("一時ファイルの削除に失敗しました:", error);
-    }
+      const buffer = fs.readFileSync(filePath);
+      const utf8Data = iconv.decode(buffer, "Shift_JIS");
 
-    return records.length;
+      const records = parse(utf8Data, {
+        columns: true,
+        skip_empty_lines: true,
+        relax_column_count: true,
+      }) as RawLadData[];
+
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return [];
+      }
+
+      return records;
+    } catch (error) {
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
+    } finally {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (error) {
+        this.logger.error("一時ファイルの削除に失敗しました:", error);
+      }
+    }
+  }
+
+  private async transformData(rawData: RawLadData[]) {
+    const formatted = await Promise.all(
+      rawData
+        .filter((item) => {
+          if (!item["成果日時"] || !item["遷移広告URL名"]) {
+            this.logger.warn(
+              `Skipping invalid record: ${JSON.stringify(item)}`,
+            );
+            return false;
+          }
+          return true;
+        })
+        .map(async (item) => {
+          try {
+            const actionDateTime = parseToJst(item["成果日時"]);
+            const affiliateLinkName = item["遷移広告URL名"]?.trim();
+            const referrerUrl = item["リファラ(クリック)"]?.trim() || null;
+
+            if (!actionDateTime) {
+              this.logger.warn(`Invalid date format: ${item["成果日時"]}`);
+              return null;
+            }
+
+            if (!affiliateLinkName) {
+              this.logger.warn("遷移広告URL名が空です");
+              return null;
+            }
+
+            const affiliateLink =
+              await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+
+            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+              await processReferrerLink(this.prisma, this.logger, referrerUrl);
+
+            return {
+              actionDateTime,
+              affiliate_link_id: affiliateLink.id,
+              referrer_link_id: referrerLinkId,
+              referrerUrl: processedReferrerUrl,
+              uid: null,
+            };
+          } catch (error) {
+            this.logger.error(
+              `Error processing record: ${JSON.stringify(item)}`,
+              error,
+            );
+            return null;
+          }
+        }),
+    );
+
+    return formatted.filter(
+      (record): record is NonNullable<typeof record> => record !== null,
+    );
   }
 }

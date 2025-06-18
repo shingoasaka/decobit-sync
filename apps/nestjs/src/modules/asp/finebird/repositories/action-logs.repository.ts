@@ -1,17 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
-import {
-  BaseActionLogRepository,
-  processReferrerLink,
-} from "../../base/repository.base";
-import { parseToJst } from "src/libs/date-utils";
+import { BaseActionLogRepository } from "../../base/repository.base";
 
-// Finebird固有のカラム名を持つインターフェース・合計値形式
-interface RawFinebirdData {
-  注文日時?: string;
-  サイト名?: string;
-  リファラ?: string;
+interface ActionLogData {
+  actionDateTime: Date;
+  affiliate_link_id: number;
+  referrer_link_id: number | null;
+  referrerUrl: string | null;
+  uid: string | null;
 }
 
 @Injectable()
@@ -20,88 +17,28 @@ export class FinebirdActionLogRepository extends BaseActionLogRepository {
     super(prisma, AspType.FINEBIRD);
   }
 
-  async save(logs: RawFinebirdData[]): Promise<number> {
+  async save(actionLogs: ActionLogData[]): Promise<number> {
     try {
-      const formatted = await Promise.all(
-        logs
-          .filter((item) => {
-            if (!item["注文日時"] || !item["サイト名"]) {
-              this.logger.warn(
-                `Skipping invalid record: ${JSON.stringify(item)}`,
-              );
-              return false;
-            }
-            return true;
-          })
-          .map(async (item) => {
-            try {
-              const actionDateTime = parseToJst(item["注文日時"]);
-              const affiliateLinkName = item["サイト名"]?.trim();
-              const referrerUrl = item["リファラ"] || null;
-
-              if (!actionDateTime) {
-                this.logger.warn(`Invalid date format: ${item["注文日時"]}`);
-                return null;
-              }
-
-              if (!affiliateLinkName) {
-                this.logger.warn("サイト名が空です");
-                return null;
-              }
-
-              // 名前→ID変換
-              const affiliateLink = await this.prisma.affiliateLink.upsert({
-                where: {
-                  asp_type_affiliate_link_name: {
-                    asp_type: this.aspType,
-                    affiliate_link_name: affiliateLinkName,
-                  },
-                },
-                update: {},
-                create: {
-                  asp_type: this.aspType,
-                  affiliate_link_name: affiliateLinkName,
-                },
-              });
-
-              // リファラリンクの処理
-              const { referrerLinkId, referrerUrl: processedReferrerUrl } =
-                await processReferrerLink(
-                  this.prisma,
-                  this.logger,
-                  referrerUrl,
-                );
-
-              return {
-                actionDateTime,
-                affiliate_link_id: affiliateLink.id,
-                referrer_link_id: referrerLinkId,
-                referrerUrl: processedReferrerUrl,
-                uid: null,
-              };
-            } catch (error) {
-              this.logger.error(
-                `Error processing record: ${JSON.stringify(item)}`,
-                error,
-              );
-              return null;
-            }
-          }),
-      );
-
-      const validRecords = formatted.filter(
-        (record): record is NonNullable<typeof record> => record !== null,
-      );
-
-      if (validRecords.length === 0) {
-        this.logger.warn("No valid records to save");
-        return 0;
-      }
-
-      return await this.saveToCommonTable(validRecords);
+      return await this.saveToCommonTable(actionLogs);
     } catch (error) {
-      this.logger.error("Error saving Finebird action logs:", error);
+      this.logger.error("Error saving action logs:", error);
       throw error;
     }
+  }
+
+  async getOrCreateAffiliateLink(affiliateLinkName: string) {
+    return await this.prisma.affiliateLink.upsert({
+      where: {
+        asp_type_affiliate_link_name: {
+          asp_type: this.aspType,
+          affiliate_link_name: affiliateLinkName,
+        },
+      },
+      update: {},
+      create: {
+        asp_type: this.aspType,
+        affiliate_link_name: affiliateLinkName,
+      },
+    });
   }
 }

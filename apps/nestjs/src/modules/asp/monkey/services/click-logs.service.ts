@@ -1,9 +1,8 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
 import { MonkeyClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
-import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
 
@@ -37,8 +36,15 @@ class MonkeyServiceError extends Error {
   }
 }
 
+interface RawMonkeyData {
+  タグ名?: string;
+  click?: string;
+}
+
 @Injectable()
 export class MonkeyClickLogService implements LogService {
+  private readonly logger = new Logger(MonkeyClickLogService.name);
+
   constructor(
     private readonly repository: MonkeyClickLogRepository,
     private readonly prisma: PrismaService,
@@ -52,15 +58,19 @@ export class MonkeyClickLogService implements LogService {
       await this.login(page);
       await this.navigateToReport(page);
       const downloadPath = await this.downloadReport(page);
-      return await this.processCsvAndSave(downloadPath);
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
     } catch (error) {
-      this.handleError("fetchAndInsertLogs", error);
+      this.logger.error("Monkeyログ取得エラー:", error);
       return 0;
     } finally {
       if (browser) {
-        await browser
-          .close()
-          .catch((error) => console.error("Browser closing error:", error));
+        try {
+          await browser.close();
+        } catch (error) {
+          this.logger.error("ブラウザのクローズに失敗しました:", error);
+        }
       }
     }
   }
@@ -69,12 +79,11 @@ export class MonkeyClickLogService implements LogService {
     try {
       return await chromium.launch({
         headless: true,
-        timeout: 30000, // タイムアウト設定の追加
+        timeout: 30000,
       });
     } catch (error) {
-      throw new MonkeyServiceError(
+      throw new Error(
         `Failed to initialize browser: ${error instanceof Error ? error.message : "Unknown error"}`,
-        "initializeBrowser",
       );
     }
   }
@@ -89,31 +98,30 @@ export class MonkeyClickLogService implements LogService {
       await page.goto(url);
       return page;
     } catch (error) {
-      throw new MonkeyServiceError(
+      throw new Error(
         `Failed to setup page: ${error instanceof Error ? error.message : "Unknown error"}`,
-        "setupPage",
       );
     }
   }
 
   private async login(page: Page): Promise<void> {
-    await page.fill(CONFIG.SELECTORS.LOGIN.ID, process.env.MONKEY_ID ?? "");
+    await page.fill('input[type="text"].ef', process.env.MONKEY_ID ?? "");
     await page.fill(
-      CONFIG.SELECTORS.LOGIN.PASSWORD,
+      'input[type="password"].ef',
       process.env.MONKEY_PASSWORD ?? "",
     );
-    await (await page.waitForSelector(CONFIG.SELECTORS.LOGIN.SUBMIT)).click();
+    await (await page.waitForSelector("button.button.button-squere")).click();
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(CONFIG.WAIT_TIME.SHORT);
+    await page.waitForTimeout(2000);
   }
 
   private async navigateToReport(page: Page): Promise<void> {
     try {
-      await page.waitForTimeout(CONFIG.WAIT_TIME.SHORT);
+      await page.waitForTimeout(2000);
       await (
-        await page.waitForSelector(CONFIG.SELECTORS.REPORT.ACTION_TAB)
+        await page.waitForSelector('li[data-v-d2f0d4f2][id="TAG"].is-size-5')
       ).click();
-      await page.waitForTimeout(CONFIG.WAIT_TIME.SHORT);
+      await page.waitForTimeout(2000);
     } catch (error) {
       if (error instanceof Error && error.message.includes("TimeoutError")) {
         throw new Error(
@@ -128,7 +136,9 @@ export class MonkeyClickLogService implements LogService {
     try {
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 60000 }),
-        (await page.waitForSelector(CONFIG.SELECTORS.REPORT.DOWNLOAD)).click(),
+        (
+          await page.waitForSelector("button[data-v-de104928].button.is-small")
+        ).click(),
       ]);
 
       const downloadPath = await download.path();
@@ -137,23 +147,13 @@ export class MonkeyClickLogService implements LogService {
       }
       return downloadPath;
     } catch (error) {
-      throw new MonkeyServiceError(
-        `レポートダウンロード中にエラー: ${
-          error instanceof Error ? error.message : error
-        }`,
-        "downloadReport",
+      throw new Error(
+        `レポートダウンロード中にエラー: ${error instanceof Error ? error.message : error}`,
       );
     }
   }
 
-  private handleError(method: string, error: unknown): void {
-    console.error(
-      `Error in ${method}:`,
-      error instanceof Error ? error.message : "Unknown error",
-    );
-  }
-
-  private async processCsvAndSave(filePath: string): Promise<number> {
+  private async processCsv(filePath: string): Promise<RawMonkeyData[]> {
     try {
       const buffer = fs.readFileSync(filePath);
       const utf8Data = buffer.toString("utf8").replace(/^\uFEFF/, "");
@@ -161,24 +161,83 @@ export class MonkeyClickLogService implements LogService {
       const records = parse(utf8Data, {
         columns: true,
         skip_empty_lines: true,
-        trim: true, // 空白文字の除去を追加
-      });
+        trim: true,
+      }) as RawMonkeyData[];
 
-      await this.repository.save(records);
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return [];
+      }
 
-      // ファイルの削除を追加
-      await fs.promises
-        .unlink(filePath)
-        .catch((error) =>
-          console.error("Failed to delete temporary file:", error),
-        );
-
-      return records.length;
+      return records;
     } catch (error) {
-      throw new MonkeyServiceError(
-        `Failed to process CSV: ${error instanceof Error ? error.message : "Unknown error"}`,
-        "processCsvAndSave",
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
       );
+    } finally {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (error) {
+        this.logger.error("一時ファイルの削除に失敗しました:", error);
+      }
+    }
+  }
+
+  private async transformData(rawData: RawMonkeyData[]) {
+    const formatted = await Promise.all(
+      rawData
+        .filter((item) => {
+          if (!item["タグ名"]) {
+            this.logger.warn(
+              `Skipping invalid record: ${JSON.stringify(item)}`,
+            );
+            return false;
+          }
+          return true;
+        })
+        .map(async (item) => {
+          try {
+            const affiliateLinkName = item["タグ名"]?.trim();
+            if (!affiliateLinkName) {
+              this.logger.warn("タグ名が空です");
+              return null;
+            }
+
+            const currentTotalClicks = this.toInt(item["click"]);
+
+            const affiliateLink =
+              await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+
+            return {
+              affiliate_link_id: affiliateLink.id,
+              currentTotalClicks,
+              referrer_link_id: null,
+              referrerUrl: null,
+            };
+          } catch (error) {
+            this.logger.error(
+              `Error processing record: ${JSON.stringify(item)}`,
+              error,
+            );
+            return null;
+          }
+        }),
+    );
+
+    return formatted.filter(
+      (record): record is NonNullable<typeof record> => record !== null,
+    );
+  }
+
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
     }
   }
 }

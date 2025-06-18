@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
 import { FinebirdClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
@@ -6,6 +6,13 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
+import { processReferrerLink } from "../../base/repository.base";
+
+interface RawFinebirdData {
+  サイト名?: string;
+  総クリック?: string;
+  リファラ?: string;
+}
 
 interface FinebirdSelectors {
   LOGIN: {
@@ -41,6 +48,8 @@ const WAIT_TIME = {
 
 @Injectable()
 export class FinebirdClickLogService implements LogService {
+  private readonly logger = new Logger(FinebirdClickLogService.name);
+
   constructor(
     private readonly repository: FinebirdClickLogRepository,
     private readonly prisma: PrismaService,
@@ -58,13 +67,107 @@ export class FinebirdClickLogService implements LogService {
         return 0;
       }
       const downloadPath = await this.downloadReport(page);
-      return await this.processCsvAndSave(downloadPath);
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
     } catch (error) {
       this.handleError("fetchAndInsertLogs", error);
       return 0;
     } finally {
       await browser?.close();
     }
+  }
+
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      console.warn(`Invalid number format: ${value}`);
+      return 0;
+    }
+  }
+
+  private async processCsv(filePath: string): Promise<RawFinebirdData[]> {
+    try {
+      const buffer = fs.readFileSync(filePath);
+      const utf8Data = buffer.toString("utf8").replace(/^\uFEFF/, "");
+
+      const records = parse(utf8Data, {
+        columns: true,
+        skip_empty_lines: true,
+      }) as RawFinebirdData[];
+
+      if (!records || records.length === 0) {
+        console.warn("CSVにデータがありませんでした");
+        return [];
+      }
+
+      return records;
+    } catch (error) {
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
+    } finally {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (error) {
+        console.error("Error deleting temporary file:", error);
+      }
+    }
+  }
+
+  private async transformData(rawData: RawFinebirdData[]) {
+    const formatted = await Promise.all(
+      rawData
+        .filter((item) => {
+          if (!item["サイト名"]) {
+            this.logger.warn(
+              `Skipping invalid record: ${JSON.stringify(item)}`,
+            );
+            return false;
+          }
+          return true;
+        })
+        .map(async (item) => {
+          try {
+            const affiliateLinkName = item["サイト名"]?.trim();
+            const referrerUrl = item["リファラ"] || null;
+
+            if (!affiliateLinkName) {
+              this.logger.warn("サイト名が空です");
+              return null;
+            }
+
+            const currentTotalClicks = this.toInt(item["総クリック"]);
+
+            const affiliateLink =
+              await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+
+            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+              await processReferrerLink(this.prisma, this.logger, referrerUrl);
+
+            return {
+              affiliate_link_id: affiliateLink.id,
+              currentTotalClicks,
+              referrer_link_id: referrerLinkId,
+              referrerUrl: processedReferrerUrl,
+            };
+          } catch (error) {
+            this.logger.error(
+              `Error processing record: ${JSON.stringify(item)}`,
+              error,
+            );
+            return null;
+          }
+        }),
+    );
+
+    return formatted.filter(
+      (record): record is NonNullable<typeof record> => record !== null,
+    );
   }
 
   private async initializeBrowser(): Promise<Browser> {
@@ -101,7 +204,11 @@ export class FinebirdClickLogService implements LogService {
       ).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
 
-      const emptyDataElement = await page.$("td[colspan='17']"); // 修正部分
+      /**
+       * Finebirdのレポートページでデータが存在しない場合のチェック
+       * Finebirdはデータが存在しない場合、colspan='17'の空のtd要素を表示する
+       */
+      const emptyDataElement = await page.$("td[colspan='17']");
       if (emptyDataElement) {
         const emptyDataMessage = await page.evaluate(
           (el) => el.textContent,
@@ -153,29 +260,5 @@ export class FinebirdClickLogService implements LogService {
       `Error in ${method}:`,
       error instanceof Error ? error.message : "Unknown error",
     );
-  }
-
-  private async processCsvAndSave(filePath: string): Promise<number> {
-    try {
-      const buffer = fs.readFileSync(filePath);
-      const utf8Data = buffer.toString("utf8").replace(/^\uFEFF/, "");
-
-      const records = parse(utf8Data, {
-        columns: true,
-        skip_empty_lines: true,
-      });
-
-      await this.repository.save(records);
-      return records.length;
-    } catch (error) {
-      this.handleError("processCsvAndSave", error);
-      throw error;
-    } finally {
-      try {
-        fs.unlinkSync(filePath);
-      } catch (error) {
-        console.error("Error deleting temporary file:", error);
-      }
-    }
   }
 }

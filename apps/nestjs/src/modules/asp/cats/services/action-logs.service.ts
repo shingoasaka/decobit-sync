@@ -1,9 +1,20 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
 import { CatsActionLogRepository } from "../repositories/action-logs.repository";
+import * as fs from "fs";
+import { parse } from "csv-parse/sync";
+import * as iconv from "iconv-lite";
+import { parseToJst } from "src/libs/date-utils";
+
+interface RawCatsData {
+  [key: string]: string | null | undefined;
+  成果日時?: string;
+  遷移広告URL名?: string;
+}
 
 @Injectable()
 export class CatsActionLogService {
+  private readonly logger = new Logger(CatsActionLogService.name);
   constructor(private readonly repository: CatsActionLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -14,12 +25,16 @@ export class CatsActionLogService {
 
       await this.login(page);
       if (!(await this.navigateToReport(page))) {
-        console.warn("検索結果が存在しないため、ダウンロードをスキップします");
+        this.logger.warn(
+          "検索結果が存在しないため、ダウンロードをスキップします",
+        );
         return 0;
       }
 
       const downloadPath = await this.downloadReport(page);
-      return await this.repository.processCsvAndSave(downloadPath);
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
     } catch (error) {
       this.handleError("fetchAndInsertLogs", error);
       return 0;
@@ -100,8 +115,47 @@ export class CatsActionLogService {
     }
   }
 
+  private async processCsv(downloadPath: string): Promise<RawCatsData[]> {
+    try {
+      const fileBuffer = fs.readFileSync(downloadPath);
+      const utf8Content = iconv.decode(fileBuffer, "Shift_JIS");
+      return parse(utf8Content, {
+        columns: true,
+        skip_empty_lines: true,
+      }) as RawCatsData[];
+    } catch (error) {
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
+
+  private async transformData(rawData: RawCatsData[]) {
+    return await Promise.all(
+      rawData.map(async (item) => {
+        const actionDateTime = parseToJst(item["成果日時"]);
+        const affiliateLinkName = item["遷移広告URL名"];
+
+        if (!actionDateTime || !affiliateLinkName) {
+          throw new Error("必須データが不足しています");
+        }
+
+        const affiliateLink =
+          await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+
+        return {
+          actionDateTime,
+          affiliate_link_id: affiliateLink.id,
+          referrer_link_id: null, // CATSは常にnull
+          referrerUrl: null,
+          uid: null, // CATSは常にnull
+        };
+      }),
+    );
+  }
+
   private handleError(method: string, error: unknown): void {
-    console.error(
+    this.logger.error(
       `❌ ${method} でエラーが発生しました:`,
       error instanceof Error ? error.message : "Unknown error",
     );

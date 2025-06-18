@@ -1,12 +1,19 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
 import { CatsClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
+import { parseToJst } from "src/libs/date-utils";
+
+interface RawCatsData {
+  クリック日時?: string;
+  広告名?: string;
+}
 
 @Injectable()
 export class CatsClickLogService {
+  private readonly logger = new Logger(CatsClickLogService.name);
   constructor(private readonly repository: CatsClickLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -17,12 +24,16 @@ export class CatsClickLogService {
 
       await this.login(page);
       if (!(await this.navigateToReport(page))) {
-        console.warn("検索結果が存在しないため、ダウンロードをスキップします");
+        this.logger.warn(
+          "検索結果が存在しないため、ダウンロードをスキップします",
+        );
         return 0;
       }
 
       const downloadPath = await this.downloadReport(page);
-      return await this.repository.processCsvAndSave(downloadPath);
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
     } catch (error) {
       this.handleError("fetchAndInsertLogs", error);
       return 0;
@@ -119,8 +130,77 @@ export class CatsClickLogService {
     }
   }
 
+  private async processCsv(downloadPath: string): Promise<RawCatsData[]> {
+    try {
+      const fileBuffer = fs.readFileSync(downloadPath);
+      const utf8Content = iconv.decode(fileBuffer, "Shift_JIS");
+      const records = parse(utf8Content, {
+        columns: true,
+        skip_empty_lines: true,
+      }) as RawCatsData[];
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return [];
+      }
+
+      return records;
+    } catch (error) {
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
+
+  private async transformData(rawData: RawCatsData[]) {
+    const formatted = await Promise.all(
+      rawData
+        .filter((item) => {
+          if (!item["クリック日時"] || !item["広告名"]) {
+            this.logger.warn(
+              `Skipping invalid record: ${JSON.stringify(item)}`,
+            );
+            return false;
+          }
+          return true;
+        })
+        .map(async (item) => {
+          try {
+            const clickDateTime = parseToJst(item["クリック日時"]);
+            const affiliateLinkName = item["広告名"];
+
+            if (!clickDateTime) {
+              this.logger.warn(`Invalid date format: ${item["クリック日時"]}`);
+              return null;
+            }
+
+            const affiliateLink =
+              await this.repository.getOrCreateAffiliateLink(
+                affiliateLinkName!,
+              );
+
+            return {
+              clickDateTime,
+              affiliate_link_id: affiliateLink.id,
+              referrer_link_id: null, // CATSは常にnull
+              referrerUrl: null,
+            };
+          } catch (error) {
+            this.logger.error(
+              `Error processing record: ${JSON.stringify(item)}`,
+              error,
+            );
+            return null;
+          }
+        }),
+    );
+
+    return formatted.filter(
+      (record): record is NonNullable<typeof record> => record !== null,
+    );
+  }
+
   private handleError(method: string, error: unknown): void {
-    console.error(
+    this.logger.error(
       `❌ ${method} でエラーが発生しました:`,
       error instanceof Error ? error.message : "Unknown error",
     );

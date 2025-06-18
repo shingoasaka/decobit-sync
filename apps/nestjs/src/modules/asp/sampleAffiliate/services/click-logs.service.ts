@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
 import { SampleAffiliateClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
@@ -51,8 +51,17 @@ const WAIT_TIME = {
   SHORT: 2000,
 } as const;
 
+interface RawSampleAffiliateData {
+  [key: string]: string | null | undefined;
+  クリック日時?: string;
+  メディア?: string;
+  "アクセス数[件]"?: string;
+}
+
 @Injectable()
 export class SampleAffiliateClickLogService implements LogService {
+  private readonly logger = new Logger(SampleAffiliateClickLogService.name);
+
   constructor(
     private readonly repository: SampleAffiliateClickLogRepository,
     private readonly prisma: PrismaService,
@@ -66,12 +75,20 @@ export class SampleAffiliateClickLogService implements LogService {
       await this.login(page);
       await this.navigateToReport(page);
       const downloadPath = await this.downloadReport(page);
-      return await this.processCsvAndSave(downloadPath);
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
     } catch (error) {
-      this.handleError("fetchAndInsertLogs", error);
+      this.logger.error("SampleAffiliateログ取得エラー:", error);
       return 0;
     } finally {
-      await browser?.close();
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (error) {
+          this.logger.error("ブラウザのクローズに失敗しました:", error);
+        }
+      }
     }
   }
 
@@ -79,7 +96,7 @@ export class SampleAffiliateClickLogService implements LogService {
     return await chromium.launch({ headless: true });
   }
 
-  private async setupPage(browser: Browser) {
+  private async setupPage(browser: Browser): Promise<Page> {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(process.env.SAMPLE_AFFILIATE_URL ?? "");
@@ -134,16 +151,14 @@ export class SampleAffiliateClickLogService implements LogService {
       const downloadPath = await this.initiateAndHandleDownload(page);
       return downloadPath;
     } catch (error) {
-      this.handleError("downloadReport", error);
+      this.logger.error("ダウンロード中にエラーが発生しました:", error);
       throw error;
     }
   }
 
   private async initiateAndHandleDownload(page: Page): Promise<string> {
-    // 先にダウンロードリンクをクリックして、ダイアログを表示
     await this.clickDownloadLink(page);
 
-    // iframe内のボタンクリックとダウンロードイベントを同時に待つ
     const frameElement = await page.waitForSelector(
       SELECTORS.DOWNLOAD_DIALOG.IFRAME,
     );
@@ -160,7 +175,6 @@ export class SampleAffiliateClickLogService implements LogService {
       throw new Error("ダウンロード確認ボタンが見つかりません");
     }
 
-    // Promise.allを使用してダウンロードイベントとボタンクリックを関連付ける
     const [download] = await Promise.all([
       page.waitForEvent("download", { timeout: 60000 }),
       confirmButton.click(),
@@ -183,14 +197,9 @@ export class SampleAffiliateClickLogService implements LogService {
     await page.waitForTimeout(WAIT_TIME.SHORT);
   }
 
-  private handleError(method: string, error: unknown): void {
-    console.error(
-      `Error in ${method}:`,
-      error instanceof Error ? error.message : "Unknown error",
-    );
-  }
-
-  private async processCsvAndSave(filePath: string): Promise<number> {
+  private async processCsv(
+    filePath: string,
+  ): Promise<RawSampleAffiliateData[]> {
     try {
       const buffer = fs.readFileSync(filePath);
       const sjisData = iconv.decode(buffer, "Shift_JIS");
@@ -198,19 +207,81 @@ export class SampleAffiliateClickLogService implements LogService {
       const records = parse(sjisData, {
         columns: true,
         skip_empty_lines: true,
-      });
+      }) as RawSampleAffiliateData[];
 
-      await this.repository.save(records);
-      return records.length;
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return [];
+      }
+
+      return records;
     } catch (error) {
-      this.handleError("processCsvAndSave", error);
-      throw error;
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
     } finally {
       try {
         fs.unlinkSync(filePath);
       } catch (error) {
-        console.error("Error deleting temporary file:", error);
+        this.logger.error("一時ファイルの削除に失敗しました:", error);
       }
+    }
+  }
+
+  private async transformData(rawData: RawSampleAffiliateData[]) {
+    const formatted = await Promise.all(
+      rawData
+        .filter((item) => {
+          if (!item.メディア) {
+            this.logger.warn(
+              `Skipping invalid record: ${JSON.stringify(item)}`,
+            );
+            return false;
+          }
+          return true;
+        })
+        .map(async (item) => {
+          try {
+            const affiliateLinkName = item.メディア?.trim();
+            if (!affiliateLinkName) {
+              this.logger.warn("メディアが空です");
+              return null;
+            }
+
+            const currentTotalClicks = this.toInt(item["アクセス数[件]"]);
+            const affiliateLink =
+              await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+
+            return {
+              affiliate_link_id: affiliateLink.id,
+              currentTotalClicks,
+              referrer_link_id: null,
+              referrerUrl: null,
+            };
+          } catch (error) {
+            this.logger.error(
+              `Error processing record: ${JSON.stringify(item)}`,
+              error,
+            );
+            return null;
+          }
+        }),
+    );
+
+    return formatted.filter(
+      (record): record is NonNullable<typeof record> => record !== null,
+    );
+  }
+
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
     }
   }
 }
