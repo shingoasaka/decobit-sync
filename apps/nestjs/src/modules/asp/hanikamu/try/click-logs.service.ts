@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser } from "playwright";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
@@ -7,9 +7,17 @@ import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
 import { HanikamuClickLogRepository } from "../repositories/click-logs.repository";
 import { getNowJstForDisplay } from "src/libs/date-utils";
+import { processReferrerLink } from "../../base/repository.base";
+
+interface RawHanikamuData {
+  ランディングページ?: string;
+  Click数?: string;
+}
 
 @Injectable()
 export class TryClickLogService implements LogService {
+  private readonly logger = new Logger(TryClickLogService.name);
+
   constructor(
     private readonly repository: HanikamuClickLogRepository,
     private readonly prisma: PrismaService,
@@ -33,7 +41,7 @@ export class TryClickLogService implements LogService {
       await page.getByRole("button", { name: "LOGIN" }).click();
 
       await page.waitForTimeout(2000);
-      await page.getByRole("link", { name: " Reports" }).click();
+      await page.getByRole("link", { name: " Reports" }).click();
       await page.getByRole("link", { name: "LP別" }).click();
       await page.goto("https://www.82comb.net/partner/report/lp");
       // ページの読み込みを待つ
@@ -93,13 +101,15 @@ export class TryClickLogService implements LogService {
           throw new Error("ダウンロードパスが取得できません");
         }
 
-        return await this.processCsvAndSave(downloadPath);
+        const rawData = await this.processCsv(downloadPath);
+        const formattedData = await this.transformData(rawData);
+        return await this.repository.save(formattedData);
       } catch (error) {
-        console.error("Error during fetchAndInsertLogs:", error);
+        this.logger.error("Error during fetchAndInsertLogs:", error);
         return 0;
       }
     } catch (error) {
-      console.error("Error during fetchAndInsertLogs:", error);
+      this.logger.error("Error during fetchAndInsertLogs:", error);
       return 0;
     } finally {
       if (browser) {
@@ -108,16 +118,90 @@ export class TryClickLogService implements LogService {
     }
   }
 
-  private async processCsvAndSave(filePath: string): Promise<number> {
-    const buffer = fs.readFileSync(filePath);
-    const utf8Data = iconv.decode(buffer, "Shift_JIS");
+  private toInt(value: string | null | undefined): number {
+    if (!value) return 0;
+    try {
+      const cleanValue = value.replace(/[,¥]/g, "");
+      const num = parseInt(cleanValue, 10);
+      return isNaN(num) ? 0 : num;
+    } catch (error) {
+      this.logger.warn(`Invalid number format: ${value}`);
+      return 0;
+    }
+  }
 
-    const records = parse(utf8Data, {
-      columns: true,
-      skip_empty_lines: true,
-    });
+  private async processCsv(filePath: string): Promise<RawHanikamuData[]> {
+    try {
+      const buffer = fs.readFileSync(filePath);
+      const utf8Data = iconv.decode(buffer, "Shift_JIS");
 
-    await this.repository.save(records);
-    return records.length;
+      const records = parse(utf8Data, {
+        columns: true,
+        skip_empty_lines: true,
+      }) as RawHanikamuData[];
+
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return [];
+      }
+
+      return records;
+    } catch (error) {
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
+    } finally {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (error) {
+        this.logger.error("Error deleting temporary file:", error);
+      }
+    }
+  }
+
+  private async transformData(rawData: RawHanikamuData[]) {
+    const formatted = await Promise.all(
+      rawData
+        .filter((item) => {
+          if (!item["ランディングページ"]) {
+            this.logger.warn(
+              `Skipping invalid record: ${JSON.stringify(item)}`,
+            );
+            return false;
+          }
+          return true;
+        })
+        .map(async (item) => {
+          try {
+            const affiliateLinkName = item["ランディングページ"]?.trim();
+            if (!affiliateLinkName) {
+              this.logger.warn("ランディングページが空です");
+              return null;
+            }
+
+            const currentTotalClicks = this.toInt(item["Click数"]);
+
+            const affiliateLink =
+              await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+
+            return {
+              affiliate_link_id: affiliateLink.id,
+              currentTotalClicks,
+              referrer_link_id: null,
+              referrerUrl: null,
+            };
+          } catch (error) {
+            this.logger.error(
+              `Error processing record: ${JSON.stringify(item)}`,
+              error,
+            );
+            return null;
+          }
+        }),
+    );
+
+    return formatted.filter(
+      (record): record is NonNullable<typeof record> => record !== null,
+    );
   }
 }

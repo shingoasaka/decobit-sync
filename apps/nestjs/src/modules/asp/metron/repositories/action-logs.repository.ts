@@ -23,6 +23,14 @@ interface RawMetronData {
   clientInfo?: string;
 }
 
+interface ActionLogData {
+  actionDateTime: Date;
+  affiliate_link_id: number;
+  referrer_link_id: number | null;
+  referrerUrl: string | null;
+  uid: string | null;
+}
+
 @Injectable()
 export class MetronActionLogRepository extends BaseActionLogRepository {
   constructor(protected readonly prisma: PrismaService) {
@@ -70,93 +78,30 @@ export class MetronActionLogRepository extends BaseActionLogRepository {
     return processReferrerLink(this.prisma, this.logger, clickLog.referrer_url);
   }
 
-  async save(logs: RawMetronData[]): Promise<number> {
+  async save(actionLogs: ActionLogData[]): Promise<number> {
     try {
-      const formatted = await Promise.all(
-        logs
-          .filter((item) => {
-            if (!item.actionDateTime || !item.siteName) {
-              this.logger.warn(
-                `Skipping invalid record: ${JSON.stringify(item)}`,
-              );
-              return false;
-            }
-            return true;
-          })
-          .map(async (item) => {
-            try {
-              const actionDateTime = parseToJst(item.actionDateTime);
-              const affiliateLinkName = item.siteName?.trim();
-              const sessionId = item.sessionId || null;
-
-              if (!actionDateTime) {
-                this.logger.warn(`Invalid date format: ${item.actionDateTime}`);
-                return null;
-              }
-
-              if (!affiliateLinkName) {
-                this.logger.warn("siteName is empty");
-                return null;
-              }
-
-              // 名前→ID変換
-              const affiliateLink = await this.prisma.affiliateLink.upsert({
-                where: {
-                  asp_type_affiliate_link_name: {
-                    asp_type: this.aspType,
-                    affiliate_link_name: affiliateLinkName,
-                  },
-                },
-                update: {},
-                create: {
-                  asp_type: this.aspType,
-                  affiliate_link_name: affiliateLinkName,
-                },
-              });
-
-              // クリックログからリファラ情報を取得
-              const { referrerLinkId, referrerUrl } =
-                await this.getReferrerFromClickLog(sessionId);
-
-              // uidの取得
-              let uid: string | null = null;
-              try {
-                const parsed = JSON.parse(item.clientInfo || "{}");
-                uid = parsed.userId1 || null;
-              } catch {
-                uid = null;
-              }
-
-              return {
-                actionDateTime,
-                affiliate_link_id: affiliateLink.id,
-                referrer_link_id: referrerLinkId,
-                referrerUrl,
-                uid,
-              };
-            } catch (error) {
-              this.logger.error(
-                `Error processing record: ${JSON.stringify(item)}`,
-                error,
-              );
-              return null;
-            }
-          }),
-      );
-
-      const validRecords = formatted.filter(
-        (record): record is NonNullable<typeof record> => record !== null,
-      );
-
-      if (validRecords.length === 0) {
-        this.logger.warn("No valid records to save");
-        return 0;
-      }
-
-      return await this.saveToCommonTable(validRecords);
+      return await this.saveToCommonTable(actionLogs);
     } catch (error) {
-      this.logger.error("Error saving Metron action logs:", error);
+      this.logger.error("Error saving action logs:", error);
       throw error;
     }
+  }
+
+  async getOrCreateAffiliateLink(affiliateLinkName: string) {
+    return await this.prisma.affiliateLink.upsert({
+      where: {
+        asp_type_affiliate_link_name: {
+          asp_type: this.aspType,
+          affiliate_link_name: affiliateLinkName,
+        },
+      },
+      update: {
+        affiliate_link_name: affiliateLinkName,
+      },
+      create: {
+        asp_type: this.aspType,
+        affiliate_link_name: affiliateLinkName,
+      },
+    });
   }
 }

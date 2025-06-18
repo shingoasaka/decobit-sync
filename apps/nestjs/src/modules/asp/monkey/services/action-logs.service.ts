@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
 import { MonkeyActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
@@ -6,40 +6,19 @@ import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
+import { processReferrerLink } from "../../base/repository.base";
+import { parseToJst } from "src/libs/date-utils";
 
-interface MonkeySelectors {
-  LOGIN: {
-    ID: string;
-    PASSWORD: string;
-    SUBMIT: string;
-  };
-  REPORT: {
-    ACTION_TAB: string;
-    DOWNLOAD: string;
-    NO_DATA: string;
-  };
+interface RawMonkeyData {
+  成果日時?: string;
+  タグ?: string;
+  リファラ?: string;
 }
-
-const SELECTORS: MonkeySelectors = {
-  LOGIN: {
-    ID: 'input[type="text"].ef',
-    PASSWORD: 'input[type="password"].ef',
-    SUBMIT: "button.button.button-squere",
-  },
-  REPORT: {
-    ACTION_TAB:
-      'li[data-v-1e3b336f] div[data-v-1e3b336f] a[href="#/logs"].has-text-white',
-    DOWNLOAD: "button[data-v-2e9de55a].button.is-small",
-    NO_DATA: ".log-not-found",
-  },
-} as const;
-
-const WAIT_TIME = {
-  SHORT: 2000,
-} as const;
 
 @Injectable()
 export class MonkeyActionLogService implements LogService {
+  private readonly logger = new Logger(MonkeyActionLogService.name);
+
   constructor(
     private readonly repository: MonkeyActionLogRepository,
     private readonly prisma: PrismaService,
@@ -53,12 +32,20 @@ export class MonkeyActionLogService implements LogService {
       await this.login(page);
       await this.navigateToReport(page);
       const downloadPath = await this.downloadReport(page);
-      return await this.processCsvAndSave(downloadPath);
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
     } catch (error) {
-      this.handleError("fetchAndInsertLogs", error);
+      this.logger.error("Monkeyログ取得エラー:", error);
       return 0;
     } finally {
-      await browser?.close();
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (error) {
+          this.logger.error("ブラウザのクローズに失敗しました:", error);
+        }
+      }
     }
   }
 
@@ -74,23 +61,27 @@ export class MonkeyActionLogService implements LogService {
   }
 
   private async login(page: Page): Promise<void> {
-    await page.fill(SELECTORS.LOGIN.ID, process.env.MONKEY_ID ?? "");
+    await page.fill('input[type="text"].ef', process.env.MONKEY_ID ?? "");
     await page.fill(
-      SELECTORS.LOGIN.PASSWORD,
+      'input[type="password"].ef',
       process.env.MONKEY_PASSWORD ?? "",
     );
-    await (await page.waitForSelector(SELECTORS.LOGIN.SUBMIT)).click();
+    await (await page.waitForSelector("button.button.button-squere")).click();
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(WAIT_TIME.SHORT);
+    await page.waitForTimeout(2000);
   }
 
   private async navigateToReport(page: Page): Promise<void> {
     try {
-      await (await page.waitForSelector(SELECTORS.REPORT.ACTION_TAB)).click();
-      await page.waitForTimeout(WAIT_TIME.SHORT);
+      await (
+        await page.waitForSelector(
+          'li[data-v-1e3b336f] div[data-v-1e3b336f] a[href="#/logs"].has-text-white',
+        )
+      ).click();
+      await page.waitForTimeout(2000);
 
       // 検索結果の有無を確認
-      const noDataElement = await page.$(SELECTORS.REPORT.NO_DATA);
+      const noDataElement = await page.$(".log-not-found");
       if (noDataElement) {
         throw new Error("検索結果が存在しません");
       }
@@ -108,7 +99,9 @@ export class MonkeyActionLogService implements LogService {
     try {
       const [download] = await Promise.all([
         page.waitForEvent("download", { timeout: 60000 }),
-        (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
+        (
+          await page.waitForSelector("button[data-v-2e9de55a].button.is-small")
+        ).click(),
       ]);
 
       const downloadPath = await download.path();
@@ -118,32 +111,93 @@ export class MonkeyActionLogService implements LogService {
       return downloadPath;
     } catch (error) {
       throw new Error(
-        `レポートダウンロード中にエラー: ${
-          error instanceof Error ? error.message : error
-        }`,
+        `レポートダウンロード中にエラー: ${error instanceof Error ? error.message : error}`,
       );
     }
   }
 
-  private handleError(method: string, error: unknown): void {
-    console.error(
-      `Error in ${method}:`,
-      error instanceof Error ? error.message : "Unknown error",
-    );
+  private async processCsv(filePath: string): Promise<RawMonkeyData[]> {
+    try {
+      const buffer = fs.readFileSync(filePath);
+      const utf8Data = buffer.toString("utf8").replace(/^\uFEFF/, "");
+
+      const records = parse(utf8Data, {
+        columns: true,
+        skip_empty_lines: true,
+      }) as RawMonkeyData[];
+
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return [];
+      }
+
+      return records;
+    } catch (error) {
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
+    } finally {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (error) {
+        this.logger.error("一時ファイルの削除に失敗しました:", error);
+      }
+    }
   }
 
-  private async processCsvAndSave(filePath: string): Promise<number> {
-    const buffer = fs.readFileSync(filePath);
-    // BOM付きUTF-8として読み込む
-    const utf8Data = buffer.toString("utf8").replace(/^\uFEFF/, ""); // BOMを除去
+  private async transformData(rawData: RawMonkeyData[]) {
+    const formatted = await Promise.all(
+      rawData
+        .filter((item) => {
+          if (!item["成果日時"] || !item["タグ"]) {
+            this.logger.warn(
+              `Skipping invalid record: ${JSON.stringify(item)}`,
+            );
+            return false;
+          }
+          return true;
+        })
+        .map(async (item) => {
+          try {
+            const actionDateTime = parseToJst(item["成果日時"]);
+            const affiliateLinkName = item["タグ"]?.trim();
+            const referrerUrl = item["リファラ"]?.trim() || null;
 
-    const records = parse(utf8Data, {
-      columns: true,
-      skip_empty_lines: true,
-    });
+            if (!actionDateTime) {
+              this.logger.warn(`Invalid date format: ${item["成果日時"]}`);
+              return null;
+            }
 
-    await this.repository.save(records);
+            if (!affiliateLinkName) {
+              this.logger.warn("タグ名が空です");
+              return null;
+            }
 
-    return records.length;
+            const affiliateLink =
+              await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+
+            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+              await processReferrerLink(this.prisma, this.logger, referrerUrl);
+
+            return {
+              actionDateTime,
+              affiliate_link_id: affiliateLink.id,
+              referrer_link_id: referrerLinkId,
+              referrerUrl: processedReferrerUrl,
+              uid: null,
+            };
+          } catch (error) {
+            this.logger.error(
+              `Error processing record: ${JSON.stringify(item)}`,
+              error,
+            );
+            return null;
+          }
+        }),
+    );
+
+    return formatted.filter(
+      (record): record is NonNullable<typeof record> => record !== null,
+    );
   }
 }

@@ -1,10 +1,18 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { chromium, Browser, Page } from "playwright";
 import { FinebirdActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
+import { processReferrerLink } from "../../base/repository.base";
+import { parseToJst } from "src/libs/date-utils";
+
+interface RawFinebirdData {
+  注文日時?: string;
+  サイト名?: string;
+  リファラ?: string;
+}
 
 interface FinebirdSelectors {
   LOGIN: {
@@ -40,6 +48,8 @@ const WAIT_TIME = {
 
 @Injectable()
 export class FinebirdActionLogService implements LogService {
+  private readonly logger = new Logger(FinebirdActionLogService.name);
+
   constructor(
     private readonly repository: FinebirdActionLogRepository,
     private readonly prisma: PrismaService,
@@ -57,7 +67,9 @@ export class FinebirdActionLogService implements LogService {
         return 0;
       }
       const downloadPath = await this.downloadReport(page);
-      return await this.processCsvAndSave(downloadPath);
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
     } catch (error) {
       this.handleError("fetchAndInsertLogs", error);
       return 0;
@@ -156,7 +168,7 @@ export class FinebirdActionLogService implements LogService {
     );
   }
 
-  private async processCsvAndSave(filePath: string): Promise<number> {
+  private async processCsv(filePath: string): Promise<RawFinebirdData[]> {
     try {
       const buffer = fs.readFileSync(filePath);
       const utf8Data = buffer.toString("utf8").replace(/^\uFEFF/, "");
@@ -164,13 +176,18 @@ export class FinebirdActionLogService implements LogService {
       const records = parse(utf8Data, {
         columns: true,
         skip_empty_lines: true,
-      });
+      }) as RawFinebirdData[];
 
-      await this.repository.save(records);
-      return records.length;
+      if (!records || records.length === 0) {
+        console.warn("CSVにデータがありませんでした");
+        return [];
+      }
+
+      return records;
     } catch (error) {
-      this.handleError("processCsvAndSave", error);
-      throw error;
+      throw new Error(
+        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
+      );
     } finally {
       try {
         fs.unlinkSync(filePath);
@@ -178,5 +195,61 @@ export class FinebirdActionLogService implements LogService {
         console.error("Error deleting temporary file:", error);
       }
     }
+  }
+
+  private async transformData(rawData: RawFinebirdData[]) {
+    const formatted = await Promise.all(
+      rawData
+        .filter((item) => {
+          if (!item["注文日時"] || !item["サイト名"]) {
+            this.logger.warn(
+              `Skipping invalid record: ${JSON.stringify(item)}`,
+            );
+            return false;
+          }
+          return true;
+        })
+        .map(async (item) => {
+          try {
+            const actionDateTime = parseToJst(item["注文日時"]);
+            const affiliateLinkName = item["サイト名"]?.trim();
+            const referrerUrl = item["リファラ"] || null;
+
+            if (!actionDateTime) {
+              this.logger.warn(`Invalid date format: ${item["注文日時"]}`);
+              return null;
+            }
+
+            if (!affiliateLinkName) {
+              this.logger.warn("サイト名が空です");
+              return null;
+            }
+
+            const affiliateLink =
+              await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+
+            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
+              await processReferrerLink(this.prisma, this.logger, referrerUrl);
+
+            return {
+              actionDateTime,
+              affiliate_link_id: affiliateLink.id,
+              referrer_link_id: referrerLinkId,
+              referrerUrl: processedReferrerUrl,
+              uid: null,
+            };
+          } catch (error) {
+            this.logger.error(
+              `Error processing record: ${JSON.stringify(item)}`,
+              error,
+            );
+            return null;
+          }
+        }),
+    );
+
+    return formatted.filter(
+      (record): record is NonNullable<typeof record> => record !== null,
+    );
   }
 }

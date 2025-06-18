@@ -1,17 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
 import { AspType } from "@operate-ad/prisma";
-import {
-  BaseAspRepository,
-  processReferrerLink,
-} from "../../base/repository.base";
-import { getNowJst } from "src/libs/date-utils";
+import { BaseAspRepository } from "../../base/repository.base";
 
-// Finebird固有のカラム名を持つインターフェース・合計値形式
-interface RawFinebirdData {
-  サイト名?: string;
-  総クリック?: string;
-  リファラ?: string;
+interface ClickLogData {
+  affiliate_link_id: number;
+  currentTotalClicks: number;
+  referrer_link_id: number | null;
+  referrerUrl: string | null;
 }
 
 @Injectable()
@@ -22,95 +18,28 @@ export class FinebirdClickLogRepository extends BaseAspRepository {
     super(prisma, AspType.FINEBIRD);
   }
 
-  private toInt(value: string | null | undefined): number {
-    if (!value) return 0;
+  async save(clickLogs: ClickLogData[]): Promise<number> {
     try {
-      const cleanValue = value.replace(/[,¥]/g, "");
-      const num = parseInt(cleanValue, 10);
-      return isNaN(num) ? 0 : num;
+      return await this.saveToCommonTable(clickLogs);
     } catch (error) {
-      this.logger.warn(`Invalid number format: ${value}`);
-      return 0;
+      this.logger.error("Error saving click logs:", error);
+      throw error;
     }
   }
 
-  async save(clickData: RawFinebirdData[]): Promise<number> {
-    try {
-      const formatted = await Promise.all(
-        clickData
-          .filter((item) => {
-            if (!item["サイト名"]) {
-              this.logger.warn(
-                `Skipping invalid record: ${JSON.stringify(item)}`,
-              );
-              return false;
-            }
-            return true;
-          })
-          .map(async (item) => {
-            try {
-              const affiliateLinkName = item["サイト名"]?.trim();
-              const referrerUrl = item["リファラ"] || null;
-
-              if (!affiliateLinkName) {
-                this.logger.warn("サイト名が空です");
-                return null;
-              }
-
-              const currentTotalClicks = this.toInt(item["総クリック"]);
-
-              // 名前→ID変換
-              const affiliateLink = await this.prisma.affiliateLink.upsert({
-                where: {
-                  asp_type_affiliate_link_name: {
-                    asp_type: this.aspType,
-                    affiliate_link_name: affiliateLinkName,
-                  },
-                },
-                update: {},
-                create: {
-                  asp_type: this.aspType,
-                  affiliate_link_name: affiliateLinkName,
-                },
-              });
-
-              // リファラリンクの処理
-              const { referrerLinkId, referrerUrl: processedReferrerUrl } =
-                await processReferrerLink(
-                  this.prisma,
-                  this.logger,
-                  referrerUrl,
-                );
-
-              return {
-                affiliate_link_id: affiliateLink.id,
-                currentTotalClicks,
-                referrer_link_id: referrerLinkId,
-                referrerUrl: processedReferrerUrl,
-              };
-            } catch (error) {
-              this.logger.error(
-                `Error processing record: ${JSON.stringify(item)}`,
-                error,
-              );
-              return null;
-            }
-          }),
-      );
-
-      const validRecords = formatted.filter(
-        (record): record is NonNullable<typeof record> => record !== null,
-      );
-
-      if (validRecords.length === 0) {
-        this.logger.warn("No valid records to save");
-        return 0;
-      }
-
-      return await this.saveToCommonTable(validRecords);
-    } catch (error) {
-      this.logger.error("Error saving Finebird click data:", error);
-      throw error;
-    }
+  async getOrCreateAffiliateLink(affiliateLinkName: string) {
+    return await this.prisma.affiliateLink.upsert({
+      where: {
+        asp_type_affiliate_link_name: {
+          asp_type: this.aspType,
+          affiliate_link_name: affiliateLinkName,
+        },
+      },
+      update: {},
+      create: {
+        asp_type: this.aspType,
+        affiliate_link_name: affiliateLinkName,
+      },
+    });
   }
 }
