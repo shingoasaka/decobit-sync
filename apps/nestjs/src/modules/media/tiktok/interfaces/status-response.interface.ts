@@ -1,4 +1,4 @@
-import { TikTokPageInfo } from "./tiktok-api.interface";
+import { PageInfo } from "./api.interface";
 
 // 共通のステータス情報インターフェース
 export interface TikTokStatusItem {
@@ -27,6 +27,6 @@ export interface TikTokCampaignStatusItem extends TikTokStatusItem {
 export interface TikTokStatusResponse<T extends TikTokStatusItem> {
   data: {
     list: T[];
-    page_info: TikTokPageInfo;
+    page_info: PageInfo;
   };
 }

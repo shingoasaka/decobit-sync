@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
-import { TikTokAdGroupRepository } from "./repositories/report/report-adgroup.repository";
 import { TikTokAdRepository } from "./repositories/report/report-ad.repository";
+import { TikTokAdgroupRepository } from "./repositories/report/report-adgroup.repository";
 import { TikTokCampaignRepository } from "./repositories/report/report-campaign.repository";
 import { TikTokAdReportService } from "./services/report/report-ad.service";
 import { TikTokAdgroupReportService } from "./services/report/report-adgroup.service";
@@ -17,7 +17,7 @@ import { PrismaService } from "@prismaService";
     TikTokCampaignReportService,
     TikTokAccountService,
     TikTokAdRepository,
-    TikTokAdGroupRepository,
+    TikTokAdgroupRepository,
     TikTokCampaignRepository,
     PrismaService,
   ],

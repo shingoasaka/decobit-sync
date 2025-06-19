@@ -1,23 +1,25 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokAdGroupRepository } from "../../repositories/report/report-adgroup.repository";
-import { TikTokAdgroupReport } from "../../interfaces/report.interface";
 import { TikTokAdgroupReportDto } from "../../dtos/tiktok-report.dto";
-import { getNowJstForDB } from "src/libs/date-utils";
+import { TikTokAdgroupReport } from "../../interfaces/report.interface";
+import { TikTokAdgroupStatusItem } from "../../interfaces/status-response.interface";
+import { ApiHeaders } from "../../interfaces/api.interface";
+import { StatusBaseService } from "../../base/status-base.service";
 import { TikTokAccountService } from "../account.service";
-import { PrismaService } from "@prismaService";
-import { TikTokStatusBaseService } from "../../base/tiktok-status-base.service";
+import { TikTokAdgroupRepository } from "../../repositories/report/report-adgroup.repository";
 import {
   MediaError,
-  ERROR_MESSAGES,
-  ERROR_CODES,
   ErrorType,
+  ERROR_CODES,
 } from "../../../common/errors/media.error";
-import { TikTokAdgroupStatusItem } from "../../interfaces/tiktok-status-response.interface";
-import { TikTokApiHeaders } from "../../interfaces/tiktok-api.interface";
+import { ERROR_MESSAGES } from "../../../common/errors/media.error";
 
+/**
+ * TikTok アドグループレポートサービス
+ * ビジネスロジック（API呼び出し、データ変換、マージ）を担当
+ */
 @Injectable()
-export class TikTokAdgroupReportService extends TikTokStatusBaseService {
+export class TikTokAdgroupReportService extends StatusBaseService {
   protected readonly apiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
   protected readonly statusApiUrl =
@@ -27,27 +29,25 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
     "secondary_status",
     "operation_status",
     "modify_time",
+    "budget",
   ];
 
   constructor(
-    private readonly adgroupRepository: TikTokAdGroupRepository,
     http: HttpService,
     private readonly tikTokAccountService: TikTokAccountService,
-    private readonly prisma: PrismaService,
+    private readonly adGroupRepository: TikTokAdgroupRepository,
   ) {
     super(http, TikTokAdgroupReportService.name);
   }
 
-  async saveReports(reports?: TikTokAdgroupReport[]): Promise<number> {
+  public async saveReports(reports: TikTokAdgroupReport[]): Promise<number> {
     if (!reports || reports.length === 0) {
       this.logDebug("処理対象のデータがありません");
       return 0;
     }
 
     try {
-      const savedCount = await this.adgroupRepository.save(reports);
-      this.logInfo(`✅ ${savedCount} 件のアドグループレポートを保存しました`);
-      return savedCount;
+      return await this.adGroupRepository.save(reports);
     } catch (error) {
       throw new MediaError(
         ERROR_MESSAGES.SAVE_ERROR,
@@ -58,7 +58,7 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
     }
   }
 
-  async fetchAndInsertLogs(): Promise<number> {
+  public async fetchAndInsertLogs(): Promise<number> {
     try {
       const advertiserIds = await this.tikTokAccountService.getAccountIds();
 
@@ -70,24 +70,10 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
         );
       }
 
-      const accountMapping = await this.prisma.adAccount.findMany({
-        where: {
-          ad_platform_account_id: { in: advertiserIds },
-        },
-        select: {
-          id: true,
-          ad_platform_account_id: true,
-        },
-      });
+      const accountMapping =
+        await this.adGroupRepository.getAccountMapping(advertiserIds);
 
-      const accountIdMap = new Map<string, number>(
-        accountMapping.map(
-          (acc: { ad_platform_account_id: string; id: number }) => [
-            acc.ad_platform_account_id,
-            acc.id,
-          ],
-        ),
-      );
+      const accountIdMap = accountMapping;
 
       const today = new Date();
       const todayStr = this.formatDate(today);
@@ -95,7 +81,7 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
 
       this.logInfo(`本日(${todayStr})のデータを取得します`);
 
-      const headers = {
+      const headers: ApiHeaders = {
         "Access-Token": process.env.TIKTOK_ACCESS_TOKEN!,
         "Content-Type": "application/json",
       };
@@ -178,63 +164,19 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
     accountIdMap: Map<string, number>,
     status?: TikTokAdgroupStatusItem,
   ): TikTokAdgroupReport {
-    const now = getNowJstForDB();
-    const advertiserId = dto.metrics.advertiser_id;
-    const adAccountId = accountIdMap.get(advertiserId);
-
-    if (!adAccountId) {
-      this.logWarn(`AdAccount not found for advertiser_id: ${advertiserId}`);
-    }
-
-    if (!status) {
-      this.logWarn(
-        `Status not found for adgroup_id: ${dto.dimensions.adgroup_id}, using default values`,
-      );
-      // デフォルト値を設定して処理を継続
-      return {
-        ad_account_id: adAccountId ?? 0,
-        ad_platform_account_id: advertiserId,
-        platform_adgroup_id: this.safeBigInt(dto.dimensions.adgroup_id),
-        adgroup_name: dto.metrics.adgroup_name,
-        stat_time_day: new Date(dto.dimensions.stat_time_day),
-        budget: this.parseNumber(dto.metrics.budget),
-        spend: this.parseNumber(dto.metrics.spend),
-        impressions: this.parseNumber(dto.metrics.impressions),
-        clicks: this.parseNumber(dto.metrics.clicks),
-        video_play_actions: this.parseNumber(dto.metrics.video_play_actions),
-        video_watched_2s: this.parseNumber(dto.metrics.video_watched_2s),
-        video_watched_6s: this.parseNumber(dto.metrics.video_watched_6s),
-        video_views_p100: this.parseNumber(dto.metrics.video_views_p100),
-        reach: this.parseNumber(dto.metrics.reach),
-        conversion: this.parseNumber(dto.metrics.conversion),
-        status: "UNKNOWN",
-        opt_status: "UNKNOWN",
-        status_updated_time: now,
-        created_at: now,
-      };
-    }
-
-    return {
-      ad_account_id: adAccountId ?? 0,
-      ad_platform_account_id: advertiserId,
+    const additionalFields = {
       platform_adgroup_id: this.safeBigInt(dto.dimensions.adgroup_id),
       adgroup_name: dto.metrics.adgroup_name,
-      stat_time_day: new Date(dto.dimensions.stat_time_day),
-      budget: this.parseNumber(dto.metrics.budget),
-      spend: this.parseNumber(dto.metrics.spend),
-      impressions: this.parseNumber(dto.metrics.impressions),
-      clicks: this.parseNumber(dto.metrics.clicks),
-      video_play_actions: this.parseNumber(dto.metrics.video_play_actions),
-      video_watched_2s: this.parseNumber(dto.metrics.video_watched_2s),
-      video_watched_6s: this.parseNumber(dto.metrics.video_watched_6s),
-      video_views_p100: this.parseNumber(dto.metrics.video_views_p100),
-      reach: this.parseNumber(dto.metrics.reach),
-      conversion: this.parseNumber(dto.metrics.conversion),
-      status: status.secondary_status,
-      opt_status: status.operation_status,
-      status_updated_time: new Date(status.modify_time),
-      created_at: now,
     };
+
+    return this.convertDtoToEntityCommon(
+      dto,
+      accountIdMap,
+      status,
+      "adgroup_id",
+      "AdGroup",
+      additionalFields,
+    ) as TikTokAdgroupReport;
   }
 
   private formatDate(date: Date): string {
@@ -247,10 +189,9 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
   private async fetchReportData(
     advertiserId: string,
     dateStr: string,
-    headers: TikTokApiHeaders,
+    headers: ApiHeaders,
   ): Promise<TikTokAdgroupReportDto[]> {
     const metrics = [
-      "budget",
       "spend",
       "impressions",
       "clicks",
@@ -287,49 +228,13 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
     allStatusData: Map<string, TikTokAdgroupStatusItem[]>,
     accountIdMap: Map<string, number>,
   ): TikTokAdgroupReport[] {
-    // 全ステータスデータを統合
-    const statusMap = new Map<string, TikTokAdgroupStatusItem>();
-    for (const [advertiserId, statusList] of allStatusData) {
-      // 配列チェックを追加
-      if (Array.isArray(statusList)) {
-        for (const status of statusList) {
-          statusMap.set(status.adgroup_id, status);
-        }
-      } else {
-        this.logWarn(
-          `ステータスデータが配列ではありません: advertiser=${advertiserId}, type=${typeof statusList}`,
-        );
-      }
-    }
-
-    // データ整合性チェック
-    this.validateDataConsistency(
+    return this.mergeReportAndStatusDataCommon(
       reportData,
-      statusMap,
+      allStatusData,
+      accountIdMap,
       "adgroup_id",
       "AdGroup",
+      this.convertDtoToEntity.bind(this),
     );
-
-    // バッチ処理でメモリ使用量を削減
-    const batchSize = 100;
-    const mergedRecords: TikTokAdgroupReport[] = [];
-
-    for (let i = 0; i < reportData.length; i += batchSize) {
-      const batch = reportData.slice(i, i + batchSize);
-
-      try {
-        const batchRecords = batch.map((dto) => {
-          const status = statusMap.get(dto.dimensions.adgroup_id);
-          return this.convertDtoToEntity(dto, accountIdMap, status);
-        });
-
-        mergedRecords.push(...batchRecords);
-      } catch (error) {
-        this.logError(`バッチ処理エラー (${i}-${i + batch.length}件目)`, error);
-        throw error;
-      }
-    }
-
-    return mergedRecords;
   }
 }

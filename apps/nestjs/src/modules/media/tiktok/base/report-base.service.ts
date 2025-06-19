@@ -8,14 +8,14 @@ import {
   ERROR_MESSAGES,
 } from "../../common/errors/media.error";
 import {
-  TikTokReportApiParams,
-  TikTokApiHeaders,
-  TikTokReportApiResponseData,
-  TikTokReportApiResponse,
-} from "../interfaces/tiktok-api.interface";
+  ReportApiParams,
+  ReportApiResponseData,
+  ReportApiResponse,
+} from "../interfaces/api.interface";
+import { ApiHeaders } from "../interfaces/api.interface";
 
 @Injectable()
-export abstract class TikTokReportBaseService {
+export abstract class ReportBaseService {
   protected readonly logger: Logger;
   protected readonly retryConfig = {
     maxRetries: 5,
@@ -101,9 +101,9 @@ export abstract class TikTokReportBaseService {
    * レポートAPI専用のリクエストメソッド
    */
   protected async makeReportApiRequest<T = unknown>(
-    params: TikTokReportApiParams,
-    headers: TikTokApiHeaders,
-  ): Promise<TikTokReportApiResponseData<T>> {
+    params: ReportApiParams,
+    headers: ApiHeaders,
+  ): Promise<ReportApiResponseData<T>> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
@@ -118,7 +118,7 @@ export abstract class TikTokReportBaseService {
         }
 
         const response = await firstValueFrom(
-          this.http.get<TikTokReportApiResponse<T>>(this.apiUrl, {
+          this.http.get<ReportApiResponse<T>>(this.apiUrl, {
             params,
             headers,
             timeout: this.TIMEOUT,
