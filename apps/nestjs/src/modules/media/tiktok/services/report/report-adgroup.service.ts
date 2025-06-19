@@ -119,10 +119,12 @@ export class TikTokAdgroupReportService extends StatusBaseService {
       );
 
       // ステータスAPI: 今日のIDのみを指定して取得
-      const allStatusData = await this.processReportAndStatusData<
-        TikTokAdgroupStatusItem,
-        TikTokAdgroupReportDto
-      >(allReportData, "adgroup_id", headers, "アドグループ");
+      const allStatusData = await this.processReportAndStatusData<TikTokAdgroupStatusItem>(
+        allReportData,
+        "adgroup_id",
+        headers,
+        "アドグループ",
+      );
 
       // データをマージしてRAWテーブルに保存
       let mergedRecords: TikTokAdgroupReport[] = [];
@@ -159,24 +161,67 @@ export class TikTokAdgroupReportService extends StatusBaseService {
     }
   }
 
+  /**
+   * レポートデータとステータスデータをバッチマージ
+   */
+  private mergeReportAndStatusDataBatch(
+    reportData: TikTokAdgroupReportDto[],
+    allStatusData: Map<string, TikTokAdgroupStatusItem[]>,
+    accountIdMap: Map<string, number>,
+  ): TikTokAdgroupReport[] {
+    const mergedRecords: TikTokAdgroupReport[] = [];
+    const statusMap = new Map<string, TikTokAdgroupStatusItem>();
+
+    // ステータスデータをIDでマップ化
+    for (const [, statusList] of allStatusData) {
+      for (const status of statusList) {
+        const id = status.adgroup_id;
+        if (id) {
+          statusMap.set(id, status);
+        }
+      }
+    }
+
+    // レポートデータとステータスデータをマージ
+    for (const report of reportData) {
+      const id = report.dimensions.adgroup_id;
+      const status = statusMap.get(id);
+      const entity = this.convertDtoToEntity(report, accountIdMap, status);
+
+      if (entity) {
+        mergedRecords.push(entity);
+      }
+    }
+
+    this.logInfo(`アドグループデータマージ完了: 総件数=${mergedRecords.length}`);
+    return mergedRecords;
+  }
+
   private convertDtoToEntity(
     dto: TikTokAdgroupReportDto,
     accountIdMap: Map<string, number>,
     status?: TikTokAdgroupStatusItem,
-  ): TikTokAdgroupReport {
-    const additionalFields = {
+  ): TikTokAdgroupReport | null {
+    const accountId = this.getAccountId(dto.metrics.advertiser_id, accountIdMap);
+    if (accountId === null) {
+      return null;
+    }
+
+    const commonMetrics = this.convertCommonMetrics(dto.metrics as unknown as Record<string, string | number | undefined>);
+    const statusFields = this.convertStatusFields(status);
+
+    return {
+      ...commonMetrics,
+      ad_account_id: accountId,
+      ad_platform_account_id: dto.metrics.advertiser_id,
+      stat_time_day: new Date(dto.dimensions.stat_time_day),
+      ...statusFields,
       platform_adgroup_id: this.safeBigInt(dto.dimensions.adgroup_id),
       adgroup_name: dto.metrics.adgroup_name,
+      status: statusFields.secondary_status,
+      opt_status: statusFields.operation_status,
+      status_updated_time: new Date(statusFields.modify_time || Date.now()),
     };
-
-    return this.convertDtoToEntityCommon(
-      dto,
-      accountIdMap,
-      status,
-      "adgroup_id",
-      "AdGroup",
-      additionalFields,
-    ) as TikTokAdgroupReport;
   }
 
   private formatDate(date: Date): string {
@@ -217,24 +262,6 @@ export class TikTokAdgroupReportService extends StatusBaseService {
       "AUCTION_ADGROUP",
       requiredMetrics,
       "アドグループ",
-    );
-  }
-
-  /**
-   * レポートデータとステータスデータをバッチマージ
-   */
-  private mergeReportAndStatusDataBatch(
-    reportData: TikTokAdgroupReportDto[],
-    allStatusData: Map<string, TikTokAdgroupStatusItem[]>,
-    accountIdMap: Map<string, number>,
-  ): TikTokAdgroupReport[] {
-    return this.mergeReportAndStatusDataCommon(
-      reportData,
-      allStatusData,
-      accountIdMap,
-      "adgroup_id",
-      "AdGroup",
-      this.convertDtoToEntity.bind(this),
     );
   }
 }

@@ -146,41 +146,12 @@ export abstract class StatusBaseService extends ReportBaseService {
   }
 
   /**
-   * データ整合性チェック
-   */
-  protected validateDataConsistency<T extends TikTokStatusItem>(
-    reportData: { dimensions: Record<string, string> }[],
-    statusMap: Map<string, T>,
-    idField: string,
-    entityName: string,
-  ): void {
-    const reportIds = new Set(reportData.map((d) => d.dimensions[idField]));
-    const statusIds = new Set(statusMap.keys());
-
-    const missingStatus = Array.from(reportIds).filter(
-      (id) => !statusIds.has(id),
-    );
-
-    if (missingStatus.length > 0) {
-      this.logWarn(
-        `データ不整合: ${missingStatus.length}件の${entityName}ステータスが見つかりません`,
-      );
-    } else {
-      this.logInfo(
-        `データ整合性チェック完了: 全${reportData.length}件の${entityName}ステータスが取得できました`,
-      );
-    }
-  }
-
-  /**
    * レポートデータを広告主別にグループ化
    */
-  protected groupIdsByAdvertiser<
-    T extends {
-      metrics: { advertiser_id: string };
-      dimensions: Record<string, string>;
-    },
-  >(reportData: T[], idField: string): Map<string, string[]> {
+  protected groupIdsByAdvertiser<T extends { metrics: { advertiser_id: string }; dimensions: Record<string, string> }>(
+    reportData: T[],
+    idField: string,
+  ): Map<string, string[]> {
     const groupedIds = new Map<string, string[]>();
 
     for (const item of reportData) {
@@ -199,14 +170,8 @@ export abstract class StatusBaseService extends ReportBaseService {
   /**
    * レポートデータとステータスデータの統合処理
    */
-  protected async processReportAndStatusData<
-    T extends TikTokStatusItem,
-    R extends {
-      metrics: { advertiser_id: string };
-      dimensions: Record<string, string>;
-    },
-  >(
-    allReportData: R[],
+  protected async processReportAndStatusData<T extends TikTokStatusItem>(
+    allReportData: { metrics: { advertiser_id: string }; dimensions: Record<string, string> }[],
     idField: string,
     headers: ApiHeaders,
     entityName: string,
@@ -288,7 +253,7 @@ export abstract class StatusBaseService extends ReportBaseService {
   /**
    * レポートDTOの妥当性チェック
    */
-  protected isValidReportDto<T extends { metrics: Record<string, any> }>(
+  protected isValidReportDto<T extends { metrics: Record<string, unknown> }>(
     item: unknown,
     requiredMetrics: string[],
   ): item is T {
@@ -296,132 +261,71 @@ export abstract class StatusBaseService extends ReportBaseService {
       return false;
     }
 
-    const obj = item as Record<string, any>;
+    const obj = item as Record<string, unknown>;
     if (!obj.metrics || typeof obj.metrics !== "object") {
       return false;
     }
 
-    return requiredMetrics.every((metric) => obj.metrics[metric] !== undefined);
+    const metrics = obj.metrics as Record<string, unknown>;
+    return requiredMetrics.every((metric) => metrics[metric] !== undefined);
   }
 
   /**
    * 共通メトリクスの変換
    */
-  protected convertCommonMetrics(metrics: Record<string, string>) {
+  protected convertCommonMetrics(metrics: Record<string, string | number | undefined>) {
     return {
-      advertiser_id: metrics.advertiser_id,
-      spend: this.parseNumber(metrics.spend),
-      impressions: this.parseNumber(metrics.impressions),
-      clicks: this.parseNumber(metrics.clicks),
-      video_play_actions: this.parseNumber(metrics.video_play_actions),
-      video_watched_2s: this.parseNumber(metrics.video_watched_2s),
-      video_watched_6s: this.parseNumber(metrics.video_watched_6s),
-      video_views_p100: this.parseNumber(metrics.video_views_p100),
-      reach: this.parseNumber(metrics.reach),
-      conversion: this.parseNumber(metrics.conversion),
-      stat_time_day: metrics.stat_time_day,
+      advertiser_id: String(metrics.advertiser_id),
+      spend: this.parseNumber(String(metrics.spend || "0")),
+      impressions: this.parseNumber(String(metrics.impressions || "0")),
+      clicks: this.parseNumber(String(metrics.clicks || "0")),
+      video_play_actions: this.parseNumber(String(metrics.video_play_actions || "0")),
+      video_watched_2s: this.parseNumber(String(metrics.video_watched_2s || "0")),
+      video_watched_6s: this.parseNumber(String(metrics.video_watched_6s || "0")),
+      video_views_p100: this.parseNumber(String(metrics.video_views_p100 || "0")),
+      reach: this.parseNumber(String(metrics.reach || "0")),
+      conversion: this.parseNumber(String(metrics.conversion || "0")),
+      stat_time_day: String(metrics.stat_time_day || ""),
       created_at: getNowJstForDB(),
       updated_at: getNowJstForDB(),
     };
   }
 
   /**
-   * DTOからエンティティへの共通変換
+   * ステータスフィールドの変換
    */
-  protected convertDtoToEntityCommon<T extends TikTokStatusItem>(
-    dto: {
-      metrics: { advertiser_id: string } & Record<string, any>;
-      dimensions: Record<string, string>;
-    },
-    accountIdMap: Map<string, number>,
-    status: T | undefined,
-    idField: string,
-    entityName: string,
-    additionalFields: Record<string, any> = {},
-  ): any {
-    const accountId = accountIdMap.get(dto.metrics.advertiser_id);
-    if (!accountId) {
-      this.logWarn(
-        `アカウントIDが見つかりません: advertiser=${dto.metrics.advertiser_id}`,
-      );
-      return null;
+  protected convertStatusFields(status: TikTokStatusItem & { budget?: string | number } | undefined) {
+    if (!status) {
+      return {
+        secondary_status: "UNKNOWN",
+        operation_status: "UNKNOWN",
+        modify_time: "",
+        budget: 0,
+      };
     }
 
-    const commonMetrics = this.convertCommonMetrics(dto.metrics);
-    const statusFields = status
-      ? {
-          secondary_status: status.secondary_status,
-          operation_status: status.operation_status,
-          modify_time: status.modify_time,
-          budget: (status as any).budget
-            ? this.parseNumber((status as any).budget)
-            : 0,
-        }
-      : {
-          secondary_status: "UNKNOWN",
-          operation_status: "UNKNOWN",
-          modify_time: "",
-          budget: 0,
-        };
-
     return {
-      ...commonMetrics,
-      account_id: accountId,
-      ...statusFields,
-      ...additionalFields,
+      secondary_status: status.secondary_status,
+      operation_status: status.operation_status,
+      modify_time: status.modify_time,
+      budget: status.budget ? this.parseNumber(status.budget) : 0,
     };
   }
 
   /**
-   * レポートデータとステータスデータの共通マージ処理
+   * アカウントIDの取得と検証
    */
-  protected mergeReportAndStatusDataCommon<
-    T extends TikTokStatusItem,
-    R extends {
-      metrics: { advertiser_id: string } & Record<string, any>;
-      dimensions: Record<string, string>;
-    },
-    E,
-  >(
-    reportData: R[],
-    allStatusData: Map<string, T[]>,
+  protected getAccountId(
+    advertiserId: string,
     accountIdMap: Map<string, number>,
-    idField: string,
-    entityName: string,
-    convertFunction: (
-      dto: R,
-      accountIdMap: Map<string, number>,
-      status?: T,
-    ) => E,
-  ): E[] {
-    const mergedRecords: E[] = [];
-    const statusMap = new Map<string, T>();
-
-    // ステータスデータをIDでマップ化
-    for (const [advertiserId, statusList] of allStatusData) {
-      for (const status of statusList) {
-        const id = (status as any)[idField];
-        if (id) {
-          statusMap.set(id, status);
-        }
-      }
+  ): number | null {
+    const accountId = accountIdMap.get(advertiserId);
+    if (!accountId) {
+      this.logWarn(
+        `アカウントIDが見つかりません: advertiser=${advertiserId}`,
+      );
+      return null;
     }
-
-    // レポートデータとステータスデータをマージ
-    for (const report of reportData) {
-      const id = report.dimensions[idField];
-      const status = statusMap.get(id);
-      const entity = convertFunction(report, accountIdMap, status);
-
-      if (entity) {
-        mergedRecords.push(entity);
-      }
-    }
-
-    this.logInfo(
-      `${entityName}データマージ完了: 総件数=${mergedRecords.length}`,
-    );
-
-    return mergedRecords;
+    return accountId;
   }
-}
+} 

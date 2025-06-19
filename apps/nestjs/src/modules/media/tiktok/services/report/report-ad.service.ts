@@ -118,10 +118,12 @@ export class TikTokAdReportService extends StatusBaseService {
       );
 
       // ステータスAPI: 今日のIDのみを指定して取得
-      const allStatusData = await this.processReportAndStatusData<
-        TikTokAdStatusItem,
-        TikTokAdReportDto
-      >(allReportData, "ad_id", headers, "広告");
+      const allStatusData = await this.processReportAndStatusData<TikTokAdStatusItem>(
+        allReportData,
+        "ad_id",
+        headers,
+        "広告",
+      );
 
       // データをマージしてRAWテーブルに保存
       let mergedRecords: TikTokAdReport[] = [];
@@ -208,22 +210,53 @@ export class TikTokAdReportService extends StatusBaseService {
     allStatusData: Map<string, TikTokAdStatusItem[]>,
     accountIdMap: Map<string, number>,
   ): TikTokAdReport[] {
-    return this.mergeReportAndStatusDataCommon(
-      reportData,
-      allStatusData,
-      accountIdMap,
-      "ad_id",
-      "Ad",
-      this.convertDtoToEntity.bind(this),
-    );
+    const mergedRecords: TikTokAdReport[] = [];
+    const statusMap = new Map<string, TikTokAdStatusItem>();
+
+    // ステータスデータをIDでマップ化
+    for (const [, statusList] of allStatusData) {
+      for (const status of statusList) {
+        const id = status.ad_id;
+        if (id) {
+          statusMap.set(id, status);
+        }
+      }
+    }
+
+    // レポートデータとステータスデータをマージ
+    for (const report of reportData) {
+      const id = report.dimensions.ad_id;
+      const status = statusMap.get(id);
+      const entity = this.convertDtoToEntity(report, accountIdMap, status);
+
+      if (entity) {
+        mergedRecords.push(entity);
+      }
+    }
+
+    this.logInfo(`広告データマージ完了: 総件数=${mergedRecords.length}`);
+    return mergedRecords;
   }
 
   private convertDtoToEntity(
     dto: TikTokAdReportDto,
     accountIdMap: Map<string, number>,
     status?: TikTokAdStatusItem,
-  ): TikTokAdReport {
-    const additionalFields = {
+  ): TikTokAdReport | null {
+    const accountId = this.getAccountId(dto.metrics.advertiser_id, accountIdMap);
+    if (accountId === null) {
+      return null;
+    }
+
+    const commonMetrics = this.convertCommonMetrics(dto.metrics as unknown as Record<string, string | number | undefined>);
+    const statusFields = this.convertStatusFields(status);
+
+    return {
+      ...commonMetrics,
+      ad_account_id: accountId,
+      ad_platform_account_id: dto.metrics.advertiser_id,
+      stat_time_day: new Date(dto.dimensions.stat_time_day),
+      ...statusFields,
       platform_campaign_id: this.safeBigInt(dto.metrics.campaign_id),
       campaign_name: dto.metrics.campaign_name,
       platform_adgroup_id: this.safeBigInt(dto.metrics.adgroup_id),
@@ -231,16 +264,10 @@ export class TikTokAdReportService extends StatusBaseService {
       platform_ad_id: this.safeBigInt(dto.dimensions.ad_id),
       ad_name: dto.metrics.ad_name,
       ad_url: dto.metrics.ad_url,
+      status: statusFields.secondary_status,
+      opt_status: statusFields.operation_status,
+      status_updated_time: new Date(statusFields.modify_time || Date.now()),
     };
-
-    return this.convertDtoToEntityCommon(
-      dto,
-      accountIdMap,
-      status,
-      "ad_id",
-      "Ad",
-      additionalFields,
-    ) as TikTokAdReport;
   }
 
   private formatDate(date: Date): string {
