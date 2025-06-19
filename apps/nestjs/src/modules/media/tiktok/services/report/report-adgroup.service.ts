@@ -13,31 +13,21 @@ import {
   ERROR_CODES,
   ErrorType,
 } from "../../../common/errors/media.error";
-import { firstValueFrom } from "rxjs";
-
-interface TikTokAdgroupStatusResponse {
-  data: {
-    list: Array<{
-      adgroup_id: string;
-      secondary_status: string;
-      operation_status: string;
-      modify_time: string;
-    }>;
-    page_info: {
-      total_number: number;
-      page: number;
-      page_size: number;
-      total_page: number;
-    };
-  };
-}
+import { TikTokAdgroupStatusResponse, TikTokAdgroupStatusItem } from "../../interfaces/tiktok-status-response.interface";
+import { TikTokStatusBaseService } from "../../base/tiktok-status-base.service";
 
 @Injectable()
-export class TikTokAdgroupReportService extends TikTokReportBase {
+export class TikTokAdgroupReportService extends TikTokStatusBaseService {
   protected readonly apiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
-  private readonly statusApiUrl =
+  protected readonly statusApiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/adgroup/get/";
+  protected readonly statusFields = [
+    "adgroup_id",
+    "secondary_status",
+    "operation_status",
+    "modify_time",
+  ];
 
   constructor(
     private readonly adgroupRepository: TikTokAdGroupRepository,
@@ -133,13 +123,10 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
       }
 
       // ステータスAPI: 各広告主を個別に処理
-      const allStatusData = new Map<
-        string,
-        TikTokAdgroupStatusResponse["data"]["list"]
-      >();
+      const allStatusData = new Map<string, TikTokAdgroupStatusItem[]>();
       for (const advertiserId of advertiserIds) {
         try {
-          const statusData = await this.fetchAdgroupStatus(
+          const statusData = await this.fetchStatusData<TikTokAdgroupStatusItem>(
             advertiserId,
             headers,
           );
@@ -195,7 +182,7 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
   private convertDtoToEntity(
     dto: TikTokAdgroupReportDto,
     accountIdMap: Map<string, number>,
-    status?: TikTokAdgroupStatusResponse["data"]["list"][0],
+    status?: TikTokAdgroupStatusItem,
   ): TikTokAdgroupReport {
     const now = getNowJstForDB();
     const advertiserId = dto.metrics.advertiser_id;
@@ -303,7 +290,7 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
         end_date: dateStr,
         primary_status: "STATUS_ALL",
         page,
-        page_size: 1000,
+        page_size: 200, // 1000から200に削減（タイムアウト対策）
       };
 
       try {
@@ -344,69 +331,15 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
   }
 
   /**
-   * adgroup/get APIからステータスデータを取得
-   */
-  private async fetchAdgroupStatus(
-    advertiserId: string,
-    headers: any,
-  ): Promise<TikTokAdgroupStatusResponse["data"]["list"]> {
-    const params = {
-      advertiser_id: advertiserId,
-      page_size: 1000,
-      fields: JSON.stringify([
-        "adgroup_id",
-        "secondary_status",
-        "operation_status",
-        "modify_time",
-      ]),
-    };
-
-    try {
-      this.logDebug(`ステータスAPI: advertiser=${advertiserId}`);
-
-      const response = await firstValueFrom(
-        this.http.get<TikTokAdgroupStatusResponse>(this.statusApiUrl, {
-          params,
-          headers,
-          timeout: this.TIMEOUT,
-        }),
-      );
-
-      // レスポンスの構造を確認
-      if (
-        response?.data?.data?.list &&
-        Array.isArray(response.data.data.list)
-      ) {
-        return response.data.data.list;
-      } else {
-        this.logWarn(
-          `ステータスAPI レスポンスが不正: advertiser=${advertiserId}`,
-        );
-        return [];
-      }
-    } catch (error) {
-      this.logError(
-        `ステータスデータの取得に失敗: advertiser=${advertiserId}`,
-        error,
-      );
-      // ステータス取得に失敗してもレポートデータは処理を継続
-      return [];
-    }
-  }
-
-  /**
    * レポートデータとステータスデータをバッチマージ
    */
   private mergeReportAndStatusDataBatch(
     reportData: TikTokAdgroupReportDto[],
-    allStatusData: Map<string, TikTokAdgroupStatusResponse["data"]["list"]>,
+    allStatusData: Map<string, TikTokAdgroupStatusItem[]>,
     accountIdMap: Map<string, number>,
   ): TikTokAdgroupReport[] {
     // 全ステータスデータを統合
-    const statusMap = new Map<
-      string,
-      TikTokAdgroupStatusResponse["data"]["list"][0]
-    >();
+    const statusMap = new Map<string, TikTokAdgroupStatusItem>();
     for (const [advertiserId, statusList] of allStatusData) {
       // 配列チェックを追加
       if (Array.isArray(statusList)) {
@@ -419,6 +352,9 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
         );
       }
     }
+
+    // データ整合性チェック
+    this.validateDataConsistency(reportData, statusMap, 'adgroup_id', 'AdGroup');
 
     // バッチ処理でメモリ使用量を削減
     const batchSize = 100;
@@ -442,11 +378,4 @@ export class TikTokAdgroupReportService extends TikTokReportBase {
 
     return mergedRecords;
   }
-
-  /**
-   * レート制限対策のための遅延
-   */
-  private async delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-}
+} 
