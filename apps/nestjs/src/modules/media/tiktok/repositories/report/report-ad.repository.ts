@@ -25,7 +25,7 @@ export class TikTokAdRepository extends BaseReportRepository<TikTokAdReport> {
     return await this.prisma.$transaction(async (tx) => {
       const batchSize = 1000;
       let totalSaved = 0;
-      
+
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
         const result = await tx.tikTokRawReportAd.createMany({
@@ -34,7 +34,7 @@ export class TikTokAdRepository extends BaseReportRepository<TikTokAdReport> {
         });
         totalSaved += result.count;
       }
-      
+
       return totalSaved;
     });
   }

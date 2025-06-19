@@ -26,7 +26,9 @@ export abstract class BaseReportRepository<T> implements IReportRepository<T> {
    * 広告主IDとアカウントIDのマッピングを取得
    * 共通のデータアクセス操作
    */
-  async getAccountMapping(advertiserIds: string[]): Promise<Map<string, number>> {
+  async getAccountMapping(
+    advertiserIds: string[],
+  ): Promise<Map<string, number>> {
     const accountMapping = await this.prisma.adAccount.findMany({
       where: {
         ad_platform_account_id: { in: advertiserIds },
@@ -36,12 +38,9 @@ export abstract class BaseReportRepository<T> implements IReportRepository<T> {
         ad_platform_account_id: true,
       },
     });
-    
+
     return new Map<string, number>(
-      accountMapping.map((acc) => [
-        acc.ad_platform_account_id,
-        acc.id,
-      ]),
+      accountMapping.map((acc) => [acc.ad_platform_account_id, acc.id]),
     );
   }
 }

@@ -29,19 +29,19 @@ export class LadClickLogRepository extends BaseAspRepository {
 
   async getOrCreateAffiliateLink(affiliateLinkName: string) {
     return await this.prisma.affiliateLink.upsert({
-                where: {
-                  asp_type_affiliate_link_name: {
-                    asp_type: this.aspType,
-                    affiliate_link_name: affiliateLinkName,
-                  },
-                },
-                update: {
-                  affiliate_link_name: affiliateLinkName,
-                },
-                create: {
-                  asp_type: this.aspType,
-                  affiliate_link_name: affiliateLinkName,
-                },
-              });
+      where: {
+        asp_type_affiliate_link_name: {
+          asp_type: this.aspType,
+          affiliate_link_name: affiliateLinkName,
+        },
+      },
+      update: {
+        affiliate_link_name: affiliateLinkName,
+      },
+      create: {
+        asp_type: this.aspType,
+        affiliate_link_name: affiliateLinkName,
+      },
+    });
   }
 }

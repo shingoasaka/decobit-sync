@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokCampaignReportDto, TikTokCampaignMetrics } from "../../dtos/tiktok-report.dto";
+import {
+  TikTokCampaignReportDto,
+  TikTokCampaignMetrics,
+} from "../../dtos/tiktok-report.dto";
 import { TikTokCampaignReport } from "../../interfaces/report.interface";
 import { TikTokCampaignStatusItem } from "../../interfaces/status-response.interface";
 import { ApiHeaders } from "../../interfaces/api.interface";
@@ -13,6 +16,7 @@ import {
   ERROR_CODES,
 } from "../../../common/errors/media.error";
 import { ERROR_MESSAGES } from "../../../common/errors/media.error";
+import { DataMapper } from "../../utils/data-mapper.util";
 
 /**
  * TikTok キャンペーンレポートサービス
@@ -121,12 +125,13 @@ export class TikTokCampaignReportService extends StatusBaseService {
       );
 
       // ステータスAPI: 今日のIDのみを指定して取得
-      const allStatusData = await this.processReportAndStatusData<TikTokCampaignStatusItem>(
-        allReportData,
-        "campaign_id",
-        headers,
-        "キャンペーン",
-      );
+      const allStatusData =
+        await this.processReportAndStatusData<TikTokCampaignStatusItem>(
+          allReportData,
+          "campaign_id",
+          headers,
+          "キャンペーン",
+        );
 
       // データをマージしてRAWテーブルに保存
       let mergedRecords: TikTokCampaignReport[] = [];
@@ -195,7 +200,9 @@ export class TikTokCampaignReportService extends StatusBaseService {
       }
     }
 
-    this.logInfo(`キャンペーンデータマージ完了: 総件数=${mergedRecords.length}`);
+    this.logInfo(
+      `キャンペーンデータマージ完了: 総件数=${mergedRecords.length}`,
+    );
     return mergedRecords;
   }
 
@@ -204,13 +211,18 @@ export class TikTokCampaignReportService extends StatusBaseService {
     accountIdMap: Map<string, number>,
     status?: TikTokCampaignStatusItem,
   ): TikTokCampaignReport | null {
-    const accountId = this.getAccountId(dto.metrics.advertiser_id, accountIdMap);
+    const accountId = this.getAccountId(
+      dto.metrics.advertiser_id,
+      accountIdMap,
+    );
     if (accountId === null) {
       return null;
     }
 
-    const commonMetrics = this.convertCommonMetrics(dto.metrics as TikTokCampaignMetrics);
-    const statusFields = this.convertStatusFields(status);
+    const commonMetrics = DataMapper.convertCommonMetrics(
+      dto.metrics as TikTokCampaignMetrics,
+    );
+    const statusFields = DataMapper.convertStatusFields(status);
 
     return {
       ...commonMetrics,
@@ -220,7 +232,8 @@ export class TikTokCampaignReportService extends StatusBaseService {
       ...statusFields,
       platform_campaign_id: this.safeBigInt(dto.dimensions.campaign_id),
       campaign_name: dto.metrics.campaign_name,
-      is_smart_performance_campaign: status?.is_smart_performance_campaign ?? false,
+      is_smart_performance_campaign:
+        status?.is_smart_performance_campaign ?? false,
     };
   }
 

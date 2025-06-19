@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokAdReportDto, TikTokAdMetrics } from "../../dtos/tiktok-report.dto";
+import {
+  TikTokAdReportDto,
+  TikTokAdMetrics,
+} from "../../dtos/tiktok-report.dto";
 import { TikTokAdReport } from "../../interfaces/report.interface";
 import { TikTokAdStatusItem } from "../../interfaces/status-response.interface";
 import { ApiHeaders } from "../../interfaces/api.interface";
@@ -13,6 +16,7 @@ import {
   ERROR_CODES,
 } from "../../../common/errors/media.error";
 import { ERROR_MESSAGES } from "../../../common/errors/media.error";
+import { DataMapper } from "../../utils/data-mapper.util";
 
 /**
  * TikTok 広告レポートサービス
@@ -29,7 +33,6 @@ export class TikTokAdReportService extends StatusBaseService {
     "secondary_status",
     "operation_status",
     "modify_time",
-    "budget",
   ];
 
   constructor(
@@ -121,14 +124,13 @@ export class TikTokAdReportService extends StatusBaseService {
       );
 
       // ステータスAPI: 今日のIDのみを指定して取得
-      this.logInfo(`ステータスAPI呼び出し開始: 対象広告ID数=${todayAdIds.size}`);
-      const allStatusData = await this.processReportAndStatusData<TikTokAdStatusItem>(
-        allReportData,
-        "ad_id",
-        headers,
-        "広告",
-      );
-      this.logInfo(`ステータスAPI呼び出し完了: 取得したステータスデータ数=${Array.from(allStatusData.values()).reduce((sum, list) => sum + list.length, 0)}`);
+      const allStatusData =
+        await this.processReportAndStatusData<TikTokAdStatusItem>(
+          allReportData,
+          "ad_id",
+          headers,
+          "広告",
+        );
 
       // データをマージしてRAWテーブルに保存
       let mergedRecords: TikTokAdReport[] = [];
@@ -179,21 +181,14 @@ export class TikTokAdReportService extends StatusBaseService {
     // ステータスデータをIDでマップ化
     let totalStatusItems = 0;
     for (const [advertiserId, statusList] of allStatusData) {
-      this.logInfo(`ステータスデータ処理: advertiser=${advertiserId}, 件数=${statusList.length}`);
       totalStatusItems += statusList.length;
       for (const status of statusList) {
         const id = status.ad_id;
         if (id) {
           statusMap.set(id, status);
-          // 最初の数件のステータスIDをログ出力
-          if (totalStatusItems <= 5) {
-            this.logInfo(`ステータスID例: ${id} (type: ${typeof id})`);
-          }
         }
       }
     }
-
-    this.logInfo(`ステータスマップ作成完了: 総ステータス件数=${totalStatusItems}, マップサイズ=${statusMap.size}`);
 
     // レポートデータとステータスデータをマージ
     let matchedCount = 0;
@@ -201,20 +196,13 @@ export class TikTokAdReportService extends StatusBaseService {
     for (const report of reportData) {
       const id = report.dimensions.ad_id;
       const status = statusMap.get(id);
-      
-      // 最初の数件のレポートIDをログ出力
-      if (unmatchedCount + matchedCount < 5) {
-        this.logInfo(`レポートID例: ${id} (type: ${typeof id})`);
-      }
-      
+
       if (status) {
         matchedCount++;
-        this.logDebug(`ステータスマッチ: ad_id=${id}, status=${status.secondary_status}, opt_status=${status.operation_status}`);
       } else {
         unmatchedCount++;
-        this.logDebug(`ステータス未マッチ: ad_id=${id}`);
       }
-      
+
       const entity = this.convertDtoToEntity(report, accountIdMap, status);
 
       if (entity) {
@@ -222,7 +210,9 @@ export class TikTokAdReportService extends StatusBaseService {
       }
     }
 
-    this.logInfo(`広告データマージ完了: 総件数=${mergedRecords.length}, マッチ件数=${matchedCount}, 未マッチ件数=${unmatchedCount}`);
+    this.logInfo(
+      `広告データマージ完了: 総件数=${mergedRecords.length}, マッチ件数=${matchedCount}, 未マッチ件数=${unmatchedCount}`,
+    );
     return mergedRecords;
   }
 
@@ -231,13 +221,18 @@ export class TikTokAdReportService extends StatusBaseService {
     accountIdMap: Map<string, number>,
     status?: TikTokAdStatusItem,
   ): TikTokAdReport | null {
-    const accountId = this.getAccountId(dto.metrics.advertiser_id, accountIdMap);
+    const accountId = this.getAccountId(
+      dto.metrics.advertiser_id,
+      accountIdMap,
+    );
     if (accountId === null) {
       return null;
     }
 
-    const commonMetrics = this.convertCommonMetrics(dto.metrics as TikTokAdMetrics);
-    const statusFields = this.convertStatusFields(status);
+    const commonMetrics = DataMapper.convertCommonMetrics(
+      dto.metrics as TikTokAdMetrics,
+    );
+    const statusFields = DataMapper.convertStatusFields(status);
 
     return {
       ...commonMetrics,
@@ -268,6 +263,7 @@ export class TikTokAdReportService extends StatusBaseService {
     headers: ApiHeaders,
   ): Promise<TikTokAdReportDto[]> {
     const metrics = [
+      "budget",
       "spend",
       "impressions",
       "clicks",

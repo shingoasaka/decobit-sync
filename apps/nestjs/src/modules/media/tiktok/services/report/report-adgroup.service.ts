@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokAdgroupReportDto, TikTokAdgroupMetrics } from "../../dtos/tiktok-report.dto";
+import {
+  TikTokAdgroupReportDto,
+  TikTokAdgroupMetrics,
+} from "../../dtos/tiktok-report.dto";
 import { TikTokAdgroupReport } from "../../interfaces/report.interface";
 import { TikTokAdgroupStatusItem } from "../../interfaces/status-response.interface";
 import { ApiHeaders } from "../../interfaces/api.interface";
@@ -13,6 +16,7 @@ import {
   ERROR_CODES,
 } from "../../../common/errors/media.error";
 import { ERROR_MESSAGES } from "../../../common/errors/media.error";
+import { DataMapper } from "../../utils/data-mapper.util";
 
 /**
  * TikTok アドグループレポートサービス
@@ -122,12 +126,13 @@ export class TikTokAdgroupReportService extends StatusBaseService {
       );
 
       // ステータスAPI: 今日のIDのみを指定して取得
-      const allStatusData = await this.processReportAndStatusData<TikTokAdgroupStatusItem>(
-        allReportData,
-        "adgroup_id",
-        headers,
-        "アドグループ",
-      );
+      const allStatusData =
+        await this.processReportAndStatusData<TikTokAdgroupStatusItem>(
+          allReportData,
+          "adgroup_id",
+          headers,
+          "アドグループ",
+        );
 
       // データをマージしてRAWテーブルに保存
       let mergedRecords: TikTokAdgroupReport[] = [];
@@ -196,7 +201,9 @@ export class TikTokAdgroupReportService extends StatusBaseService {
       }
     }
 
-    this.logInfo(`アドグループデータマージ完了: 総件数=${mergedRecords.length}`);
+    this.logInfo(
+      `アドグループデータマージ完了: 総件数=${mergedRecords.length}`,
+    );
     return mergedRecords;
   }
 
@@ -205,13 +212,18 @@ export class TikTokAdgroupReportService extends StatusBaseService {
     accountIdMap: Map<string, number>,
     status?: TikTokAdgroupStatusItem,
   ): TikTokAdgroupReport | null {
-    const accountId = this.getAccountId(dto.metrics.advertiser_id, accountIdMap);
+    const accountId = this.getAccountId(
+      dto.metrics.advertiser_id,
+      accountIdMap,
+    );
     if (accountId === null) {
       return null;
     }
 
-    const commonMetrics = this.convertCommonMetrics(dto.metrics as TikTokAdgroupMetrics);
-    const statusFields = this.convertStatusFields(status);
+    const commonMetrics = DataMapper.convertCommonMetrics(
+      dto.metrics as TikTokAdgroupMetrics,
+    );
+    const statusFields = DataMapper.convertStatusFields(status);
 
     return {
       ...commonMetrics,
