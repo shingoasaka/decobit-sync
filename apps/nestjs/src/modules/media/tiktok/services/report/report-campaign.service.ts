@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokCampaignReportDto } from "../../dtos/tiktok-report.dto";
+import { TikTokCampaignReportDto, TikTokCampaignMetrics } from "../../dtos/tiktok-report.dto";
 import { TikTokCampaignReport } from "../../interfaces/report.interface";
 import { TikTokCampaignStatusItem } from "../../interfaces/status-response.interface";
 import { ApiHeaders } from "../../interfaces/api.interface";
@@ -47,8 +47,11 @@ export class TikTokCampaignReportService extends StatusBaseService {
     }
 
     try {
-      return await this.campaignRepository.save(reports);
+      const savedCount = await this.campaignRepository.save(reports);
+      this.logInfo(`✅ ${savedCount} 件のキャンペーンレポートを保存しました`);
+      return savedCount;
     } catch (error) {
+      this.logError("キャンペーンレポートの保存に失敗しました", error);
       throw new MediaError(
         ERROR_MESSAGES.SAVE_ERROR,
         ERROR_CODES.SAVE_ERROR,
@@ -206,7 +209,7 @@ export class TikTokCampaignReportService extends StatusBaseService {
       return null;
     }
 
-    const commonMetrics = this.convertCommonMetrics(dto.metrics as unknown as Record<string, string | number | undefined>);
+    const commonMetrics = this.convertCommonMetrics(dto.metrics as TikTokCampaignMetrics);
     const statusFields = this.convertStatusFields(status);
 
     return {
@@ -217,9 +220,6 @@ export class TikTokCampaignReportService extends StatusBaseService {
       ...statusFields,
       platform_campaign_id: this.safeBigInt(dto.dimensions.campaign_id),
       campaign_name: dto.metrics.campaign_name,
-      status: statusFields.secondary_status,
-      opt_status: statusFields.operation_status,
-      status_updated_time: new Date(statusFields.modify_time || Date.now()),
       is_smart_performance_campaign: status?.is_smart_performance_campaign ?? false,
     };
   }

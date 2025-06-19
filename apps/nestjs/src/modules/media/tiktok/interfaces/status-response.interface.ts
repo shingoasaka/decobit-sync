@@ -5,21 +5,25 @@ export interface TikTokStatusItem {
   secondary_status: string;
   operation_status: string;
   modify_time: string;
+  budget?: string | number;
 }
 
 // Ad用のステータスアイテム
 export interface TikTokAdStatusItem extends TikTokStatusItem {
   ad_id: string;
+  budget: string | number;
 }
 
 // AdGroup用のステータスアイテム
 export interface TikTokAdgroupStatusItem extends TikTokStatusItem {
   adgroup_id: string;
+  budget: string | number;
 }
 
 // Campaign用のステータスアイテム
 export interface TikTokCampaignStatusItem extends TikTokStatusItem {
   campaign_id: string;
+  budget: string | number;
   is_smart_performance_campaign: boolean;
 }
 

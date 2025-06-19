@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokAdgroupReportDto } from "../../dtos/tiktok-report.dto";
+import { TikTokAdgroupReportDto, TikTokAdgroupMetrics } from "../../dtos/tiktok-report.dto";
 import { TikTokAdgroupReport } from "../../interfaces/report.interface";
 import { TikTokAdgroupStatusItem } from "../../interfaces/status-response.interface";
 import { ApiHeaders } from "../../interfaces/api.interface";
@@ -47,8 +47,11 @@ export class TikTokAdgroupReportService extends StatusBaseService {
     }
 
     try {
-      return await this.adGroupRepository.save(reports);
+      const savedCount = await this.adGroupRepository.save(reports);
+      this.logInfo(`✅ ${savedCount} 件のアドグループレポートを保存しました`);
+      return savedCount;
     } catch (error) {
+      this.logError("アドグループレポートの保存に失敗しました", error);
       throw new MediaError(
         ERROR_MESSAGES.SAVE_ERROR,
         ERROR_CODES.SAVE_ERROR,
@@ -207,7 +210,7 @@ export class TikTokAdgroupReportService extends StatusBaseService {
       return null;
     }
 
-    const commonMetrics = this.convertCommonMetrics(dto.metrics as unknown as Record<string, string | number | undefined>);
+    const commonMetrics = this.convertCommonMetrics(dto.metrics as TikTokAdgroupMetrics);
     const statusFields = this.convertStatusFields(status);
 
     return {
@@ -218,9 +221,6 @@ export class TikTokAdgroupReportService extends StatusBaseService {
       ...statusFields,
       platform_adgroup_id: this.safeBigInt(dto.dimensions.adgroup_id),
       adgroup_name: dto.metrics.adgroup_name,
-      status: statusFields.secondary_status,
-      opt_status: statusFields.operation_status,
-      status_updated_time: new Date(statusFields.modify_time || Date.now()),
     };
   }
 

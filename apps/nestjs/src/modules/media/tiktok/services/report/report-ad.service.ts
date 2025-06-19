@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { TikTokAdReportDto } from "../../dtos/tiktok-report.dto";
+import { TikTokAdReportDto, TikTokAdMetrics } from "../../dtos/tiktok-report.dto";
 import { TikTokAdReport } from "../../interfaces/report.interface";
 import { TikTokAdStatusItem } from "../../interfaces/status-response.interface";
 import { ApiHeaders } from "../../interfaces/api.interface";
@@ -47,8 +47,11 @@ export class TikTokAdReportService extends StatusBaseService {
     }
 
     try {
-      return await this.adRepository.save(reports);
+      const savedCount = await this.adRepository.save(reports);
+      this.logInfo(`✅ ${savedCount} 件の広告レポートを保存しました`);
+      return savedCount;
     } catch (error) {
+      this.logError("広告レポートの保存に失敗しました", error);
       throw new MediaError(
         ERROR_MESSAGES.SAVE_ERROR,
         ERROR_CODES.SAVE_ERROR,
@@ -118,12 +121,14 @@ export class TikTokAdReportService extends StatusBaseService {
       );
 
       // ステータスAPI: 今日のIDのみを指定して取得
+      this.logInfo(`ステータスAPI呼び出し開始: 対象広告ID数=${todayAdIds.size}`);
       const allStatusData = await this.processReportAndStatusData<TikTokAdStatusItem>(
         allReportData,
         "ad_id",
         headers,
         "広告",
       );
+      this.logInfo(`ステータスAPI呼び出し完了: 取得したステータスデータ数=${Array.from(allStatusData.values()).reduce((sum, list) => sum + list.length, 0)}`);
 
       // データをマージしてRAWテーブルに保存
       let mergedRecords: TikTokAdReport[] = [];
@@ -158,6 +163,100 @@ export class TikTokAdReportService extends StatusBaseService {
         { originalError: error },
       );
     }
+  }
+
+  /**
+   * レポートデータとステータスデータをバッチマージ
+   */
+  private mergeReportAndStatusDataBatch(
+    reportData: TikTokAdReportDto[],
+    allStatusData: Map<string, TikTokAdStatusItem[]>,
+    accountIdMap: Map<string, number>,
+  ): TikTokAdReport[] {
+    const mergedRecords: TikTokAdReport[] = [];
+    const statusMap = new Map<string, TikTokAdStatusItem>();
+
+    // ステータスデータをIDでマップ化
+    let totalStatusItems = 0;
+    for (const [advertiserId, statusList] of allStatusData) {
+      this.logInfo(`ステータスデータ処理: advertiser=${advertiserId}, 件数=${statusList.length}`);
+      totalStatusItems += statusList.length;
+      for (const status of statusList) {
+        const id = status.ad_id;
+        if (id) {
+          statusMap.set(id, status);
+          // 最初の数件のステータスIDをログ出力
+          if (totalStatusItems <= 5) {
+            this.logInfo(`ステータスID例: ${id} (type: ${typeof id})`);
+          }
+        }
+      }
+    }
+
+    this.logInfo(`ステータスマップ作成完了: 総ステータス件数=${totalStatusItems}, マップサイズ=${statusMap.size}`);
+
+    // レポートデータとステータスデータをマージ
+    let matchedCount = 0;
+    let unmatchedCount = 0;
+    for (const report of reportData) {
+      const id = report.dimensions.ad_id;
+      const status = statusMap.get(id);
+      
+      // 最初の数件のレポートIDをログ出力
+      if (unmatchedCount + matchedCount < 5) {
+        this.logInfo(`レポートID例: ${id} (type: ${typeof id})`);
+      }
+      
+      if (status) {
+        matchedCount++;
+        this.logDebug(`ステータスマッチ: ad_id=${id}, status=${status.secondary_status}, opt_status=${status.operation_status}`);
+      } else {
+        unmatchedCount++;
+        this.logDebug(`ステータス未マッチ: ad_id=${id}`);
+      }
+      
+      const entity = this.convertDtoToEntity(report, accountIdMap, status);
+
+      if (entity) {
+        mergedRecords.push(entity);
+      }
+    }
+
+    this.logInfo(`広告データマージ完了: 総件数=${mergedRecords.length}, マッチ件数=${matchedCount}, 未マッチ件数=${unmatchedCount}`);
+    return mergedRecords;
+  }
+
+  private convertDtoToEntity(
+    dto: TikTokAdReportDto,
+    accountIdMap: Map<string, number>,
+    status?: TikTokAdStatusItem,
+  ): TikTokAdReport | null {
+    const accountId = this.getAccountId(dto.metrics.advertiser_id, accountIdMap);
+    if (accountId === null) {
+      return null;
+    }
+
+    const commonMetrics = this.convertCommonMetrics(dto.metrics as TikTokAdMetrics);
+    const statusFields = this.convertStatusFields(status);
+
+    return {
+      ...commonMetrics,
+      ad_account_id: accountId,
+      ad_platform_account_id: dto.metrics.advertiser_id,
+      stat_time_day: new Date(dto.dimensions.stat_time_day),
+      ...statusFields,
+      platform_campaign_id: this.safeBigInt(dto.metrics.campaign_id),
+      campaign_name: dto.metrics.campaign_name,
+      platform_adgroup_id: this.safeBigInt(dto.metrics.adgroup_id),
+      adgroup_name: dto.metrics.adgroup_name,
+      platform_ad_id: this.safeBigInt(dto.dimensions.ad_id),
+      ad_name: dto.metrics.ad_name,
+      ad_url: dto.metrics.ad_url,
+    };
+  }
+
+  private formatDate(date: Date): string {
+    return date.toISOString().split("T")[0];
   }
 
   /**
@@ -200,77 +299,5 @@ export class TikTokAdReportService extends StatusBaseService {
       requiredMetrics,
       "広告",
     );
-  }
-
-  /**
-   * レポートデータとステータスデータをバッチマージ
-   */
-  private mergeReportAndStatusDataBatch(
-    reportData: TikTokAdReportDto[],
-    allStatusData: Map<string, TikTokAdStatusItem[]>,
-    accountIdMap: Map<string, number>,
-  ): TikTokAdReport[] {
-    const mergedRecords: TikTokAdReport[] = [];
-    const statusMap = new Map<string, TikTokAdStatusItem>();
-
-    // ステータスデータをIDでマップ化
-    for (const [, statusList] of allStatusData) {
-      for (const status of statusList) {
-        const id = status.ad_id;
-        if (id) {
-          statusMap.set(id, status);
-        }
-      }
-    }
-
-    // レポートデータとステータスデータをマージ
-    for (const report of reportData) {
-      const id = report.dimensions.ad_id;
-      const status = statusMap.get(id);
-      const entity = this.convertDtoToEntity(report, accountIdMap, status);
-
-      if (entity) {
-        mergedRecords.push(entity);
-      }
-    }
-
-    this.logInfo(`広告データマージ完了: 総件数=${mergedRecords.length}`);
-    return mergedRecords;
-  }
-
-  private convertDtoToEntity(
-    dto: TikTokAdReportDto,
-    accountIdMap: Map<string, number>,
-    status?: TikTokAdStatusItem,
-  ): TikTokAdReport | null {
-    const accountId = this.getAccountId(dto.metrics.advertiser_id, accountIdMap);
-    if (accountId === null) {
-      return null;
-    }
-
-    const commonMetrics = this.convertCommonMetrics(dto.metrics as unknown as Record<string, string | number | undefined>);
-    const statusFields = this.convertStatusFields(status);
-
-    return {
-      ...commonMetrics,
-      ad_account_id: accountId,
-      ad_platform_account_id: dto.metrics.advertiser_id,
-      stat_time_day: new Date(dto.dimensions.stat_time_day),
-      ...statusFields,
-      platform_campaign_id: this.safeBigInt(dto.metrics.campaign_id),
-      campaign_name: dto.metrics.campaign_name,
-      platform_adgroup_id: this.safeBigInt(dto.metrics.adgroup_id),
-      adgroup_name: dto.metrics.adgroup_name,
-      platform_ad_id: this.safeBigInt(dto.dimensions.ad_id),
-      ad_name: dto.metrics.ad_name,
-      ad_url: dto.metrics.ad_url,
-      status: statusFields.secondary_status,
-      opt_status: statusFields.operation_status,
-      status_updated_time: new Date(statusFields.modify_time || Date.now()),
-    };
-  }
-
-  private formatDate(date: Date): string {
-    return date.toISOString().split("T")[0];
   }
 }

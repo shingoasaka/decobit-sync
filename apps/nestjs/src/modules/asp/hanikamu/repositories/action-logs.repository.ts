@@ -28,17 +28,17 @@ export class HanikamuActionLogRepository extends BaseActionLogRepository {
 
   async getOrCreateAffiliateLink(affiliateLinkName: string) {
     return await this.prisma.affiliateLink.upsert({
-      where: {
-        asp_type_affiliate_link_name: {
-          asp_type: this.aspType,
-          affiliate_link_name: affiliateLinkName,
-        },
-      },
-      update: {},
-      create: {
-        asp_type: this.aspType,
-        affiliate_link_name: affiliateLinkName,
-      },
-    });
+                where: {
+                  asp_type_affiliate_link_name: {
+                    asp_type: this.aspType,
+                    affiliate_link_name: affiliateLinkName,
+                  },
+                },
+                update: {},
+                create: {
+                  asp_type: this.aspType,
+                  affiliate_link_name: affiliateLinkName,
+                },
+              });
   }
 }

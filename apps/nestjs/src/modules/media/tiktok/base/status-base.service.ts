@@ -9,6 +9,7 @@ import {
   PageInfo,
 } from "../interfaces/api.interface";
 import { getNowJstForDB } from "src/libs/date-utils";
+import { TikTokMetrics } from "../dtos/tiktok-report.dto";
 
 /**
  * TikTok ステータスAPI用ベースサービス
@@ -114,6 +115,10 @@ export abstract class StatusBaseService extends ReportBaseService {
         fields: JSON.stringify(this.statusFields),
       };
 
+      // デバッグログ: リクエストパラメータを出力
+      this.logInfo(`Status API リクエスト: ${this.statusApiUrl}`);
+      this.logInfo(`Status API パラメータ: ${JSON.stringify(params)}`);
+
       try {
         const response = await firstValueFrom(
           this.http.get<GetApiResponse<T>>(this.statusApiUrl, {
@@ -122,6 +127,13 @@ export abstract class StatusBaseService extends ReportBaseService {
             timeout: this.TIMEOUT,
           }),
         );
+
+        // デバッグログ: レスポンスを出力
+        this.logInfo(`Status API レスポンス: ${JSON.stringify({
+          status: response.status,
+          data_length: response?.data?.data?.list?.length || 0,
+          first_item: response?.data?.data?.list?.[0] || null,
+        })}`);
 
         if (
           response?.data?.data?.list &&
@@ -148,7 +160,10 @@ export abstract class StatusBaseService extends ReportBaseService {
   /**
    * レポートデータを広告主別にグループ化
    */
-  protected groupIdsByAdvertiser<T extends { metrics: { advertiser_id: string }; dimensions: Record<string, string> }>(
+  protected groupIdsByAdvertiser<T extends { 
+    metrics: { advertiser_id: string }; 
+    dimensions: Record<string, string> 
+  }>(
     reportData: T[],
     idField: string,
   ): Map<string, string[]> {
@@ -171,7 +186,10 @@ export abstract class StatusBaseService extends ReportBaseService {
    * レポートデータとステータスデータの統合処理
    */
   protected async processReportAndStatusData<T extends TikTokStatusItem>(
-    allReportData: { metrics: { advertiser_id: string }; dimensions: Record<string, string> }[],
+    allReportData: { 
+      metrics: { advertiser_id: string }; 
+      dimensions: Record<string, string> 
+    }[],
     idField: string,
     headers: ApiHeaders,
     entityName: string,
@@ -273,9 +291,8 @@ export abstract class StatusBaseService extends ReportBaseService {
   /**
    * 共通メトリクスの変換
    */
-  protected convertCommonMetrics(metrics: Record<string, string | number | undefined>) {
+  protected convertCommonMetrics<T extends TikTokMetrics>(metrics: T) {
     return {
-      advertiser_id: String(metrics.advertiser_id),
       spend: this.parseNumber(String(metrics.spend || "0")),
       impressions: this.parseNumber(String(metrics.impressions || "0")),
       clicks: this.parseNumber(String(metrics.clicks || "0")),
@@ -285,9 +302,7 @@ export abstract class StatusBaseService extends ReportBaseService {
       video_views_p100: this.parseNumber(String(metrics.video_views_p100 || "0")),
       reach: this.parseNumber(String(metrics.reach || "0")),
       conversion: this.parseNumber(String(metrics.conversion || "0")),
-      stat_time_day: String(metrics.stat_time_day || ""),
       created_at: getNowJstForDB(),
-      updated_at: getNowJstForDB(),
     };
   }
 
@@ -297,17 +312,17 @@ export abstract class StatusBaseService extends ReportBaseService {
   protected convertStatusFields(status: TikTokStatusItem & { budget?: string | number } | undefined) {
     if (!status) {
       return {
-        secondary_status: "UNKNOWN",
-        operation_status: "UNKNOWN",
-        modify_time: "",
+        status: "UNKNOWN",
+        opt_status: "UNKNOWN",
+        status_updated_time: null,
         budget: 0,
       };
     }
 
     return {
-      secondary_status: status.secondary_status,
-      operation_status: status.operation_status,
-      modify_time: status.modify_time,
+      status: status.secondary_status,
+      opt_status: status.operation_status,
+      status_updated_time: new Date(status.modify_time || Date.now()),
       budget: status.budget ? this.parseNumber(status.budget) : 0,
     };
   }

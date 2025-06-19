@@ -27,7 +27,7 @@ export interface TikTokAdReport extends TikTokReportBase {
   ad_url: string;
   status: string;
   opt_status: string;
-  status_updated_time: Date;
+  status_updated_time: Date | null;
 }
 
 // Adgroup用のインターフェース
@@ -36,7 +36,7 @@ export interface TikTokAdgroupReport extends TikTokReportBase {
   adgroup_name: string;
   status: string;
   opt_status: string;
-  status_updated_time: Date;
+  status_updated_time: Date | null;
 }
 
 // Campaign用のインターフェース
@@ -45,7 +45,7 @@ export interface TikTokCampaignReport extends TikTokReportBase {
   campaign_name: string;
   status: string;
   opt_status: string;
-  status_updated_time: Date;
+  status_updated_time: Date | null;
   is_smart_performance_campaign: boolean;
 }
 

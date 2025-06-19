@@ -1,5 +1,5 @@
 // 共通のメトリクス
-interface TikTokMetrics {
+export interface TikTokMetrics {
   advertiser_id: string;
   budget: string;
   spend: string;
@@ -14,7 +14,7 @@ interface TikTokMetrics {
 }
 
 // Ad用のメトリクス
-interface TikTokAdMetrics extends TikTokMetrics {
+export interface TikTokAdMetrics extends TikTokMetrics {
   campaign_id: string;
   campaign_name: string;
   adgroup_id: string;
@@ -24,12 +24,12 @@ interface TikTokAdMetrics extends TikTokMetrics {
 }
 
 // Adgroup用のメトリクス
-interface TikTokAdgroupMetrics extends TikTokMetrics {
+export interface TikTokAdgroupMetrics extends TikTokMetrics {
   adgroup_name: string;
 }
 
 // Campaign用のメトリクス
-interface TikTokCampaignMetrics extends TikTokMetrics {
+export interface TikTokCampaignMetrics extends TikTokMetrics {
   campaign_name: string;
 }
 
