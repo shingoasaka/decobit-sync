@@ -14,7 +14,6 @@ interface TikTokApiParams {
   report_type: string;
   dimensions: string;
   metrics: string;
-  data_level: string;
   start_date: string;
   end_date: string;
   primary_status: string;
@@ -40,12 +39,12 @@ interface TikTokApiResponse {
 export abstract class TikTokReportBase {
   protected readonly logger: Logger;
   protected readonly retryConfig = {
-    maxRetries: 3,
-    initialDelay: 1000,
-    maxDelay: 30000,
+    maxRetries: 5,
+    initialDelay: 3000,
+    maxDelay: 120000,
     factor: 2,
   };
-  protected readonly TIMEOUT = 30000;
+  protected readonly TIMEOUT = 60000;
   protected readonly REQUEST_INTERVAL = 1000;
   protected readonly RATE_LIMIT_BACKOFF = 60000;
   protected abstract readonly apiUrl: string;

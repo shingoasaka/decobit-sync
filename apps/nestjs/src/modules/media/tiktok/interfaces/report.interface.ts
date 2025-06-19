@@ -25,21 +25,28 @@ export interface TikTokAdReport extends TikTokReportBase {
   platform_ad_id: bigint;
   ad_name: string;
   ad_url: string;
-  status?: string;
-  opt_status?: string;
-  status_updated_time?: Date;
+  status: string;
+  opt_status: string;
+  status_updated_time: Date;
 }
 
 // Adgroup用のインターフェース
 export interface TikTokAdgroupReport extends TikTokReportBase {
   platform_adgroup_id: bigint;
   adgroup_name: string;
+  status: string;
+  opt_status: string;
+  status_updated_time: Date;
 }
 
 // Campaign用のインターフェース
 export interface TikTokCampaignReport extends TikTokReportBase {
   platform_campaign_id: bigint;
   campaign_name: string;
+  status: string;
+  opt_status: string;
+  status_updated_time: Date;
+  is_smart_performance_campaign: boolean;
 }
 
 // APIレスポンス用のDTO

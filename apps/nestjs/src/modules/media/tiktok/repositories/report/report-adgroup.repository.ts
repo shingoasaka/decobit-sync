@@ -15,11 +15,24 @@ export class TikTokAdGroupRepository {
     }
 
     try {
-      const result = await this.prisma.tikTokRawReportAdGroup.createMany({
-        data: records,
-        skipDuplicates: true,
+      return await this.prisma.$transaction(async (tx) => {
+        const batchSize = 1000;
+        let totalSaved = 0;
+
+        for (let i = 0; i < records.length; i += batchSize) {
+          const batch = records.slice(i, i + batchSize);
+          const result = await tx.tikTokRawReportAdGroup.createMany({
+            data: batch,
+            skipDuplicates: true,
+          });
+          totalSaved += result.count;
+        }
+
+        this.logger.log(
+          `✅ ${totalSaved} 件のアドグループレポートを保存しました`,
+        );
+        return totalSaved;
       });
-      return result.count;
     } catch (error) {
       this.logger.error(
         "データの保存に失敗しました",

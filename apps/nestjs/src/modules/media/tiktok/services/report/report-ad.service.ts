@@ -423,6 +423,39 @@ export class TikTokAdReportService extends TikTokReportBase {
         this.logWarn(`AdAccount not found for advertiser_id: ${advertiserId}`);
       }
 
+      if (!status) {
+        this.logWarn(
+          `Status not found for ad_id: ${dto.dimensions.ad_id}, using default values`,
+        );
+        // デフォルト値を設定して処理を継続
+        return {
+          ad_account_id: adAccountId ?? 0,
+          ad_platform_account_id: advertiserId,
+          platform_campaign_id: this.safeBigInt(dto.metrics.campaign_id),
+          campaign_name: dto.metrics.campaign_name,
+          platform_adgroup_id: this.safeBigInt(dto.metrics.adgroup_id),
+          adgroup_name: dto.metrics.adgroup_name,
+          platform_ad_id: this.safeBigInt(dto.dimensions.ad_id),
+          ad_name: dto.metrics.ad_name,
+          ad_url: dto.metrics.ad_url,
+          stat_time_day: new Date(dto.dimensions.stat_time_day),
+          budget: this.parseNumber(dto.metrics.budget),
+          spend: this.parseNumber(dto.metrics.spend),
+          impressions: this.parseNumber(dto.metrics.impressions),
+          clicks: this.parseNumber(dto.metrics.clicks),
+          video_play_actions: this.parseNumber(dto.metrics.video_play_actions),
+          video_watched_2s: this.parseNumber(dto.metrics.video_watched_2s),
+          video_watched_6s: this.parseNumber(dto.metrics.video_watched_6s),
+          video_views_p100: this.parseNumber(dto.metrics.video_views_p100),
+          reach: this.parseNumber(dto.metrics.reach),
+          conversion: this.parseNumber(dto.metrics.conversion),
+          status: "UNKNOWN",
+          opt_status: "UNKNOWN",
+          status_updated_time: now,
+          created_at: now,
+        };
+      }
+
       return {
         ad_account_id: adAccountId ?? 0,
         ad_platform_account_id: advertiserId,
@@ -444,11 +477,9 @@ export class TikTokAdReportService extends TikTokReportBase {
         video_views_p100: this.parseNumber(dto.metrics.video_views_p100),
         reach: this.parseNumber(dto.metrics.reach),
         conversion: this.parseNumber(dto.metrics.conversion),
-        status: status?.secondary_status,
-        opt_status: status?.operation_status,
-        status_updated_time: status?.modify_time
-          ? new Date(status.modify_time)
-          : undefined,
+        status: status.secondary_status,
+        opt_status: status.operation_status,
+        status_updated_time: new Date(status.modify_time),
         created_at: now,
       };
     } catch (error) {

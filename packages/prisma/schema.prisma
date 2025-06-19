@@ -189,6 +189,10 @@ model TikTokRawReportCampaign {
   platform_campaign_id   BigInt
   campaign_name          String
   stat_time_day          DateTime
+  status                 String
+  opt_status             String
+  status_updated_time    DateTime
+  is_smart_performance_campaign Boolean @default(false)
   adAccount              AdAccount @relation(fields: [ad_account_id], references: [id])
 }
 
@@ -210,6 +214,9 @@ model TikTokRawReportAdGroup {
   conversion             Int
   created_at             DateTime  @default(now())
   adgroup_name           String
+  status                 String
+  opt_status             String
+  status_updated_time    DateTime
   adAccount              AdAccount @relation(fields: [ad_account_id], references: [id])
 }
 
@@ -236,9 +243,9 @@ model TikTokRawReportAd {
   platform_campaign_id   BigInt
   campaign_name          String
   stat_time_day          DateTime
-  opt_status             String?
-  status                 String?
-  status_updated_time    DateTime?
+  opt_status             String
+  status                 String
+  status_updated_time    DateTime
   adAccount              AdAccount @relation(fields: [ad_account_id], references: [id])
 }
 

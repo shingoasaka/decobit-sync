@@ -19,6 +19,8 @@ export class TikTokCampaignReportService extends TikTokReportBase {
   protected readonly apiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
 
+  // TODO: ステータスを取得するAPIを作成する
+
   constructor(
     private readonly campaignRepository: TikTokCampaignRepository,
     http: HttpService,
@@ -195,6 +197,10 @@ export class TikTokCampaignReportService extends TikTokReportBase {
       reach: this.parseNumber(dto.metrics.reach),
       conversion: this.parseNumber(dto.metrics.conversion),
       created_at: now,
+      status: "",
+      opt_status: "",
+      status_updated_time: now,
+      is_smart_performance_campaign: false,
     };
   }
 
