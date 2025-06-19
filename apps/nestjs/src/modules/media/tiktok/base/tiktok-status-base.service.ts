@@ -1,28 +1,32 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { TikTokStatusResponse, TikTokStatusItem, TikTokPageInfo } from "../interfaces/tiktok-status-response.interface";
-import { TikTokReportBase, TikTokApiHeaders } from "./tiktok-report.base";
+import {
+  TikTokStatusItem,
+} from "../interfaces/tiktok-status-response.interface";
+import { TikTokReportBaseService } from "./tiktok-report-base.service";
+import {
+  TikTokApiHeaders,
+  TikTokGetApiResponse,
+  TikTokPageInfo,
+} from "../interfaces/tiktok-api.interface";
 
 @Injectable()
-export abstract class TikTokStatusBaseService extends TikTokReportBase {
+export abstract class TikTokStatusBaseService extends TikTokReportBaseService {
   protected abstract readonly statusApiUrl: string;
   protected abstract readonly statusFields: string[];
 
-  constructor(
-    http: HttpService,
-    serviceName: string,
-  ) {
+  constructor(http: HttpService, serviceName: string) {
     super(http, serviceName);
   }
 
   /**
-   * ステータスAPIからデータを取得（ページネーション対応）
+   * ステータスAPI（GET API）からデータを取得（ページネーション対応）
    */
   protected async fetchStatusData<T extends TikTokStatusItem>(
     advertiserId: string,
     headers: TikTokApiHeaders,
-    pageSize: number = 500,
+    pageSize: number = 1000,
   ): Promise<T[]> {
     const allStatusData: T[] = [];
     let page = 1;
@@ -37,10 +41,8 @@ export abstract class TikTokStatusBaseService extends TikTokReportBase {
       };
 
       try {
-        this.logDebug(`ステータスAPI: advertiser=${advertiserId}, page=${page}`);
-
         const response = await firstValueFrom(
-          this.http.get<TikTokStatusResponse<T>>(this.statusApiUrl, {
+          this.http.get<TikTokGetApiResponse<T>>(this.statusApiUrl, {
             params,
             headers,
             timeout: this.TIMEOUT,
@@ -53,15 +55,11 @@ export abstract class TikTokStatusBaseService extends TikTokReportBase {
           Array.isArray(response.data.data.list)
         ) {
           allStatusData.push(...response.data.data.list);
-          
+
           // ページネーション情報を確認
           const pageInfo: TikTokPageInfo = response.data.data.page_info;
           hasNext = page < pageInfo.total_page;
           page += 1;
-
-          this.logDebug(
-            `ステータスAPI ページ成功: advertiser=${advertiserId}, page=${page-1}, list.length=${response.data.data.list.length}, total_page=${pageInfo.total_page}`,
-          );
         } else {
           this.logWarn(
             `ステータスAPI レスポンスが不正: advertiser=${advertiserId}, page=${page}`,
@@ -98,23 +96,21 @@ export abstract class TikTokStatusBaseService extends TikTokReportBase {
     idField: string,
     entityName: string,
   ): void {
-    const reportIds = new Set(reportData.map(d => d.dimensions[idField]));
+    const reportIds = new Set(reportData.map((d) => d.dimensions[idField]));
     const statusIds = new Set(statusMap.keys());
-    
-    const missingStatus = Array.from(reportIds).filter(id => !statusIds.has(id));
-    
+
+    const missingStatus = Array.from(reportIds).filter(
+      (id) => !statusIds.has(id),
+    );
+
     if (missingStatus.length > 0) {
-      this.logWarn(`データ不整合: ${missingStatus.length}件の${entityName}ステータスが見つかりません`);
-      
-      // 最初の10件のみ詳細ログ出力
-      const sampleMissing = missingStatus.slice(0, 10);
-      this.logDebug(`見つからない${idField}の例: ${sampleMissing.join(', ')}`);
-      
-      if (missingStatus.length > 10) {
-        this.logDebug(`... 他${missingStatus.length - 10}件`);
-      }
+      this.logWarn(
+        `データ不整合: ${missingStatus.length}件の${entityName}ステータスが見つかりません`,
+      );
     } else {
-      this.logInfo(`データ整合性チェック完了: 全${reportData.length}件の${entityName}ステータスが取得できました`);
+      this.logInfo(
+        `データ整合性チェック完了: 全${reportData.length}件の${entityName}ステータスが取得できました`,
+      );
     }
   }
 
@@ -124,4 +120,4 @@ export abstract class TikTokStatusBaseService extends TikTokReportBase {
   protected async delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-} 
+}

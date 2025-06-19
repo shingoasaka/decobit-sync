@@ -7,17 +7,14 @@ import { TikTokAdRepository } from "../../repositories/report/report-ad.reposito
 import { TikTokAccountService } from "../account.service";
 import { PrismaService } from "@prismaService";
 import {
-  TikTokReportBase,
-  TikTokApiHeaders,
-} from "../../base/tiktok-report.base";
-import {
   MediaError,
   ErrorType,
   ERROR_CODES,
 } from "../../../common/errors/media.error";
 import { ERROR_MESSAGES } from "../../../common/errors/media.error";
-import { TikTokAdStatusResponse, TikTokAdStatusItem } from "../../interfaces/tiktok-status-response.interface";
+import { TikTokAdStatusItem } from "../../interfaces/tiktok-status-response.interface";
 import { TikTokStatusBaseService } from "../../base/tiktok-status-base.service";
+import { TikTokApiHeaders } from "../../interfaces/tiktok-api.interface";
 
 @Injectable()
 export class TikTokAdReportService extends TikTokStatusBaseService {
@@ -121,7 +118,6 @@ export class TikTokAdReportService extends TikTokStatusBaseService {
       const allReportData: TikTokAdReportDto[] = [];
       for (const advertiserId of advertiserIds) {
         try {
-          this.logInfo(`レポートAPI処理: advertiser=${advertiserId}`);
           const reportData = await this.fetchReportData(
             advertiserId,
             todayStr,
@@ -243,24 +239,24 @@ export class TikTokAdReportService extends TikTokStatusBaseService {
         end_date: dateStr,
         primary_status: "STATUS_ALL",
         page,
-        page_size: 200, // 1000から200に削減（タイムアウト対策）
+        page_size: 1000,
       };
 
       try {
-        this.logDebug(`レポートAPI: advertiser=${advertiserId}, page=${page}`);
-
-        const response = await this.makeApiRequest(params, headers);
+        const response = await this.makeReportApiRequest(params, headers);
         const list = response.list ?? [];
 
         if (list.length > 0) {
           // 型安全な変換 - TikTokAdReportDtoのみを処理
           const adReportData = list.filter(
             (item): item is TikTokAdReportDto => {
-              const metrics = item.metrics as any;
               return (
-                metrics.campaign_id !== undefined &&
-                metrics.adgroup_id !== undefined &&
-                metrics.ad_name !== undefined
+                'metrics' in item &&
+                typeof item.metrics === 'object' &&
+                item.metrics !== null &&
+                'campaign_id' in item.metrics &&
+                'adgroup_id' in item.metrics &&
+                'ad_name' in item.metrics
               );
             },
           );
@@ -268,7 +264,16 @@ export class TikTokAdReportService extends TikTokStatusBaseService {
           allReportData.push(...adReportData);
         }
 
-        hasNext = response.page_info?.has_next ?? false;
+        // より正確なページネーション判定
+        const pageInfo = response.page_info;
+        if (pageInfo?.total_page) {
+          // total_pageが利用可能な場合はそれを使用
+          hasNext = page < pageInfo.total_page;
+        } else {
+          // フォールバック: has_nextを使用
+          hasNext = pageInfo?.has_next ?? false;
+        }
+
         page += 1;
 
         // レート制限対策: ページ間で少し待機
@@ -284,6 +289,9 @@ export class TikTokAdReportService extends TikTokStatusBaseService {
       }
     }
 
+    this.logInfo(
+      `レポートAPI 完了: advertiser=${advertiserId}, 総件数=${allReportData.length}`,
+    );
     return allReportData;
   }
 
@@ -311,7 +319,7 @@ export class TikTokAdReportService extends TikTokStatusBaseService {
     }
 
     // データ整合性チェック
-    this.validateDataConsistency(reportData, statusMap, 'ad_id', 'Ad');
+    this.validateDataConsistency(reportData, statusMap, "ad_id", "Ad");
 
     // バッチ処理でメモリ使用量を削減
     const batchSize = 100;
@@ -410,7 +418,7 @@ export class TikTokAdReportService extends TikTokStatusBaseService {
         created_at: now,
       };
     } catch (error) {
-      this.logError(`convertDtoToEntity エラー: ${JSON.stringify(dto)}`, error);
+      this.logError(`convertDtoToEntity エラー`, error);
       throw error;
     }
   }

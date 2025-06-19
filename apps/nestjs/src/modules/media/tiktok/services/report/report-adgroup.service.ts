@@ -6,15 +6,15 @@ import { TikTokAdgroupReportDto } from "../../dtos/tiktok-report.dto";
 import { getNowJstForDB } from "src/libs/date-utils";
 import { TikTokAccountService } from "../account.service";
 import { PrismaService } from "@prismaService";
-import { TikTokReportBase } from "../../base/tiktok-report.base";
+import { TikTokStatusBaseService } from "../../base/tiktok-status-base.service";
 import {
   MediaError,
   ERROR_MESSAGES,
   ERROR_CODES,
   ErrorType,
 } from "../../../common/errors/media.error";
-import { TikTokAdgroupStatusResponse, TikTokAdgroupStatusItem } from "../../interfaces/tiktok-status-response.interface";
-import { TikTokStatusBaseService } from "../../base/tiktok-status-base.service";
+import { TikTokAdgroupStatusItem } from "../../interfaces/tiktok-status-response.interface";
+import { TikTokApiHeaders } from "../../interfaces/tiktok-api.interface";
 
 @Injectable()
 export class TikTokAdgroupReportService extends TikTokStatusBaseService {
@@ -126,10 +126,11 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
       const allStatusData = new Map<string, TikTokAdgroupStatusItem[]>();
       for (const advertiserId of advertiserIds) {
         try {
-          const statusData = await this.fetchStatusData<TikTokAdgroupStatusItem>(
-            advertiserId,
-            headers,
-          );
+          const statusData =
+            await this.fetchStatusData<TikTokAdgroupStatusItem>(
+              advertiserId,
+              headers,
+            );
           allStatusData.set(advertiserId, statusData);
 
           // レート制限対策: 広告主間で少し待機
@@ -253,7 +254,7 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
   private async fetchReportData(
     advertiserId: string,
     dateStr: string,
-    headers: any,
+    headers: TikTokApiHeaders,
   ): Promise<TikTokAdgroupReportDto[]> {
     const metrics = [
       "budget",
@@ -290,28 +291,41 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
         end_date: dateStr,
         primary_status: "STATUS_ALL",
         page,
-        page_size: 200, // 1000から200に削減（タイムアウト対策）
+        page_size: 1000,
       };
 
       try {
         this.logDebug(`レポートAPI: advertiser=${advertiserId}, page=${page}`);
 
-        const response = await this.makeApiRequest(params, headers);
+        const response = await this.makeReportApiRequest(params, headers);
         const list = response.list ?? [];
 
         if (list.length > 0) {
           // 型安全な変換 - TikTokAdgroupReportDtoのみを処理
           const adgroupReportData = list.filter(
             (item): item is TikTokAdgroupReportDto => {
-              const metrics = item.metrics as any;
-              return metrics.adgroup_name !== undefined;
+              return (
+                'metrics' in item &&
+                typeof item.metrics === 'object' &&
+                item.metrics !== null &&
+                'adgroup_name' in item.metrics
+              );
             },
           );
 
           allReportData.push(...adgroupReportData);
         }
 
-        hasNext = response.page_info?.has_next ?? false;
+        // より正確なページネーション判定
+        const pageInfo = response.page_info;
+        if (pageInfo?.total_page) {
+          // total_pageが利用可能な場合はそれを使用
+          hasNext = page < pageInfo.total_page;
+        } else {
+          // フォールバック: has_nextを使用
+          hasNext = pageInfo?.has_next ?? false;
+        }
+
         page += 1;
 
         // レート制限対策: ページ間で少し待機
@@ -327,6 +341,9 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
       }
     }
 
+    this.logInfo(
+      `レポートAPI 完了: advertiser=${advertiserId}, 総件数=${allReportData.length}`,
+    );
     return allReportData;
   }
 
@@ -354,7 +371,12 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
     }
 
     // データ整合性チェック
-    this.validateDataConsistency(reportData, statusMap, 'adgroup_id', 'AdGroup');
+    this.validateDataConsistency(
+      reportData,
+      statusMap,
+      "adgroup_id",
+      "AdGroup",
+    );
 
     // バッチ処理でメモリ使用量を削減
     const batchSize = 100;
@@ -378,4 +400,4 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
 
     return mergedRecords;
   }
-} 
+}

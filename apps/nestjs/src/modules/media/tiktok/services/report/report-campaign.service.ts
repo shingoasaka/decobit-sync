@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { TikTokCampaignReportDto } from "../../dtos/tiktok-report.dto";
 import { TikTokAccountService } from "../account.service";
-import { TikTokReportBase } from "src/modules/media/tiktok/base/tiktok-report.base";
+import { TikTokReportBaseService } from "src/modules/media/tiktok/base/tiktok-report-base.service";
 import { TikTokCampaignRepository } from "src/modules/media/tiktok/repositories/report/report-campaign.repository";
 import { TikTokCampaignReport } from "src/modules/media/tiktok/interfaces/report.interface";
 import { getNowJstForDB } from "src/libs/date-utils";
@@ -15,7 +15,7 @@ import {
 import { ERROR_MESSAGES } from "../../../common/errors/media.error";
 
 @Injectable()
-export class TikTokCampaignReportService extends TikTokReportBase {
+export class TikTokCampaignReportService extends TikTokReportBaseService {
   protected readonly apiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
 
@@ -126,13 +126,11 @@ export class TikTokCampaignReportService extends TikTokReportBase {
           };
 
           try {
-            this.logDebug(`APIリクエスト: id=${advertiserId}, page=${page}`);
-
-            const response = await this.makeApiRequest(params, headers);
+            const response = await this.makeReportApiRequest(params, headers);
 
             const list = response.list ?? [];
             if (list.length > 0) {
-              const records: TikTokCampaignReport[] = list.map((dto) => {
+              const records: TikTokCampaignReport[] = list.map((dto: TikTokCampaignReportDto) => {
                 const campaignDto = dto as TikTokCampaignReportDto;
                 return this.convertDtoToEntity(campaignDto, accountIdMap);
               });

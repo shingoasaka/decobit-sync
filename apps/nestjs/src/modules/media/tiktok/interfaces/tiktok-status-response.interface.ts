@@ -1,10 +1,8 @@
-// 共通のページ情報インターフェース
-export interface TikTokPageInfo {
-  total_number: number;
-  page: number;
-  page_size: number;
-  total_page: number;
-}
+// ============================================================================
+// TikTok ステータスAPI用インターフェース
+// ============================================================================
+
+import { TikTokPageInfo } from "./tiktok-api.interface";
 
 // 共通のステータス情報インターフェース
 export interface TikTokStatusItem {
@@ -36,8 +34,3 @@ export interface TikTokStatusResponse<T extends TikTokStatusItem> {
     page_info: TikTokPageInfo;
   };
 }
-
-// 型エイリアス
-export type TikTokAdStatusResponse = TikTokStatusResponse<TikTokAdStatusItem>;
-export type TikTokAdgroupStatusResponse = TikTokStatusResponse<TikTokAdgroupStatusItem>;
-export type TikTokCampaignStatusResponse = TikTokStatusResponse<TikTokCampaignStatusItem>;
