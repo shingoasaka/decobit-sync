@@ -122,28 +122,21 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
         }
       }
 
-      // ステータスAPI: 各広告主を個別に処理
-      const allStatusData = new Map<string, TikTokAdgroupStatusItem[]>();
-      for (const advertiserId of advertiserIds) {
-        try {
-          const statusData =
-            await this.fetchStatusData<TikTokAdgroupStatusItem>(
-              advertiserId,
-              headers,
-            );
-          allStatusData.set(advertiserId, statusData);
-
-          // レート制限対策: 広告主間で少し待機
-          await this.delay(100);
-        } catch (error) {
-          this.logError(
-            `ステータス取得失敗 (advertiser=${advertiserId})`,
-            error,
-          );
-          // 他の広告主の処理は継続
-          continue;
-        }
+      // 今日のReportデータからIDリストを抽出
+      const todayAdgroupIds = new Set<string>();
+      for (const report of allReportData) {
+        todayAdgroupIds.add(report.dimensions.adgroup_id);
       }
+
+      this.logInfo(
+        `今日のReportデータから ${todayAdgroupIds.size} 件のアドグループIDを抽出`,
+      );
+
+      // ステータスAPI: 今日のIDのみを指定して取得
+      const allStatusData = await this.processReportAndStatusData<
+        TikTokAdgroupStatusItem,
+        TikTokAdgroupReportDto
+      >(allReportData, "adgroup_id", headers, "アドグループ");
 
       // データをマージしてRAWテーブルに保存
       let mergedRecords: TikTokAdgroupReport[] = [];
@@ -272,79 +265,18 @@ export class TikTokAdgroupReportService extends TikTokStatusBaseService {
     ];
 
     const dimensions = ["adgroup_id", "stat_time_day"];
+    const requiredMetrics = ["adgroup_name"];
 
-    this.validateMetrics(metrics);
-    this.validateDimensions(dimensions);
-
-    const allReportData: TikTokAdgroupReportDto[] = [];
-    let page = 1;
-    let hasNext = true;
-
-    while (hasNext) {
-      const params = {
-        advertiser_ids: JSON.stringify([advertiserId]),
-        report_type: "BASIC",
-        dimensions: JSON.stringify(dimensions),
-        metrics: JSON.stringify(metrics),
-        data_level: "AUCTION_ADGROUP",
-        start_date: dateStr,
-        end_date: dateStr,
-        primary_status: "STATUS_ALL",
-        page,
-        page_size: 1000,
-      };
-
-      try {
-        this.logDebug(`レポートAPI: advertiser=${advertiserId}, page=${page}`);
-
-        const response = await this.makeReportApiRequest(params, headers);
-        const list = response.list ?? [];
-
-        if (list.length > 0) {
-          // 型安全な変換 - TikTokAdgroupReportDtoのみを処理
-          const adgroupReportData = list.filter(
-            (item): item is TikTokAdgroupReportDto => {
-              return (
-                'metrics' in item &&
-                typeof item.metrics === 'object' &&
-                item.metrics !== null &&
-                'adgroup_name' in item.metrics
-              );
-            },
-          );
-
-          allReportData.push(...adgroupReportData);
-        }
-
-        // より正確なページネーション判定
-        const pageInfo = response.page_info;
-        if (pageInfo?.total_page) {
-          // total_pageが利用可能な場合はそれを使用
-          hasNext = page < pageInfo.total_page;
-        } else {
-          // フォールバック: has_nextを使用
-          hasNext = pageInfo?.has_next ?? false;
-        }
-
-        page += 1;
-
-        // レート制限対策: ページ間で少し待機
-        if (hasNext) {
-          await this.delay(50);
-        }
-      } catch (error) {
-        this.logError(
-          `レポートAPI エラー (advertiser=${advertiserId}, page=${page})`,
-          error,
-        );
-        break;
-      }
-    }
-
-    this.logInfo(
-      `レポートAPI 完了: advertiser=${advertiserId}, 総件数=${allReportData.length}`,
+    return this.fetchReportDataGeneric<TikTokAdgroupReportDto>(
+      advertiserId,
+      dateStr,
+      headers,
+      metrics,
+      dimensions,
+      "AUCTION_ADGROUP",
+      requiredMetrics,
+      "アドグループ",
     );
-    return allReportData;
   }
 
   /**

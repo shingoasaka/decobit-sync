@@ -1,7 +1,3 @@
-// ============================================================================
-// TikTok レポートAPI用DTO
-// ============================================================================
-
 // 共通のメトリクス
 interface TikTokMetrics {
   advertiser_id: string;
@@ -43,17 +39,17 @@ interface BaseDimensions {
 }
 
 // Ad用のディメンション
-interface AdDimensions extends BaseDimensions {
+interface AdDimensions extends BaseDimensions, Record<string, string> {
   ad_id: string;
 }
 
 // Adgroup用のディメンション
-interface AdgroupDimensions extends BaseDimensions {
+interface AdgroupDimensions extends BaseDimensions, Record<string, string> {
   adgroup_id: string;
 }
 
 // Campaign用のディメンション
-interface CampaignDimensions extends BaseDimensions {
+interface CampaignDimensions extends BaseDimensions, Record<string, string> {
   campaign_id: string;
 }
 

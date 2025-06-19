@@ -126,14 +126,26 @@ export class TikTokCampaignReportService extends TikTokReportBaseService {
           };
 
           try {
-            const response = await this.makeReportApiRequest(params, headers);
+            const response =
+              await this.makeReportApiRequest<TikTokCampaignReportDto>(
+                params,
+                headers,
+              );
 
             const list = response.list ?? [];
             if (list.length > 0) {
-              const records: TikTokCampaignReport[] = list.map((dto: TikTokCampaignReportDto) => {
-                const campaignDto = dto as TikTokCampaignReportDto;
-                return this.convertDtoToEntity(campaignDto, accountIdMap);
-              });
+              const records: TikTokCampaignReport[] = list
+                .filter((item): item is TikTokCampaignReportDto => {
+                  return (
+                    "metrics" in item &&
+                    typeof item.metrics === "object" &&
+                    item.metrics !== null &&
+                    "campaign_name" in item.metrics
+                  );
+                })
+                .map((dto) => {
+                  return this.convertDtoToEntity(dto, accountIdMap);
+                });
 
               const savedCount = await this.saveReports(records);
               totalSaved += savedCount;

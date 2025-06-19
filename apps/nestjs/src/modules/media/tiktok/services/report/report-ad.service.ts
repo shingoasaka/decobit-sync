@@ -16,6 +16,29 @@ import { TikTokAdStatusItem } from "../../interfaces/tiktok-status-response.inte
 import { TikTokStatusBaseService } from "../../base/tiktok-status-base.service";
 import { TikTokApiHeaders } from "../../interfaces/tiktok-api.interface";
 
+/**
+ * TikTok 広告レポートサービス
+ *
+ * このサービスは、TikTokの広告レポートデータを効率的に取得・処理します。
+ *
+ * 主な機能:
+ * - レポートAPIから広告のメトリクスデータを取得
+ * - ステータスAPIから広告のステータス情報を取得
+ * - レポートデータとステータスデータの統合
+ * - データベースへの保存（RAWテーブル）
+ *
+ * 最適化戦略:
+ * - レポートAPIで今日のアクティブな広告IDを取得
+ * - 取得したIDのみでステータスAPIを呼び出し（データ量削減）
+ * - バッチ処理によるメモリ効率の改善
+ * - レート制限対策の実装
+ *
+ * データフロー:
+ * 1. レポートAPI → 今日の広告ID抽出
+ * 2. ステータスAPI → 抽出したIDのステータス取得
+ * 3. データ統合 → レポート + ステータス
+ * 4. データベース保存 → RAWテーブル
+ */
 @Injectable()
 export class TikTokAdReportService extends TikTokStatusBaseService {
   protected readonly apiUrl =
@@ -134,27 +157,21 @@ export class TikTokAdReportService extends TikTokStatusBaseService {
         }
       }
 
-      // ステータスAPI: 各広告主を個別に処理
-      const allStatusData = new Map<string, TikTokAdStatusItem[]>();
-      for (const advertiserId of advertiserIds) {
-        try {
-          const statusData = await this.fetchStatusData<TikTokAdStatusItem>(
-            advertiserId,
-            headers,
-          );
-          allStatusData.set(advertiserId, statusData);
-
-          // レート制限対策: 広告主間で少し待機
-          await this.delay(100);
-        } catch (error) {
-          this.logError(
-            `ステータス取得失敗 (advertiser=${advertiserId})`,
-            error,
-          );
-          // 他の広告主の処理は継続
-          continue;
-        }
+      // 今日のReportデータからIDリストを抽出
+      const todayAdIds = new Set<string>();
+      for (const report of allReportData) {
+        todayAdIds.add(report.dimensions.ad_id);
       }
+
+      this.logInfo(
+        `今日のReportデータから ${todayAdIds.size} 件の広告IDを抽出`,
+      );
+
+      // ステータスAPI: 今日のIDのみを指定して取得
+      const allStatusData = await this.processReportAndStatusData<
+        TikTokAdStatusItem,
+        TikTokAdReportDto
+      >(allReportData, "ad_id", headers, "広告");
 
       // データをマージしてRAWテーブルに保存
       let mergedRecords: TikTokAdReport[] = [];
@@ -220,79 +237,18 @@ export class TikTokAdReportService extends TikTokStatusBaseService {
     ];
 
     const dimensions = ["ad_id", "stat_time_day"];
+    const requiredMetrics = ["campaign_id", "adgroup_id", "ad_name"];
 
-    this.validateMetrics(metrics);
-    this.validateDimensions(dimensions);
-
-    const allReportData: TikTokAdReportDto[] = [];
-    let page = 1;
-    let hasNext = true;
-
-    while (hasNext) {
-      const params = {
-        advertiser_ids: JSON.stringify([advertiserId]),
-        report_type: "BASIC",
-        dimensions: JSON.stringify(dimensions),
-        metrics: JSON.stringify(metrics),
-        data_level: "AUCTION_AD",
-        start_date: dateStr,
-        end_date: dateStr,
-        primary_status: "STATUS_ALL",
-        page,
-        page_size: 1000,
-      };
-
-      try {
-        const response = await this.makeReportApiRequest(params, headers);
-        const list = response.list ?? [];
-
-        if (list.length > 0) {
-          // 型安全な変換 - TikTokAdReportDtoのみを処理
-          const adReportData = list.filter(
-            (item): item is TikTokAdReportDto => {
-              return (
-                'metrics' in item &&
-                typeof item.metrics === 'object' &&
-                item.metrics !== null &&
-                'campaign_id' in item.metrics &&
-                'adgroup_id' in item.metrics &&
-                'ad_name' in item.metrics
-              );
-            },
-          );
-
-          allReportData.push(...adReportData);
-        }
-
-        // より正確なページネーション判定
-        const pageInfo = response.page_info;
-        if (pageInfo?.total_page) {
-          // total_pageが利用可能な場合はそれを使用
-          hasNext = page < pageInfo.total_page;
-        } else {
-          // フォールバック: has_nextを使用
-          hasNext = pageInfo?.has_next ?? false;
-        }
-
-        page += 1;
-
-        // レート制限対策: ページ間で少し待機
-        if (hasNext) {
-          await this.delay(50);
-        }
-      } catch (error) {
-        this.logError(
-          `レポートAPI エラー (advertiser=${advertiserId}, page=${page})`,
-          error,
-        );
-        break;
-      }
-    }
-
-    this.logInfo(
-      `レポートAPI 完了: advertiser=${advertiserId}, 総件数=${allReportData.length}`,
+    return this.fetchReportDataGeneric<TikTokAdReportDto>(
+      advertiserId,
+      dateStr,
+      headers,
+      metrics,
+      dimensions,
+      "AUCTION_AD",
+      requiredMetrics,
+      "広告",
     );
-    return allReportData;
   }
 
   /**

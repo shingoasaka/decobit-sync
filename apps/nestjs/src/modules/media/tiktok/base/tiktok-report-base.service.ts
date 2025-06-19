@@ -100,10 +100,10 @@ export abstract class TikTokReportBaseService {
   /**
    * レポートAPI専用のリクエストメソッド
    */
-  protected async makeReportApiRequest(
+  protected async makeReportApiRequest<T = unknown>(
     params: TikTokReportApiParams,
     headers: TikTokApiHeaders,
-  ): Promise<TikTokReportApiResponseData> {
+  ): Promise<TikTokReportApiResponseData<T>> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
@@ -118,7 +118,7 @@ export abstract class TikTokReportBaseService {
         }
 
         const response = await firstValueFrom(
-          this.http.get<TikTokReportApiResponse>(this.apiUrl, {
+          this.http.get<TikTokReportApiResponse<T>>(this.apiUrl, {
             params,
             headers,
             timeout: this.TIMEOUT,

@@ -1,11 +1,3 @@
-// ============================================================================
-// TikTok API 共通インターフェース
-// ============================================================================
-
-// ============================================================================
-// レポートAPI用インターフェース
-// ============================================================================
-
 /**
  * レポートAPI用パラメータ
  */
@@ -25,8 +17,8 @@ export interface TikTokReportApiParams {
 /**
  * レポートAPI用レスポンスデータ
  */
-export interface TikTokReportApiResponseData {
-  list: any[];
+export interface TikTokReportApiResponseData<T = unknown> {
+  list: T[];
   page_info: TikTokReportPageInfo;
 }
 
@@ -44,13 +36,9 @@ export interface TikTokReportPageInfo {
 /**
  * レポートAPI用レスポンス
  */
-export interface TikTokReportApiResponse {
-  data: TikTokReportApiResponseData;
+export interface TikTokReportApiResponse<T = unknown> {
+  data: TikTokReportApiResponseData<T>;
 }
-
-// ============================================================================
-// GET API用インターフェース
-// ============================================================================
 
 /**
  * GET API用パラメータ
@@ -71,10 +59,6 @@ export interface TikTokGetApiResponse<T> {
     page_info: TikTokPageInfo;
   };
 }
-
-// ============================================================================
-// 共通インターフェース
-// ============================================================================
 
 /**
  * TikTok API用ヘッダー
