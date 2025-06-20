@@ -1,18 +1,18 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
+import { Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import {
   MediaError,
   ErrorType,
   ERROR_CODES,
   ERROR_MESSAGES,
-} from "../../common/errors/media.error";
+} from '../../common/errors/media.error';
 import {
   ReportApiParams,
   ReportApiResponseData,
   ReportApiResponse,
-} from "../interfaces/api.interface";
-import { ApiHeaders } from "../interfaces/api.interface";
+} from '../interfaces/api.interface';
+import { ApiHeaders } from '../interfaces/api.interface';
 
 @Injectable()
 export abstract class ReportBaseService {
@@ -93,7 +93,7 @@ export abstract class ReportBaseService {
   }
 
   protected parseNumber(value: string | number | undefined): number {
-    const parsed = typeof value === "number" ? value : parseFloat(value ?? "");
+    const parsed = typeof value === 'number' ? value : parseFloat(value ?? '');
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
@@ -187,20 +187,20 @@ export abstract class ReportBaseService {
     if (error instanceof MediaError) {
       switch (error.type) {
         case ErrorType.AUTHENTICATION:
-          this.logger.error("認証エラー", errorDetails);
+          this.logger.error('認証エラー', errorDetails);
           break;
         case ErrorType.API:
-          this.logger.warn("APIエラー", errorDetails);
+          this.logger.warn('APIエラー', errorDetails);
           break;
         case ErrorType.BUSINESS:
-          this.logger.error("ビジネスロジックエラー", errorDetails);
+          this.logger.error('ビジネスロジックエラー', errorDetails);
           break;
         case ErrorType.VALIDATION:
-          this.logger.warn("バリデーションエラー", errorDetails);
+          this.logger.warn('バリデーションエラー', errorDetails);
           break;
       }
     } else {
-      this.logger.error("予期せぬエラー", errorDetails);
+      this.logger.error('予期せぬエラー', errorDetails);
     }
   }
 

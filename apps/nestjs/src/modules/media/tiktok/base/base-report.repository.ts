@@ -1,4 +1,4 @@
-import { PrismaService } from "@prismaService";
+import { PrismaService } from '@prismaService';
 
 /**
  * レポートリポジトリの共通インターフェース

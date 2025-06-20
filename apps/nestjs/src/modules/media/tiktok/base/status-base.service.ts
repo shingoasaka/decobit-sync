@@ -1,20 +1,27 @@
-import { Injectable } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { firstValueFrom } from "rxjs";
-import { TikTokStatusItem } from "../interfaces/status-response.interface";
-import { ReportBaseService } from "./report-base.service";
+import { Injectable } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
+import { TikTokStatusItem } from '../interfaces/status-response.interface';
+import { ReportBaseService } from './tiktok-report.base';
 import {
   ApiHeaders,
   GetApiResponse,
   PageInfo,
-} from "../interfaces/api.interface";
-import { ValidationUtil } from "../utils/validation.util";
+} from '../interfaces/api.interface';
+import { ValidationUtil } from '../utils/validation.util';
+
+// HTTP設定の型定義
+export interface HttpConfig {
+  params?: Record<string, unknown>;
+  headers?: Record<string, string>;
+  timeout?: number;
+}
 
 /**
  * HTTP通信の抽象化インターフェース
  */
 export interface IHttpClient {
-  get<T>(url: string, config?: any): Promise<{ data: T }>;
+  get<T>(url: string, config?: HttpConfig): Promise<{ data: T }>;
 }
 
 /**
@@ -44,7 +51,7 @@ export abstract class StatusBaseService extends ReportBaseService {
    */
   protected async executeHttpRequest<T>(
     url: string,
-    config: any,
+    config: HttpConfig,
   ): Promise<{ data: T }> {
     return firstValueFrom(this.http.get<T>(url, config));
   }
@@ -113,7 +120,7 @@ export abstract class StatusBaseService extends ReportBaseService {
     advertiserId: string,
     ids: string[],
     headers: ApiHeaders,
-    idField: "ad_id" | "adgroup_id" | "campaign_id" = "ad_id",
+    idField: 'ad_id' | 'adgroup_id' | 'campaign_id' = 'ad_id',
   ): Promise<T[]> {
     if (ids.length === 0) {
       return [];
@@ -126,7 +133,7 @@ export abstract class StatusBaseService extends ReportBaseService {
 
       const params = {
         advertiser_id: advertiserId,
-        [idField + "s"]: JSON.stringify(batchIds),
+        [idField + 's']: JSON.stringify(batchIds),
         fields: JSON.stringify(this.statusFields),
       };
 
@@ -165,7 +172,7 @@ export abstract class StatusBaseService extends ReportBaseService {
     },
   >(
     reportData: T[],
-    idField: "ad_id" | "adgroup_id" | "campaign_id",
+    idField: 'ad_id' | 'adgroup_id' | 'campaign_id',
   ): Map<string, string[]> {
     const groupedIds = new Map<string, string[]>();
 
@@ -190,7 +197,7 @@ export abstract class StatusBaseService extends ReportBaseService {
       metrics: { advertiser_id: string };
       dimensions: Record<string, string>;
     }[],
-    idField: "ad_id" | "adgroup_id" | "campaign_id",
+    idField: 'ad_id' | 'adgroup_id' | 'campaign_id',
     headers: ApiHeaders,
     entityName: string,
   ): Promise<Map<string, T[]>> {
@@ -211,7 +218,8 @@ export abstract class StatusBaseService extends ReportBaseService {
           `ステータスデータ取得失敗 (advertiser=${advertiserId})`,
           error,
         );
-        allStatusData.set(advertiserId, []);
+        // 他の広告主の処理は継続
+        continue;
       }
     }
 
@@ -237,12 +245,12 @@ export abstract class StatusBaseService extends ReportBaseService {
 
     const params = {
       advertiser_ids: JSON.stringify([advertiserId]),
-      report_type: "BASIC",
+      report_type: 'BASIC',
       dimensions: JSON.stringify(dimensions),
       metrics: JSON.stringify(metrics),
       start_date: dateStr,
       end_date: dateStr,
-      primary_status: "STATUS_ALL",
+      primary_status: 'STATUS_ALL',
       page: 1,
       page_size: 1000,
       data_level: dataLevel,

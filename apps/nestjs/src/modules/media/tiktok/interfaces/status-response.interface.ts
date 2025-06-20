@@ -1,4 +1,4 @@
-import { PageInfo } from "./api.interface";
+import { PageInfo } from './api.interface';
 
 // 共通のステータス情報インターフェース
 export interface TikTokStatusItem {
@@ -11,7 +11,6 @@ export interface TikTokStatusItem {
 // Ad用のステータスアイテム
 export interface TikTokAdStatusItem extends TikTokStatusItem {
   ad_id: string;
-  budget: string | number;
 }
 
 // AdGroup用のステータスアイテム

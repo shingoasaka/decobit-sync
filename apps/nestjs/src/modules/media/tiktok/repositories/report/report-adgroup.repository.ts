@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "@prismaService";
-import { TikTokAdgroupReport } from "../../interfaces/report.interface";
-import { BaseReportRepository } from "../../base/base-report.repository";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '@prismaService';
+import { TikTokAdgroupReport } from '../../interfaces/report.interface';
+import { BaseReportRepository } from '../../base/base-report.repository';
 
 /**
  * TikTok アドグループレポートリポジトリ
