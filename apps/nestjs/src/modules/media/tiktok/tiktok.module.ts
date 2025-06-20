@@ -6,7 +6,6 @@ import { TikTokAdRepository } from "./repositories/report/report-ad.repository";
 import { TikTokCampaignReportService } from "./services/report/report-campaign.service";
 import { TikTokAdgroupReportService } from "./services/report/report-adgroup.service";
 import { TikTokAdReportService } from "./services/report/report-ad.service";
-import { TikTokReportService } from "./services/report/tiktok-report.service";
 import { HttpModule } from "@nestjs/axios";
 import { MediaModule } from "../media.module";
 import { TikTokAccountService } from "./services/account.service";
@@ -20,14 +19,12 @@ import { TikTokAccountService } from "./services/account.service";
     TikTokCampaignReportService,
     TikTokAdgroupReportService,
     TikTokAdReportService,
-    TikTokReportService,
     TikTokAccountService,
   ],
   exports: [
     TikTokCampaignReportService,
     TikTokAdgroupReportService,
     TikTokAdReportService,
-    TikTokReportService,
   ],
 })
 export class TikTokModule {}
