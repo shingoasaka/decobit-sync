@@ -1,4 +1,4 @@
-import { PageInfo } from './api.interface';
+import { PageInfo } from "./api.interface";
 
 // 共通のステータス情報インターフェース
 export interface TikTokStatusItem {

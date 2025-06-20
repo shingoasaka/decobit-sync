@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@prismaService';
+import { Injectable, Logger } from "@nestjs/common";
+import { PrismaService } from "@prismaService";
 
 @Injectable()
 export class TikTokAccountService {
@@ -36,7 +36,7 @@ export class TikTokAccountService {
       });
 
       if (accounts.length === 0) {
-        this.logger.warn('TikTokの広告アカウントが登録されていません');
+        this.logger.warn("TikTokの広告アカウントが登録されていません");
         return [];
       }
 
@@ -47,10 +47,10 @@ export class TikTokAccountService {
       return accounts.map((account) => account.ad_platform_account_id);
     } catch (error) {
       this.logger.error(
-        'TikTok広告アカウントの取得に失敗しました',
+        "TikTok広告アカウントの取得に失敗しました",
         error instanceof Error ? error.stack : String(error),
       );
-      throw new Error('TikTok広告アカウントの取得に失敗しました');
+      throw new Error("TikTok広告アカウントの取得に失敗しました");
     }
   }
 }

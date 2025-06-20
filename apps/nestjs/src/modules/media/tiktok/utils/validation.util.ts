@@ -28,22 +28,22 @@ export class ValidationUtil {
     response: unknown,
   ): response is StatusResponseStructure<T> {
     return (
-      typeof response === 'object' &&
+      typeof response === "object" &&
       response !== null &&
-      'data' in response &&
-      typeof (response as Record<string, unknown>).data === 'object' &&
+      "data" in response &&
+      typeof (response as Record<string, unknown>).data === "object" &&
       (response as Record<string, unknown>).data !== null &&
-      'data' in
+      "data" in
         ((response as Record<string, unknown>).data as Record<
           string,
           unknown
         >) &&
       typeof (
         (response as Record<string, unknown>).data as Record<string, unknown>
-      ).data === 'object' &&
+      ).data === "object" &&
       ((response as Record<string, unknown>).data as Record<string, unknown>)
         .data !== null &&
-      'list' in
+      "list" in
         (((response as Record<string, unknown>).data as Record<string, unknown>)
           .data as Record<string, unknown>) &&
       Array.isArray(
@@ -66,22 +66,22 @@ export class ValidationUtil {
     response: unknown,
   ): response is ReportResponseStructure<T> {
     return (
-      typeof response === 'object' &&
+      typeof response === "object" &&
       response !== null &&
-      'data' in response &&
-      typeof (response as Record<string, unknown>).data === 'object' &&
+      "data" in response &&
+      typeof (response as Record<string, unknown>).data === "object" &&
       (response as Record<string, unknown>).data !== null &&
-      'data' in
+      "data" in
         ((response as Record<string, unknown>).data as Record<
           string,
           unknown
         >) &&
       typeof (
         (response as Record<string, unknown>).data as Record<string, unknown>
-      ).data === 'object' &&
+      ).data === "object" &&
       ((response as Record<string, unknown>).data as Record<string, unknown>)
         .data !== null &&
-      'list' in
+      "list" in
         (((response as Record<string, unknown>).data as Record<string, unknown>)
           .data as Record<string, unknown>) &&
       Array.isArray(
@@ -104,12 +104,12 @@ export class ValidationUtil {
     item: unknown,
     requiredMetrics: string[],
   ): item is T {
-    if (!item || typeof item !== 'object') {
+    if (!item || typeof item !== "object") {
       return false;
     }
 
     const obj = item as Record<string, unknown>;
-    if (!obj.metrics || typeof obj.metrics !== 'object') {
+    if (!obj.metrics || typeof obj.metrics !== "object") {
       return false;
     }
 

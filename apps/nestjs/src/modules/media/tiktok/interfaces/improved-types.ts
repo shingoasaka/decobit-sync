@@ -1,17 +1,17 @@
 // より厳密な型定義
 
 // メディアレベルを型安全に定義
-export type MediaLevel = 'Campaign' | 'AdGroup' | 'Ad';
+export type MediaLevel = "Campaign" | "AdGroup" | "Ad";
 
 // IDフィールドを型安全に定義
-export type IdField = 'campaign_id' | 'adgroup_id' | 'ad_id';
+export type IdField = "campaign_id" | "adgroup_id" | "ad_id";
 
 // ステータスフィールドを型安全に定義
 export type StatusField =
-  | 'secondary_status'
-  | 'operation_status'
-  | 'modify_time'
-  | 'budget';
+  | "secondary_status"
+  | "operation_status"
+  | "modify_time"
+  | "budget";
 
 // API設定を型安全に定義
 export interface ApiConfig {
@@ -120,7 +120,7 @@ export interface TypedApiResponse<T> {
 export interface TypedError {
   readonly code: string;
   readonly message: string;
-  readonly type: 'API' | 'BUSINESS' | 'VALIDATION';
+  readonly type: "API" | "BUSINESS" | "VALIDATION";
   readonly details?: Record<string, unknown>;
 }
 
@@ -213,14 +213,14 @@ export function validateApiResponse<T>(
   response: unknown,
 ): response is TypedApiResponse<T> {
   return (
-    typeof response === 'object' &&
+    typeof response === "object" &&
     response !== null &&
-    'code' in response &&
-    'data' in response &&
-    typeof (response as Record<string, unknown>).data === 'object' &&
+    "code" in response &&
+    "data" in response &&
+    typeof (response as Record<string, unknown>).data === "object" &&
     (response as Record<string, unknown>).data !== null &&
-    typeof (response as Record<string, unknown>).data === 'object' &&
-    'list' in
+    typeof (response as Record<string, unknown>).data === "object" &&
+    "list" in
       ((response as Record<string, unknown>).data as Record<string, unknown>)
   );
 }

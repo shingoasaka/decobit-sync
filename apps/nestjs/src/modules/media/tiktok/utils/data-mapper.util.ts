@@ -88,4 +88,4 @@ export class DataMapper {
     const parsed = typeof value === "number" ? value : parseFloat(value ?? "");
     return Number.isFinite(parsed) ? parsed : 0;
   }
-} 
+}

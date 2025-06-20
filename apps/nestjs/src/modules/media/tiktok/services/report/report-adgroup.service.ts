@@ -1,15 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { GenericReportService, ReportConfig } from './generic-report.service';
-import { TikTokAccountService } from '../account.service';
-import { TikTokAdgroupRepository } from '../../repositories/report/report-adgroup.repository';
-import { DataMapper } from '../../utils/data-mapper.util';
+import { Injectable } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { GenericReportService, ReportConfig } from "./generic-report.service";
+import { TikTokAccountService } from "../account.service";
+import { TikTokAdgroupRepository } from "../../repositories/report/report-adgroup.repository";
+import { DataMapper } from "../../utils/data-mapper.util";
 import {
   TikTokAdgroupReportDto,
   TikTokAdgroupMetrics,
-} from '../../dtos/tiktok-report.dto';
-import { TikTokAdgroupReport } from '../../interfaces/report.interface';
-import { TikTokAdgroupStatusItem } from '../../interfaces/status-response.interface';
+} from "../../dtos/tiktok-report.dto";
+import { TikTokAdgroupReport } from "../../interfaces/report.interface";
+import { TikTokAdgroupStatusItem } from "../../interfaces/status-response.interface";
 
 /**
  * TikTok 広告グループレポートサービス
@@ -19,15 +19,15 @@ import { TikTokAdgroupStatusItem } from '../../interfaces/status-response.interf
 export class TikTokAdgroupReportService extends GenericReportService {
   // 抽象クラスの必須プロパティ
   protected readonly apiUrl =
-    'https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/';
+    "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
   protected readonly statusApiUrl =
-    'https://business-api.tiktok.com/open_api/v1.3/adgroup/get/';
+    "https://business-api.tiktok.com/open_api/v1.3/adgroup/get/";
   protected readonly statusFields = [
-    'adgroup_id',
-    'secondary_status',
-    'operation_status',
-    'modify_time',
-    'budget',
+    "adgroup_id",
+    "secondary_status",
+    "operation_status",
+    "modify_time",
+    "budget",
   ];
 
   constructor(
@@ -47,35 +47,35 @@ export class TikTokAdgroupReportService extends GenericReportService {
       TikTokAdgroupStatusItem,
       TikTokAdgroupReportDto
     > = {
-      entityName: '広告グループ',
-      idField: 'adgroup_id',
+      entityName: "広告グループ",
+      idField: "adgroup_id",
       statusApiUrl:
-        'https://business-api.tiktok.com/open_api/v1.3/adgroup/get/',
+        "https://business-api.tiktok.com/open_api/v1.3/adgroup/get/",
       statusFields: [
-        'adgroup_id',
-        'secondary_status',
-        'operation_status',
-        'modify_time',
-        'budget',
+        "adgroup_id",
+        "secondary_status",
+        "operation_status",
+        "modify_time",
+        "budget",
       ],
       apiUrl:
-        'https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/',
+        "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/",
       metrics: [
-        'spend',
-        'impressions',
-        'clicks',
-        'video_play_actions',
-        'video_watched_2s',
-        'video_watched_6s',
-        'video_views_p100',
-        'reach',
-        'conversion',
-        'advertiser_id',
-        'adgroup_name',
+        "spend",
+        "impressions",
+        "clicks",
+        "video_play_actions",
+        "video_watched_2s",
+        "video_watched_6s",
+        "video_views_p100",
+        "reach",
+        "conversion",
+        "advertiser_id",
+        "adgroup_name",
       ],
-      dimensions: ['adgroup_id', 'stat_time_day'],
-      dataLevel: 'AUCTION_ADGROUP',
-      requiredMetrics: ['adgroup_name'],
+      dimensions: ["adgroup_id", "stat_time_day"],
+      dataLevel: "AUCTION_ADGROUP",
+      requiredMetrics: ["adgroup_name"],
       repository: {
         save: (reports: TikTokAdgroupReport[]) =>
           this.adgroupRepository.save(reports),
@@ -94,7 +94,7 @@ export class TikTokAdgroupReportService extends GenericReportService {
    */
   public async saveReports(reports: TikTokAdgroupReport[]): Promise<number> {
     if (!reports || reports.length === 0) {
-      this.logDebug('処理対象のデータがありません');
+      this.logDebug("処理対象のデータがありません");
       return 0;
     }
 
@@ -103,7 +103,7 @@ export class TikTokAdgroupReportService extends GenericReportService {
       this.logInfo(`✅ ${savedCount} 件の広告グループレポートを保存しました`);
       return savedCount;
     } catch (error) {
-      this.logError('広告グループレポートの保存に失敗しました', error);
+      this.logError("広告グループレポートの保存に失敗しました", error);
       throw error;
     }
   }

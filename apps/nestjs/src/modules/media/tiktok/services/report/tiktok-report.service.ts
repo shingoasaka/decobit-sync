@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { TikTokAccountService } from '../account.service';
-import { TikTokCampaignReportService } from './report-campaign.service';
-import { TikTokAdgroupReportService } from './report-adgroup.service';
-import { TikTokAdReportService } from './report-ad.service';
+import { Injectable } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { TikTokAccountService } from "../account.service";
+import { TikTokCampaignReportService } from "./report-campaign.service";
+import { TikTokAdgroupReportService } from "./report-adgroup.service";
+import { TikTokAdReportService } from "./report-ad.service";
 
 /**
  * TikTok 統合レポートサービス

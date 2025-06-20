@@ -1,21 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { StatusBaseService } from '../../base/status-base.service';
-import { TikTokAccountService } from '../account.service';
-import { TikTokStatusItem } from '../../interfaces/status-response.interface';
+import { Injectable } from "@nestjs/common";
+import { HttpService } from "@nestjs/axios";
+import { StatusBaseService } from "../../base/status-base.service";
+import { TikTokAccountService } from "../account.service";
+import { TikTokStatusItem } from "../../interfaces/status-response.interface";
 import {
   MediaError,
   ErrorType,
   ERROR_CODES,
-} from '../../../common/errors/media.error';
-import { ERROR_MESSAGES } from '../../../common/errors/media.error';
-import { ApiHeaders } from '../../interfaces/api.interface';
-import { ValidationUtil } from '../../utils/validation.util';
+} from "../../../common/errors/media.error";
+import { ERROR_MESSAGES } from "../../../common/errors/media.error";
+import { ApiHeaders } from "../../interfaces/api.interface";
+import { ValidationUtil } from "../../utils/validation.util";
 
 // ジェネリック型定義
 export interface ReportConfig<TReport, TStatus extends TikTokStatusItem, TDto> {
   entityName: string;
-  idField: 'ad_id' | 'adgroup_id' | 'campaign_id';
+  idField: "ad_id" | "adgroup_id" | "campaign_id";
   statusApiUrl: string;
   statusFields: string[];
   apiUrl: string;
@@ -105,8 +105,8 @@ export abstract class GenericReportService extends StatusBaseService {
       this.logInfo(`本日(${todayStr})の${config.entityName}データを取得します`);
 
       const headers: ApiHeaders = {
-        'Access-Token': process.env.TIKTOK_ACCESS_TOKEN!,
-        'Content-Type': 'application/json',
+        "Access-Token": process.env.TIKTOK_ACCESS_TOKEN!,
+        "Content-Type": "application/json",
       };
 
       // レポートデータ取得
@@ -141,22 +141,12 @@ export abstract class GenericReportService extends StatusBaseService {
       const mergedCount = mergedRecords.length;
       const failedCount = reportDataCount - mergedCount;
 
-      this.logInfo(
-        `📊 ${config.entityName}データマージ結果:`,
-      );
-      this.logInfo(
-        `  - レポートデータ取得: ${reportDataCount}件`,
-      );
-      this.logInfo(
-        `  - ステータスデータ取得: ${statusDataCount}件`,
-      );
-      this.logInfo(
-        `  - マージ成功: ${mergedCount}件`,
-      );
+      this.logInfo(`📊 ${config.entityName}データマージ結果:`);
+      this.logInfo(`  - レポートデータ取得: ${reportDataCount}件`);
+      this.logInfo(`  - ステータスデータ取得: ${statusDataCount}件`);
+      this.logInfo(`  - マージ成功: ${mergedCount}件`);
       if (failedCount > 0) {
-        this.logWarn(
-          `  - マージ失敗（ステータスなし）: ${failedCount}件`,
-        );
+        this.logWarn(`  - マージ失敗（ステータスなし）: ${failedCount}件`);
       }
 
       // 保存
@@ -167,7 +157,7 @@ export abstract class GenericReportService extends StatusBaseService {
         );
         return savedCount;
       } else {
-        this.logWarn('マージされたレコードが0件のため、保存をスキップ');
+        this.logWarn("マージされたレコードが0件のため、保存をスキップ");
         return 0;
       }
     } catch (error) {
@@ -261,11 +251,11 @@ export abstract class GenericReportService extends StatusBaseService {
     idField: string,
   ): string | undefined {
     switch (idField) {
-      case 'ad_id':
+      case "ad_id":
         return status.ad_id;
-      case 'adgroup_id':
+      case "adgroup_id":
         return status.adgroup_id;
-      case 'campaign_id':
+      case "campaign_id":
         return status.campaign_id;
       default:
         return undefined;
@@ -287,12 +277,12 @@ export abstract class GenericReportService extends StatusBaseService {
 
     const params = {
       advertiser_ids: JSON.stringify([advertiserId]),
-      report_type: 'BASIC',
+      report_type: "BASIC",
       dimensions: JSON.stringify(config.dimensions),
       metrics: JSON.stringify(config.metrics),
       start_date: dateStr,
       end_date: dateStr,
-      primary_status: 'STATUS_ALL',
+      primary_status: "STATUS_ALL",
       page: 1,
       page_size: 1000,
       data_level: config.dataLevel,
@@ -322,7 +312,7 @@ export abstract class GenericReportService extends StatusBaseService {
   }
 
   private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   }
 
   protected validateDate(dateStr: string): boolean {
