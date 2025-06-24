@@ -1,51 +1,29 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { TikTokReportDto } from "../dtos/tiktok-report.dto";
 import {
   MediaError,
   ErrorType,
   ERROR_CODES,
   ERROR_MESSAGES,
 } from "../../common/errors/media.error";
-
-interface TikTokApiParams {
-  advertiser_ids: string;
-  report_type: string;
-  dimensions: string;
-  metrics: string;
-  data_level: string;
-  start_date: string;
-  end_date: string;
-  primary_status: string;
-  page: number;
-  page_size: number;
-}
-
-export interface TikTokApiHeaders extends Record<string, string> {
-  "Access-Token": string;
-  "Content-Type": string;
-}
-
-interface TikTokApiResponseData {
-  list: TikTokReportDto[];
-  page_info: { has_next: boolean };
-}
-
-interface TikTokApiResponse {
-  data: TikTokApiResponseData;
-}
+import {
+  ReportApiParams,
+  ReportApiResponseData,
+  ReportApiResponse,
+} from "../interfaces/api.interface";
+import { ApiHeaders } from "../interfaces/api.interface";
 
 @Injectable()
-export abstract class TikTokReportBase {
+export abstract class ReportBaseService {
   protected readonly logger: Logger;
   protected readonly retryConfig = {
-    maxRetries: 3,
-    initialDelay: 1000,
-    maxDelay: 30000,
+    maxRetries: 5,
+    initialDelay: 3000,
+    maxDelay: 120000,
     factor: 2,
   };
-  protected readonly TIMEOUT = 30000;
+  protected readonly TIMEOUT = 60000;
   protected readonly REQUEST_INTERVAL = 1000;
   protected readonly RATE_LIMIT_BACKOFF = 60000;
   protected abstract readonly apiUrl: string;
@@ -119,10 +97,13 @@ export abstract class TikTokReportBase {
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
-  protected async makeApiRequest(
-    params: TikTokApiParams,
-    headers: TikTokApiHeaders,
-  ): Promise<TikTokApiResponseData> {
+  /**
+   * レポートAPI専用のリクエストメソッド
+   */
+  protected async makeReportApiRequest<T = unknown>(
+    params: ReportApiParams,
+    headers: ApiHeaders,
+  ): Promise<ReportApiResponseData<T>> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= this.retryConfig.maxRetries; attempt++) {
@@ -137,7 +118,7 @@ export abstract class TikTokReportBase {
         }
 
         const response = await firstValueFrom(
-          this.http.get<TikTokApiResponse>(this.apiUrl, {
+          this.http.get<ReportApiResponse<T>>(this.apiUrl, {
             params,
             headers,
             timeout: this.TIMEOUT,
@@ -233,5 +214,12 @@ export abstract class TikTokReportBase {
 
   protected logDebug(message: string): void {
     this.logger.debug(message);
+  }
+
+  /**
+   * レート制限対策のための遅延
+   */
+  protected async delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

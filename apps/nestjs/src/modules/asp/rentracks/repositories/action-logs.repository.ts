@@ -7,7 +7,7 @@ interface ActionLogData {
   actionDateTime: Date;
   affiliate_link_id: number;
   referrer_link_id: number | null;
-  referrerUrl: string | null;
+  referrer_url: string | null;
   uid: string | null;
 }
 

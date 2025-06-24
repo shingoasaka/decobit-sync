@@ -7,6 +7,9 @@ import { metronModule } from "./metron/metron.module";
 import { MonkeyModule } from "./monkey/monkey.module";
 import { RentracksModule } from "./rentracks/rentracks.module";
 import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module";
+import { AspController } from "./asp.controller";
+import { AspCollectionService } from "./asp-collection.service";
+import { LogsModule } from "@logs/logs.module";
 
 @Module({
   imports: [
@@ -18,7 +21,10 @@ import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module
     MonkeyModule,
     RentracksModule,
     SampleAffiliateModule,
+    LogsModule,
   ],
+  controllers: [AspController],
+  providers: [AspCollectionService],
   exports: [
     CatsModule,
     FinebirdModule,
@@ -28,6 +34,7 @@ import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module
     MonkeyModule,
     RentracksModule,
     SampleAffiliateModule,
+    AspCollectionService,
   ],
 })
 export class AspModule {}

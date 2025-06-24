@@ -5,7 +5,6 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
-import { PrismaService } from "@prismaService";
 
 interface SampleAffiliateSelectors {
   LOGIN: {
@@ -62,10 +61,7 @@ interface RawSampleAffiliateData {
 export class SampleAffiliateClickLogService implements LogService {
   private readonly logger = new Logger(SampleAffiliateClickLogService.name);
 
-  constructor(
-    private readonly repository: SampleAffiliateClickLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: SampleAffiliateClickLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -248,15 +244,15 @@ export class SampleAffiliateClickLogService implements LogService {
               return null;
             }
 
-            const currentTotalClicks = this.toInt(item["アクセス数[件]"]);
+            const current_total_clicks = this.toInt(item["アクセス数[件]"]);
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
             return {
               affiliate_link_id: affiliateLink.id,
-              currentTotalClicks,
+              current_total_clicks,
               referrer_link_id: null,
-              referrerUrl: null,
+              referrer_url: null,
             };
           } catch (error) {
             this.logger.error(

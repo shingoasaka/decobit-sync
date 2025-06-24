@@ -182,7 +182,7 @@ export class CatsClickLogService {
               clickDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: null, // CATSは常にnull
-              referrerUrl: null,
+              referrer_url: null,
             };
           } catch (error) {
             this.logger.error(

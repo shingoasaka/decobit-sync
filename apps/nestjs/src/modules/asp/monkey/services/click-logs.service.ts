@@ -4,7 +4,6 @@ import { MonkeyClickLogRepository } from "../repositories/click-logs.repository"
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import { LogService } from "src/modules/logs/types";
-import { PrismaService } from "@prismaService";
 
 // 定数を別ファイルに分離することを推奨
 const CONFIG = {
@@ -45,10 +44,7 @@ interface RawMonkeyData {
 export class MonkeyClickLogService implements LogService {
   private readonly logger = new Logger(MonkeyClickLogService.name);
 
-  constructor(
-    private readonly repository: MonkeyClickLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: MonkeyClickLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -203,16 +199,16 @@ export class MonkeyClickLogService implements LogService {
               return null;
             }
 
-            const currentTotalClicks = this.toInt(item["click"]);
+            const current_total_clicks = this.toInt(item["click"]);
 
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
             return {
               affiliate_link_id: affiliateLink.id,
-              currentTotalClicks,
+              current_total_clicks,
               referrer_link_id: null,
-              referrerUrl: null,
+              referrer_url: null,
             };
           } catch (error) {
             this.logger.error(

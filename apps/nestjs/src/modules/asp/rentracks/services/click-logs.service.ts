@@ -5,7 +5,6 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
-import { PrismaService } from "@prismaService";
 import {
   getNowJstForDisplay,
   formatDateForRentracks,
@@ -22,10 +21,7 @@ interface RawRentracksData {
 export class RentracksClickLogService implements LogService {
   private readonly logger = new Logger(RentracksClickLogService.name);
 
-  constructor(
-    private readonly repository: RentracksClickLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: RentracksClickLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -155,15 +151,15 @@ export class RentracksClickLogService implements LogService {
               return null;
             }
 
-            const currentTotalClicks = this.toInt(item.クリック数);
+            const current_total_clicks = this.toInt(item.クリック数);
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
             return {
               affiliate_link_id: affiliateLink.id,
-              currentTotalClicks,
+              current_total_clicks,
               referrer_link_id: null,
-              referrerUrl: null,
+              referrer_url: null,
             };
           } catch (error) {
             this.logger.error(

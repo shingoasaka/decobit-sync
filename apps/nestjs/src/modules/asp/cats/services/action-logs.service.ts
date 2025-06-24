@@ -147,7 +147,7 @@ export class CatsActionLogService {
           actionDateTime,
           affiliate_link_id: affiliateLink.id,
           referrer_link_id: null, // CATSは常にnull
-          referrerUrl: null,
+          referrer_url: null,
           uid: null, // CATSは常にnull
         };
       }),

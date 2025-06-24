@@ -1,31 +1,41 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { TikTokCampaignReport } from "../../interfaces/report-campaign.interface";
+import { TikTokCampaignReport } from "../../interfaces/report.interface";
+import { BaseReportRepository } from "../../base/base-report.repository";
 
+/**
+ * TikTok キャンペーンレポートリポジトリ
+ * 純粋なデータアクセス操作のみを担当
+ */
 @Injectable()
-export class TikTokCampaignRepository {
-  private readonly logger = new Logger(TikTokCampaignRepository.name);
+export class TikTokCampaignRepository extends BaseReportRepository<TikTokCampaignReport> {
+  constructor(protected readonly prisma: PrismaService) {
+    super(prisma);
+  }
 
-  constructor(private readonly prisma: PrismaService) {}
-
+  /**
+   * キャンペーンレポートをバッチ保存
+   * 純粋なデータベース操作のみ
+   */
   async save(records: TikTokCampaignReport[]): Promise<number> {
     if (records.length === 0) {
-      this.logger.debug("処理対象のデータがありません");
       return 0;
     }
 
-    try {
-      const result = await this.prisma.tikTokRawReportCampaign.createMany({
-        data: records,
-        skipDuplicates: true,
-      });
-      return result.count;
-    } catch (error) {
-      this.logger.error(
-        "データの保存に失敗しました",
-        error instanceof Error ? error.stack : String(error),
-      );
-      throw error;
-    }
+    return await this.prisma.$transaction(async (tx) => {
+      const batchSize = 1000;
+      let totalSaved = 0;
+
+      for (let i = 0; i < records.length; i += batchSize) {
+        const batch = records.slice(i, i + batchSize);
+        const result = await tx.tikTokRawReportCampaign.createMany({
+          data: batch,
+          skipDuplicates: true,
+        });
+        totalSaved += result.count;
+      }
+
+      return totalSaved;
+    });
   }
 }

@@ -7,17 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AspType {
-  METRON
-  CATS
-  LAD
-  MONKEY
-  FINEBIRD
-  HANIKAMU
-  RENTRACKS
-  SAMPLE_AFFILIATE
-}
-
 enum Role {
   user
   admin
@@ -40,113 +29,102 @@ enum MediaLevel {
   Ad
 }
 
-model Department {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+enum AspType {
+  METRON
+  CATS
+  LAD
+  MONKEY
+  FINEBIRD
+  HANIKAMU
+  RENTRACKS
+  SAMPLE_AFFILIATE
+}
 
-  users      User[]
-  adAccounts AdAccount[]
+model Department {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+  users       User[]
+  ad_accounts AdAccount[]
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
-  email         String   @unique
-  firebase_uid  String   @unique
-  role          Role
-  department_id Int
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
-
-  department                Department @relation(fields: [department_id], references: [id])
-  displaySettingVisibilities UserDisplaySettingVisibility[]
-  permissions               UserPermission[]
-  permissionRequests        UserPermissionRequest[]
-}
-
-model Client {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  projects Project[]
-}
-
-model Project {
-  id        Int      @id @default(autoincrement())
-  name      String
-  client_id Int
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  client     Client @relation(fields: [client_id], references: [id])
-  adAccounts AdAccount[]
-
-  @@unique([name, client_id])
+  id                                Int                            @id @default(autoincrement())
+  email                             String                         @unique
+  firebase_uid                      String                         @unique // google_subに変更するか削除するか検討
+  role                              Role
+  department_id                     Int
+  created_at                        DateTime                       @default(now())
+  updated_at                        DateTime                       @updatedAt
+  department                        Department                     @relation(fields: [department_id], references: [id])
+  user_display_setting_visibilities UserDisplaySettingVisibility[]
+  user_permissions                  UserPermission[]
+  user_permission_requests          UserPermissionRequest[]        @relation("RequestedBy")
+  approved_permission_requests      UserPermissionRequest[]        @relation("ApprovedBy")
+  rejected_permission_requests      UserPermissionRequest[]        @relation("RejectedBy")
 }
 
 model AdPlatform {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  adAccounts           AdAccount[]
-  displaySettings      AdPlatformDisplaySetting[]
-}
-
-model AdAccount {
-  id                    Int      @id @default(autoincrement())
-  name                  String   @unique
-  ad_platform_account_id String
-  ad_platform_id        Int
-  department_id         Int?
-  project_id            Int?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
-
-  adPlatform           AdPlatform @relation(fields: [ad_platform_id], references: [id])
-  department           Department? @relation(fields: [department_id], references: [id])
-  project              Project?    @relation(fields: [project_id], references: [id])
-  permissions          UserPermission[]
-  permissionRequests   UserPermissionRequest[]
-  campaigns            Campaign[]
-  adGroups             AdGroup[]
-  ads                  Ad[]
-  tikTokRawReportCampaigns TikTokRawReportCampaign[]
-  tikTokRawReportAdGroups  TikTokRawReportAdGroup[]
-  tikTokRawReportAds       TikTokRawReportAd[]
-  linkMatchers             LinkMatcher[]
-  
-  @@unique([ad_platform_account_id, ad_platform_id])
+  id               Int                        @id @default(autoincrement())
+  name             String                     @unique
+  created_at       DateTime                   @default(now())
+  updated_at       DateTime                   @updatedAt
+  ad_accounts      AdAccount[]
+  display_settings AdPlatformDisplaySetting[]
 }
 
 model AdPlatformDisplaySetting {
-  id              Int      @id @default(autoincrement())
-  ad_platform_id  Int
-  name            String
-  key             String
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
-
-  adPlatform      AdPlatform @relation(fields: [ad_platform_id], references: [id])
-  visibilities    UserDisplaySettingVisibility[]
+  id             Int                            @id @default(autoincrement())
+  ad_platform_id Int
+  name           String
+  key            String
+  category       String
+  created_at     DateTime                       @default(now())
+  updated_at     DateTime                       @updatedAt
+  ad_platform    AdPlatform                     @relation(fields: [ad_platform_id], references: [id])
+  visibilities   UserDisplaySettingVisibility[]
 }
 
 model UserDisplaySettingVisibility {
-  id                          Int      @id @default(autoincrement())
-  user_id                     Int
+  id                             Int      @id @default(autoincrement())
+  user_id                        Int
   ad_platform_display_setting_id Int
-  is_visible                  Boolean
-  created_at                  DateTime @default(now())
-  updated_at                  DateTime @updatedAt
+  is_visible                     Boolean
+  display_order                  Int?
+  created_at                     DateTime @default(now())
+  updated_at                     DateTime @updatedAt
 
-  user                User @relation(fields: [user_id], references: [id])
-  displaySetting      AdPlatformDisplaySetting @relation(fields: [ad_platform_display_setting_id], references: [id])
+  user                        User                     @relation(fields: [user_id], references: [id])
+  ad_platform_display_setting AdPlatformDisplaySetting @relation(fields: [ad_platform_display_setting_id], references: [id])
 
   @@unique([user_id, ad_platform_display_setting_id])
+}
+
+model AdAccount {
+  id                     Int      @id @default(autoincrement())
+  name                   String
+  ad_platform_account_id String
+  ad_platform_id         Int
+  department_id          Int
+  project_id             Int
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  ad_platform              AdPlatform              @relation(fields: [ad_platform_id], references: [id])
+  department               Department              @relation(fields: [department_id], references: [id])
+  project                  Project                 @relation(fields: [project_id], references: [id])
+  user_permissions         UserPermission[]
+  user_permission_requests UserPermissionRequest[]
+  campaigns                Campaign[]
+  adgroups                 Adgroup[]
+  ads                      Ad[]
+  tik_tok_raw_report_campaigns TikTokRawReportCampaign[]
+  tik_tok_raw_report_adgroups  TikTokRawReportAdgroup[]
+  tik_tok_raw_report_ads       TikTokRawReportAd[]
+  link_matchers             LinkMatcher[]
+
+  @@unique([ad_platform_account_id, ad_platform_id])
 }
 
 model UserPermission {
@@ -157,222 +135,285 @@ model UserPermission {
   created_at            DateTime @default(now())
   updated_at            DateTime @updatedAt
 
-  user        User @relation(fields: [user_id], references: [id])
-  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+  user       User      @relation(fields: [user_id], references: [id])
+  ad_account AdAccount @relation(fields: [ad_account_id], references: [id])
 
   @@unique([user_id, ad_account_id])
 }
 
 model UserPermissionRequest {
-  id                    Int      @id @default(autoincrement())
+  id                    Int                         @id @default(autoincrement())
   user_id               Int
   ad_account_id         Int
   can_manage_ad_account Boolean
   status                UserPermissionRequestStatus
   approved_by           Int?
   rejected_by           Int?
-  requested_at          DateTime
+  requested_at          DateTime                    @default(now())
   approved_at           DateTime?
   rejected_at           DateTime?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @updatedAt
+  created_at            DateTime                    @default(now())
+  updated_at            DateTime                    @updatedAt
 
-  user        User @relation(fields: [user_id], references: [id])
-  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+  user           User      @relation("RequestedBy", fields: [user_id], references: [id])
+  ad_account     AdAccount @relation(fields: [ad_account_id], references: [id])
+  approved_by_user User?     @relation("ApprovedBy", fields: [approved_by], references: [id])
+  rejected_by_user User?     @relation("RejectedBy", fields: [rejected_by], references: [id])
+}
+
+model Client {
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  projects   Project[]
+}
+
+model Project {
+  id         Int      @id @default(autoincrement())
+  name       String
+  client_id  Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  client      Client      @relation(fields: [client_id], references: [id])
+  ad_accounts AdAccount[]
+
+  @@unique([name, client_id])
 }
 
 model Campaign {
-  id                    Int      @id @default(autoincrement())
-  ad_account_id         Int
-  platform_campaign_id  BigInt
-  platform_campaign_name String
-  created_at            DateTime @default(now())
+  id                   Int       @id @default(autoincrement())
+  ad_account_id        Int
+  platform_campaign_id BigInt    @unique
+  campaign_name        String
+  created_at           DateTime
 
-  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
-  adGroups    AdGroup[]
+  ad_account           AdAccount @relation(fields: [ad_account_id], references: [id])
+  adgroups             Adgroup[]
 }
 
-model AdGroup {
-  id                    Int      @id @default(autoincrement())
-  ad_account_id         Int
-  campaign_id           Int
-  platform_adgroup_id   BigInt
-  platform_adgroup_name String
-  created_at            DateTime @default(now())
+model Adgroup {
+  id                   Int      @id @default(autoincrement())
+  ad_account_id        Int
+  campaign_id          Int
+  platform_adgroup_id  BigInt   @unique
+  adgroup_name         String
+  created_at           DateTime
 
-  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
-  campaign    Campaign @relation(fields: [campaign_id], references: [id])
-  ads         Ad[]
+  ad_account           AdAccount @relation(fields: [ad_account_id], references: [id])
+  campaign             Campaign @relation(fields: [campaign_id], references: [id])
+  ads                  Ad[]
 }
 
 model Ad {
-  id                Int      @id @default(autoincrement())
-  ad_account_id     Int
-  adgroup_id        Int
-  platform_ad_id    BigInt
-  ad_name           String
-  created_at        DateTime @default(now())
+  id                   Int      @id @default(autoincrement())
+  ad_account_id        Int
+  adgroup_id           Int
+  platform_ad_id       BigInt   @unique
+  ad_name              String
+  created_at           DateTime
 
-  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
-  adGroup     AdGroup @relation(fields: [adgroup_id], references: [id])
+  ad_account           AdAccount @relation(fields: [ad_account_id], references: [id])
+  adgroup              Adgroup @relation(fields: [adgroup_id], references: [id])
 }
 
 model TikTokRawReportCampaign {
-  id                   Int      @id @default(autoincrement())
-  ad_account_id        Int
-  stat_time_day        DateTime
+  id                     Int      @id @default(autoincrement())
+  stat_time_day          DateTime
   ad_platform_account_id String
-  platform_campaign_id BigInt
-  budget               Int
-  spend                Int
-  impressions          Int
-  clicks               Int
-  video_play_actions   Int
-  video_watched_2s     Int
-  video_watched_6s     Int
-  video_views_p100     Int
-  reach                Int
-  conversion           Int
-  created_at           DateTime @default(now())
+  campaign_name          String
+  ad_account_id          Int
+  platform_campaign_id   BigInt
+  budget                 Int
+  spend                  Int
+  impressions            Int
+  clicks                 Int
+  video_play_actions     Int
+  video_watched_2s       Int
+  video_watched_6s       Int
+  video_views_p100       Int
+  reach                  Int
+  conversion             Int
+  created_at             DateTime
 
-  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+  ad_account             AdAccount @relation(fields: [ad_account_id], references: [id])
 }
 
-model TikTokRawReportAdGroup {
-  id                   Int      @id @default(autoincrement())
-  ad_account_id        Int
-  stat_time_day        DateTime
+model TikTokRawReportAdgroup {
+  id                     Int      @id @default(autoincrement())
+  stat_time_day          DateTime
   ad_platform_account_id String
-  platform_adgroup_id  BigInt
-  budget               Int
-  spend                Int
-  impressions          Int
-  clicks               Int
-  video_play_actions   Int
-  video_watched_2s     Int
-  video_watched_6s     Int
-  video_views_p100     Int
-  reach                Int
-  conversion           Int
-  created_at           DateTime @default(now())
+  ad_account_id          Int
+  platform_adgroup_id    BigInt
+  adgroup_name           String
+  budget                 Int
+  spend                  Int
+  impressions            Int
+  clicks                 Int
+  video_play_actions     Int
+  video_watched_2s       Int
+  video_watched_6s       Int
+  video_views_p100       Int
+  reach                  Int
+  conversion             Int
+  created_at             DateTime
 
-  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+  ad_account            AdAccount @relation(fields: [ad_account_id], references: [id])
 }
 
 model TikTokRawReportAd {
-  id                   Int      @id @default(autoincrement())
-  ad_account_id        Int
-  stat_time_day        DateTime
+  id                     Int      @id @default(autoincrement())
+  stat_time_day          DateTime
   ad_platform_account_id String
-  platform_campaign_id BigInt
-  platform_campaign_name String?
-  platform_adgroup_id  BigInt
-  platform_adgroup_name String?
-  platform_ad_id       BigInt
-  platform_ad_name     String?
-  ad_url               String?
-  budget               Int
-  spend                Int
-  impressions          Int
-  clicks               Int
-  video_play_actions   Int
-  video_watched_2s     Int
-  video_watched_6s     Int
-  video_views_p100     Int
-  reach                Int
-  conversion           Int
-  created_at           DateTime @default(now())
+  ad_account_id          Int
+  platform_campaign_id   BigInt
+  campaign_name          String
+  platform_adgroup_id    BigInt
+  adgroup_name           String
+  platform_ad_id         BigInt
+  ad_name                String
+  ad_url                 String
+  budget                 Int
+  spend                  Int
+  impressions            Int
+  clicks                 Int
+  video_play_actions     Int
+  video_watched_2s       Int
+  video_watched_6s       Int
+  video_views_p100       Int
+  reach                  Int
+  conversion             Int
+  created_at             DateTime
 
-  adAccount   AdAccount @relation(fields: [ad_account_id], references: [id])
+  ad_account            AdAccount @relation(fields: [ad_account_id], references: [id])
+}
+
+model TikTokStatusHistoryCampaign {
+  id                     Int      @id @default(autoincrement())
+  ad_account_id          Int
+  ad_platform_account_id String
+  platform_campaign_id   BigInt
+  status                 String
+  opt_status             String
+  status_updated_time    DateTime
+  created_at             DateTime @default(now())
+
+  @@index([platform_campaign_id, status_updated_time])
+}
+
+model TikTokStatusHistoryAdgroup {
+  id                     Int      @id @default(autoincrement())
+  ad_account_id          Int
+  ad_platform_account_id String
+  platform_adgroup_id    BigInt
+  status                 String
+  opt_status             String
+  status_updated_time    DateTime
+  created_at             DateTime @default(now())
+
+  @@index([platform_adgroup_id, status_updated_time])
+}
+
+model TikTokStatusHistoryAd {
+  id                     Int      @id @default(autoincrement())
+  ad_account_id          Int
+  ad_platform_account_id String
+  platform_ad_id         BigInt
+  status                 String
+  opt_status             String
+  status_updated_time    DateTime
+  created_at             DateTime @default(now())
+
+  @@index([platform_ad_id, status_updated_time])
 }
 
 model AffiliateLink {
-  id              Int      @id @default(autoincrement())
-  asp_type        AspType
-  affiliate_link_name  String
+  id                  Int      @id @default(autoincrement())
+  asp_type            AspType
+  affiliate_link_name String
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@unique([asp_type, affiliate_link_name]) 
+  link_matchers    LinkMatcher[]
+  click_snapshots  ClickLogSnapshot[]
+  action_logs      AspActionLog[]
+  click_logs       AspClickLog[]
+}
+
+model ReferrerLink{
+  id              Int     @id @default(autoincrement())
+  creative_value  String  @unique
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  @@unique([asp_type, affiliate_link_name]) 
-  linkMatchers    LinkMatcher[]
-  clickSnapshots  ClickLogSnapshot[]
-  actionLogs      AspActionLog[]
-  clickLogs       AspClickLog[]
-}
-
-model ReferrerLink {
-  id             Int      @id @default(autoincrement())
-  creative_value String
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
-
-  @@unique([creative_value])
-
-  linkMatchers   LinkMatcher[]
-  clickSnapshots ClickLogSnapshot[]
-  actionLogs     AspActionLog[]
-  clickLogs      AspClickLog[]
+  link_matchers    LinkMatcher[]
+  click_snapshots  ClickLogSnapshot[]
+  action_logs      AspActionLog[]
+  click_logs       AspClickLog[]
 }
 
 model AspActionLog {
   id                Int      @id @default(autoincrement())
   affiliate_link_id Int
+  referrer_link_id  Int?
   asp_type          AspType
   action_date_time  DateTime
-  referrer_link_id  Int?
   referrer_url      String?
   uid               String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  referrerLink      ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
-  affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
+  affiliate_link     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
+  referrer_link      ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
+
 }
 
 model AspClickLog {
   id                Int      @id @default(autoincrement())
   affiliate_link_id Int
+  referrer_link_id  Int?
   asp_type          AspType
   click_date_time   DateTime
-  referrer_link_id  Int?
   referrer_url      String?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  referrerLink      ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
-  affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
+  affiliate_link    AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
+  referrer_link     ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
 }
 
 model ClickLogSnapshot {
-  id                 Int      @id @default(autoincrement())
-  affiliate_link_id  Int
-  asp_type           AspType
-  currentTotalClicks Int
-  snapshot_date      DateTime
-  referrer_link_id   Int?
-  created_at         DateTime @default(now())
-  updated_at         DateTime @updatedAt
+  id                    Int      @id @default(autoincrement())
+  affiliate_link_id     Int
+  referrer_link_id      Int?
+  asp_type              AspType
+  current_total_clicks  Int
+  snapshot_date         DateTime
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
 
-  affiliateLink     AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
-  referrerLink       ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
+  affiliate_link        AffiliateLink @relation(fields: [affiliate_link_id], references: [id])
+  referrer_link         ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
 
   @@unique([asp_type, affiliate_link_id, snapshot_date])
 }
 
 model LinkMatcher {
   id                Int      @id @default(autoincrement())
+  affiliate_link_id Int?
+  referrer_link_id  Int?
   ad_account_id     Int
   asp_type          AspType
   match_type        MatchType
   media_level       MediaLevel
   target_dim_id     BigInt
-  affiliate_link_id Int?
-  referrer_link_id  Int?
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  @@unique([ad_account_id, asp_type,media_level, target_dim_id])
-  affiliateLink     AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
-  referrerLink      ReferrerLink? @relation(fields: [referrer_link_id], references: [id])
-  adAccount         AdAccount      @relation(fields: [ad_account_id], references: [id])
+  @@unique([ad_account_id, asp_type, target_dim_id])
+  affiliate_link    AffiliateLink? @relation(fields: [affiliate_link_id], references: [id])
+  referrer_link     ReferrerLink?  @relation(fields: [referrer_link_id], references: [id])
+  ad_account        AdAccount      @relation(fields: [ad_account_id], references: [id])
 }

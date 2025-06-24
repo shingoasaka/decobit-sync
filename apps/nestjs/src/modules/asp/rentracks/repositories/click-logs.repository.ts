@@ -5,9 +5,9 @@ import { BaseAspRepository } from "../../base/repository.base";
 
 interface ClickLogData {
   affiliate_link_id: number;
-  currentTotalClicks: number;
+  current_total_clicks: number;
   referrer_link_id: number | null;
-  referrerUrl: string | null;
+  referrer_url: string | null;
 }
 
 @Injectable()
