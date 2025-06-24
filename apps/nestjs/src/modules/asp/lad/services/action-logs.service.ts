@@ -3,11 +3,9 @@ import { chromium, Browser } from "playwright";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
-import { PrismaService } from "@prismaService";
 import { LogService } from "src/modules/logs/types";
 import dotenv from "dotenv";
 import { LadActionLogRepository } from "../repositories/action-logs.repository";
-import { processReferrerLink } from "../../base/repository.base";
 import { parseToJst } from "src/libs/date-utils";
 
 dotenv.config();
@@ -22,10 +20,7 @@ interface RawLadData {
 export class LadActionLogService implements LogService {
   private readonly logger = new Logger(LadActionLogService.name);
 
-  constructor(
-    private readonly repository: LadActionLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: LadActionLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -175,7 +170,7 @@ export class LadActionLogService implements LogService {
           try {
             const actionDateTime = parseToJst(item["成果日時"]);
             const affiliateLinkName = item["遷移広告URL名"]?.trim();
-            const referrerUrl = item["リファラ(クリック)"]?.trim() || null;
+            const referrer_url = item["リファラ(クリック)"]?.trim() || null;
 
             if (!actionDateTime) {
               this.logger.warn(`Invalid date format: ${item["成果日時"]}`);
@@ -190,14 +185,14 @@ export class LadActionLogService implements LogService {
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
-            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
-              await processReferrerLink(this.prisma, this.logger, referrerUrl);
+            const { referrerLinkId, referrer_url: processedReferrerUrl } =
+              await this.repository.processReferrerLink(referrer_url);
 
             return {
               actionDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: referrerLinkId,
-              referrerUrl: processedReferrerUrl,
+              referrer_url: processedReferrerUrl,
               uid: null,
             };
           } catch (error) {

@@ -5,7 +5,6 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
-import { PrismaService } from "@prismaService";
 import { getNowJstForDisplay } from "src/libs/date-utils";
 import { parseToJst } from "src/libs/date-utils";
 
@@ -18,10 +17,7 @@ interface RawHanikamuData {
 export class TryActionLogService implements LogService {
   private readonly logger = new Logger(TryActionLogService.name);
 
-  constructor(
-    private readonly repository: HanikamuActionLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: HanikamuActionLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -174,7 +170,7 @@ export class TryActionLogService implements LogService {
               actionDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: null,
-              referrerUrl: null,
+              referrer_url: null,
               uid: null,
             };
           } catch (error) {

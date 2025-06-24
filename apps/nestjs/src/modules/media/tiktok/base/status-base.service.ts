@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import { TikTokStatusItem } from "../interfaces/status-response.interface";
+import { TikTokStatusHistoryBase } from "../interfaces/status-history.interface";
 import { ReportBaseService } from "./tiktok-report.base";
 import {
   ApiHeaders,
@@ -9,6 +9,7 @@ import {
   PageInfo,
 } from "../interfaces/api.interface";
 import { ValidationUtil } from "../utils/validation.util";
+import { TikTokStatusItem } from "../interfaces/status.interface";
 
 // HTTP設定の型定義
 export interface HttpConfig {
@@ -224,70 +225,5 @@ export abstract class StatusBaseService extends ReportBaseService {
     }
 
     return allStatusData;
-  }
-
-  /**
-   * レポートデータ取得の汎用メソッド
-   */
-  protected async fetchReportDataGeneric<T>(
-    advertiserId: string,
-    dateStr: string,
-    headers: ApiHeaders,
-    metrics: string[],
-    dimensions: string[],
-    dataLevel: string,
-    requiredMetrics: string[],
-    entityName: string,
-  ): Promise<T[]> {
-    this.validateDate(dateStr);
-    this.validateMetrics(metrics);
-    this.validateDimensions(dimensions);
-
-    const params = {
-      advertiser_ids: JSON.stringify([advertiserId]),
-      report_type: "BASIC",
-      dimensions: JSON.stringify(dimensions),
-      metrics: JSON.stringify(metrics),
-      start_date: dateStr,
-      end_date: dateStr,
-      primary_status: "STATUS_ALL",
-      page: 1,
-      page_size: 1000,
-      data_level: dataLevel,
-    };
-
-    try {
-      const responseData = await this.makeReportApiRequest<T>(params, headers);
-      const validData = responseData.list.filter((item: unknown) =>
-        ValidationUtil.isValidReportDto(item, requiredMetrics),
-      );
-
-      this.logInfo(
-        `${entityName}レポート取得完了: advertiser=${advertiserId}, 取得件数=${validData.length}`,
-      );
-
-      return validData;
-    } catch (error) {
-      this.logError(
-        `${entityName}レポート取得失敗: advertiser=${advertiserId}`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * アカウントIDの取得と検証
-   */
-  protected getAccountId(
-    advertiserId: string,
-    accountIdMap: Map<string, number>,
-  ): number | null {
-    const accountId = accountIdMap.get(advertiserId);
-    if (!accountId) {
-      this.logWarn(`アカウントIDが見つかりません: advertiser=${advertiserId}`);
-      return null;
-    }
-    return accountId;
   }
 }

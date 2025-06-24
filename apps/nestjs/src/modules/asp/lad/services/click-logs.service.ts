@@ -3,11 +3,9 @@ import { chromium, Browser } from "playwright";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
-import { PrismaService } from "@prismaService";
 import { LogService } from "src/modules/logs/types";
 import dotenv from "dotenv";
 import { LadClickLogRepository } from "../repositories/click-logs.repository";
-import { processReferrerLink } from "../../base/repository.base";
 import { parseToJst } from "src/libs/date-utils";
 
 dotenv.config();
@@ -22,10 +20,7 @@ interface RawLadData {
 export class LadClickLogService implements LogService {
   private readonly logger = new Logger(LadClickLogService.name);
 
-  constructor(
-    private readonly repository: LadClickLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: LadClickLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -178,7 +173,7 @@ export class LadClickLogService implements LogService {
           try {
             const clickDateTime = parseToJst(item["クリック日時"]);
             const affiliateLinkName = item["広告名"]?.trim();
-            const referrerUrl = item["リファラ"]?.trim() || null;
+            const referrer_url = item["リファラ"]?.trim() || null;
 
             if (!clickDateTime) {
               this.logger.warn(`Invalid date format: ${item["クリック日時"]}`);
@@ -193,14 +188,14 @@ export class LadClickLogService implements LogService {
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
-            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
-              await processReferrerLink(this.prisma, this.logger, referrerUrl);
+            const { referrerLinkId, referrer_url: processedReferrerUrl } =
+              await this.repository.processReferrerLink(referrer_url);
 
             return {
               clickDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: referrerLinkId,
-              referrerUrl: processedReferrerUrl,
+              referrer_url: processedReferrerUrl,
             };
           } catch (error) {
             this.logger.error(

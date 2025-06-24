@@ -5,7 +5,6 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
-import { PrismaService } from "@prismaService";
 import {
   getNowJstForDisplay,
   formatDateForRentracks,
@@ -21,10 +20,7 @@ interface RawRentracksData {
 export class RentracksActionLogService implements LogService {
   private readonly logger = new Logger(RentracksActionLogService.name);
 
-  constructor(
-    private readonly repository: RentracksActionLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: RentracksActionLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -175,7 +171,7 @@ export class RentracksActionLogService implements LogService {
               actionDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: null,
-              referrerUrl: null,
+              referrer_url: null,
               uid: null,
             };
           } catch (error) {

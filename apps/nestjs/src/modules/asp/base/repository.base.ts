@@ -5,47 +5,46 @@ import { getNowJstForDB } from "src/libs/date-utils";
 import { startOfDay } from "date-fns";
 
 /**
- * 共通のデータベース保存形式
+ * ASPのリポジトリの基底クラス
  *
- * @interface IndividualClickLog
- * @property {Date} clickDateTime - クリックが発生した日時
- * @property {number} affiliate_link_id - アフィリエイトリンクのID
- * @property {number | null} [referrer_link_id] - リファラリンクのID（オプション）
- * @property {string | null} [referrerUrl] - リファラURL（オプション）
+ * 責務:
+ * - クリックログとアクションログのDB保存
+ * - スナップショット管理（クリック数の差分計算用）
+ * - トランザクション処理
  */
+
+// 共通のデータベース保存形式
 interface IndividualClickLog {
   clickDateTime: Date;
   affiliate_link_id: number;
   referrer_link_id?: number | null;
-  referrerUrl?: string | null;
+  referrer_url?: string | null;
 }
 
 interface TotalClickLog {
   affiliate_link_id: number;
-  currentTotalClicks: number;
+  current_total_clicks: number;
   referrer_link_id?: number | null;
-  referrerUrl?: string | null;
+  referrer_url?: string | null;
 }
 
 interface ActionLog {
-  actionDateTime: Date | null;
+  actionDateTime: Date;
   affiliate_link_id: number;
   referrer_link_id?: number | null;
-  referrerUrl?: string | null;
+  referrer_url?: string | null;
   uid?: string | null;
 }
 
 /**
- * UTMパラメータからクリエイティブ値を抽出する
- *
- * @param {string | null} referrerUrl - リファラURL
- * @returns {string | null} 抽出されたクリエイティブ値、またはnull
- * @throws {Error} URLのパースに失敗した場合
+ * UTMパラメータからクリエイティブ値を抽出
+ * @param referrer_url リファラURL
+ * @returns utm_creativeパラメータの値、またはnull
  */
-export function extractUtmCreative(referrerUrl: string | null): string | null {
-  if (!referrerUrl) return null;
+export function extractUtmCreative(referrer_url: string | null): string | null {
+  if (!referrer_url) return null;
   try {
-    const url = new URL(referrerUrl);
+    const url = new URL(referrer_url);
     const utmCreative = url.searchParams.get("utm_creative");
     return utmCreative || null;
   } catch (error) {
@@ -55,65 +54,43 @@ export function extractUtmCreative(referrerUrl: string | null): string | null {
 }
 
 /**
- * リファラリンクを処理し、IDとURLを返す
- *
- * @param {PrismaService} prisma - Prismaサービスインスタンス
- * @param {Logger} logger - ロガーインスタンス
- * @param {string | null} referrerUrl - 処理対象のリファラURL
- * @returns {Promise<{referrerLinkId: number | null, referrerUrl: string | null}>} 処理結果
+ * リファラリンクの処理
+ * - 既存のリファラリンクを検索
+ * - 存在しない場合は新規作成
+ * - 競合発生時は再検索
  */
 export async function processReferrerLink(
   prisma: PrismaService,
   logger: Logger,
-  referrerUrl: string | null,
-): Promise<{ referrerLinkId: number | null; referrerUrl: string | null }> {
-  if (!referrerUrl) {
-    return { referrerLinkId: null, referrerUrl: null };
+  referrer_url: string | null,
+): Promise<{ referrerLinkId: number | null; referrer_url: string | null }> {
+  if (!referrer_url) {
+    return { referrerLinkId: null, referrer_url: null };
   }
 
-  const creativeValue = extractUtmCreative(referrerUrl);
+  const creativeValue = extractUtmCreative(referrer_url);
   if (!creativeValue) {
-    return { referrerLinkId: null, referrerUrl };
+    return { referrerLinkId: null, referrer_url };
   }
 
   try {
-    // まず既存のレコードを検索
-    const existingLink = await prisma.referrerLink.findUnique({
+    const link = await prisma.referrerLink.upsert({
       where: {
         creative_value: creativeValue,
       },
-    });
-
-    if (existingLink) {
-      return { referrerLinkId: existingLink.id, referrerUrl };
-    }
-
-    // 存在しない場合のみ新規作成
-    const newLink = await prisma.referrerLink.create({
-      data: {
+      create: {
         creative_value: creativeValue,
       },
+      update: {}, // 既存のレコードは更新不要
     });
 
-    return { referrerLinkId: newLink.id, referrerUrl };
-  } catch (error: any) {
-    // 作成時に競合が発生した場合（他のプロセスが同時に作成した場合）
-    if (error.code === "P2002") {
-      // 再度検索して既存のレコードを取得
-      const existingLink = await prisma.referrerLink.findUnique({
-        where: {
-          creative_value: creativeValue,
-        },
-      });
-      if (existingLink) {
-        return { referrerLinkId: existingLink.id, referrerUrl };
-      }
-    }
+    return { referrerLinkId: link.id, referrer_url };
+  } catch (error) {
     logger.warn(
       `Failed to process referrer link for creative value: ${creativeValue}`,
       error,
     );
-    return { referrerLinkId: null, referrerUrl };
+    return { referrerLinkId: null, referrer_url };
   }
 }
 
@@ -129,6 +106,49 @@ export abstract class BaseActionLogRepository {
     this.logger = new Logger(this.constructor.name);
   }
 
+  async processReferrerLink(
+    referrer_url: string | null,
+  ): Promise<{ referrerLinkId: number | null; referrer_url: string | null }> {
+    if (!referrer_url) {
+      return { referrerLinkId: null, referrer_url: null };
+    }
+
+    const creativeValue = this.extractUtmCreative(referrer_url);
+    if (!creativeValue) {
+      return { referrerLinkId: null, referrer_url };
+    }
+
+    try {
+      const link = await this.prisma.referrerLink.upsert({
+        where: {
+          creative_value: creativeValue,
+        },
+        create: {
+          creative_value: creativeValue,
+        },
+        update: {}, // 既存のレコードは更新不要
+      });
+
+      return { referrerLinkId: link.id, referrer_url };
+    } catch (error) {
+      this.logger.warn(
+        `Failed to process referrer link for creative value: ${creativeValue}`,
+        error,
+      );
+      return { referrerLinkId: null, referrer_url };
+    }
+  }
+
+  protected extractUtmCreative(referrer_url: string): string | null {
+    try {
+      const url = new URL(referrer_url);
+      const utmCreative = url.searchParams.get("utm_creative");
+      return utmCreative || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
   protected async saveToCommonTable(data: ActionLog[]): Promise<number> {
     const now = getNowJstForDB();
     const actionLogs = data.map((item) => ({
@@ -136,14 +156,14 @@ export abstract class BaseActionLogRepository {
       action_date_time: item.actionDateTime,
       affiliate_link_id: item.affiliate_link_id,
       referrer_link_id: item.referrer_link_id ?? null,
-      referrer_url: item.referrerUrl ?? null,
+      referrer_url: item.referrer_url ?? null,
       uid: item.uid ?? null,
       created_at: now,
       updated_at: now,
     }));
 
     const result = await this.prisma.aspActionLog.createMany({
-      data: actionLogs as Prisma.AspActionLogCreateManyInput[],
+      data: actionLogs,
       skipDuplicates: true,
     });
 
@@ -164,9 +184,23 @@ export abstract class BaseAspRepository {
     this.logger = new Logger(this.constructor.name);
   }
 
+  protected extractUtmCreative(referrer_url: string): string | null {
+    try {
+      const url = new URL(referrer_url);
+      const utmCreative = url.searchParams.get("utm_creative");
+      return utmCreative || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * 最新のスナップショットを取得
+   * 日次でのクリック数推移を記録するために使用
+   */
   protected async getLastSnapshot(
     affiliateLinkId: number,
-  ): Promise<{ currentTotalClicks: number; snapshotDate: Date } | null> {
+  ): Promise<{ current_total_clicks: number; snapshotDate: Date } | null> {
     const now = getNowJstForDB();
     const today = startOfDay(now);
 
@@ -176,24 +210,28 @@ export abstract class BaseAspRepository {
         affiliate_link_id: affiliateLinkId,
         snapshot_date: today,
       },
-      select: { currentTotalClicks: true, snapshot_date: true },
+      select: { current_total_clicks: true, snapshot_date: true },
     });
 
     this.logger.debug(
-      `Last snapshot for ${this.aspType}/${affiliateLinkId}: ${snapshot?.currentTotalClicks ?? "none"}`,
+      `Last snapshot for ${this.aspType}/${affiliateLinkId}: ${snapshot?.current_total_clicks ?? "none"}`,
     );
     return snapshot
       ? {
-          currentTotalClicks: snapshot.currentTotalClicks,
+          current_total_clicks: snapshot.current_total_clicks,
           snapshotDate: snapshot.snapshot_date,
         }
       : null;
   }
 
+  /**
+   * 指定日付のスナップショットを取得
+   * 差分計算時に使用
+   */
   protected async getSnapshotForDate(
     affiliateLinkId: number,
     date: Date,
-  ): Promise<{ currentTotalClicks: number } | null> {
+  ): Promise<{ current_total_clicks: number } | null> {
     const targetDate = startOfDay(date);
 
     const snapshot = await this.prisma.clickLogSnapshot.findFirst({
@@ -202,15 +240,19 @@ export abstract class BaseAspRepository {
         affiliate_link_id: affiliateLinkId,
         snapshot_date: targetDate,
       },
-      select: { currentTotalClicks: true },
+      select: { current_total_clicks: true },
     });
 
     this.logger.debug(
-      `Snapshot for ${this.aspType}/${affiliateLinkId} on ${targetDate.toISOString()}: ${snapshot?.currentTotalClicks ?? "none"}`,
+      `Snapshot for ${this.aspType}/${affiliateLinkId} on ${targetDate.toISOString()}: ${snapshot?.current_total_clicks ?? "none"}`,
     );
     return snapshot;
   }
 
+  /**
+   * 現在のクリック数を取得
+   * スナップショット更新時に使用
+   */
   protected async getCurrentClickCount(
     affiliateLinkId: number,
   ): Promise<number> {
@@ -223,9 +265,13 @@ export abstract class BaseAspRepository {
     return count;
   }
 
+  /**
+   * スナップショットを保存
+   * 日次でのクリック数推移を記録
+   */
   private async saveSnapshot(data: {
     affiliate_link_id: number;
-    currentTotalClicks: number;
+    current_total_clicks: number;
   }): Promise<void> {
     const now = getNowJstForDB();
     const today = startOfDay(now);
@@ -241,28 +287,26 @@ export abstract class BaseAspRepository {
       create: {
         asp_type: this.aspType,
         affiliate_link_id: data.affiliate_link_id,
-        currentTotalClicks: data.currentTotalClicks,
+        current_total_clicks: data.current_total_clicks,
         snapshot_date: today,
         created_at: now,
         updated_at: now,
       },
       update: {
-        currentTotalClicks: data.currentTotalClicks,
+        current_total_clicks: data.current_total_clicks,
         updated_at: now,
       },
     });
 
     this.logger.debug(
-      `Saved new snapshot for ${this.aspType}/${data.affiliate_link_id}: ${data.currentTotalClicks} at ${today.toISOString()}`,
+      `Saved new snapshot for ${this.aspType}/${data.affiliate_link_id}: ${data.current_total_clicks} at ${today.toISOString()}`,
     );
   }
 
   /**
-   * 共通テーブルにデータを保存する
-   *
-   * @param {ActionLog[] | IndividualClickLog[] | TotalClickLog[]} data - 保存するデータ
-   * @returns {Promise<number>} 保存されたレコード数
-   * @throws {Error} 保存処理に失敗した場合
+   * 共通テーブルにデータを保存
+   * - アクションログ: 直接保存
+   * - クリックログ: 個別/総クリックに応じて処理
    */
   protected async saveToCommonTable(
     data: ActionLog[] | IndividualClickLog[] | TotalClickLog[],
@@ -279,14 +323,14 @@ export abstract class BaseAspRepository {
           asp_type: this.aspType,
           action_date_time: item.actionDateTime,
           affiliate_link_id: item.affiliate_link_id,
-          referrer_url: item.referrerUrl,
+          referrer_url: item.referrer_url,
           referrer_link_id: item.referrer_link_id ?? null,
           uid: item.uid ?? null,
           created_at: now,
           updated_at: now,
         }));
         const result = await this.prisma.aspActionLog.createMany({
-          data: actionLogs as Prisma.AspActionLogCreateManyInput[],
+          data: actionLogs,
           skipDuplicates: true,
         });
         this.logger.log(`Saved ${result.count} action logs`);
@@ -307,6 +351,11 @@ export abstract class BaseAspRepository {
     }
   }
 
+  /**
+   * 個別クリックログの処理
+   * - クリックログを直接保存
+   * - スナップショットを更新
+   */
   private async processIndividualClickLogs(
     data: IndividualClickLog[],
   ): Promise<number> {
@@ -318,7 +367,7 @@ export abstract class BaseAspRepository {
           asp_type: this.aspType,
           click_date_time: item.clickDateTime,
           affiliate_link_id: item.affiliate_link_id,
-          referrer_url: item.referrerUrl ?? null,
+          referrer_url: item.referrer_url ?? null,
           created_at: now,
           updated_at: now,
         }));
@@ -334,7 +383,7 @@ export abstract class BaseAspRepository {
           );
           await this.saveSnapshot({
             affiliate_link_id: clickLogs[0].affiliate_link_id,
-            currentTotalClicks: currentTotal,
+            current_total_clicks: currentTotal,
           });
         }
         return result.count;
@@ -348,6 +397,12 @@ export abstract class BaseAspRepository {
     }
   }
 
+  /**
+   * 総クリックログの処理
+   * - 差分を計算
+   * - クリックログを保存
+   * - スナップショットを更新
+   */
   private async processTotalClickLog(data: TotalClickLog[]): Promise<number> {
     try {
       const now = getNowJstForDB();
@@ -371,12 +426,12 @@ export abstract class BaseAspRepository {
           const snapshot = snapshots.find(
             (s) => s.affiliate_link_id === item.affiliate_link_id,
           );
-          const todayLastClicks = snapshot?.currentTotalClicks ?? 0;
-          const diff = item.currentTotalClicks - todayLastClicks;
+          const todayLastClicks = snapshot?.current_total_clicks ?? 0;
+          const diff = item.current_total_clicks - todayLastClicks;
 
           if (diff <= 0) {
             this.logger.debug(
-              `Skipping ${this.aspType}/${item.affiliate_link_id}: current=${item.currentTotalClicks}, last=${todayLastClicks}, diff=${diff}`,
+              `Skipping ${this.aspType}/${item.affiliate_link_id}: current=${item.current_total_clicks}, last=${todayLastClicks}, diff=${diff}`,
             );
             // スナップショットが存在しない場合のみ作成
             if (!snapshot) {
@@ -393,7 +448,7 @@ export abstract class BaseAspRepository {
 
           totalSaved += diff;
           this.logger.debug(
-            `Processed ${this.aspType}/${item.affiliate_link_id}: current=${item.currentTotalClicks}, last=${todayLastClicks}, diff=${diff}, saved=${totalSaved}`,
+            `Processed ${this.aspType}/${item.affiliate_link_id}: current=${item.current_total_clicks}, last=${todayLastClicks}, diff=${diff}, saved=${totalSaved}`,
           );
         } catch (itemError) {
           this.logger.error(
@@ -432,10 +487,10 @@ export abstract class BaseAspRepository {
 
     if (
       existingSnapshot &&
-      existingSnapshot.currentTotalClicks === item.currentTotalClicks
+      existingSnapshot.current_total_clicks === item.current_total_clicks
     ) {
       this.logger.debug(
-        `Skipping snapshot update for ${this.aspType}/${item.affiliate_link_id}: value unchanged (${item.currentTotalClicks})`,
+        `Skipping snapshot update for ${this.aspType}/${item.affiliate_link_id}: value unchanged (${item.current_total_clicks})`,
       );
       return;
     }
@@ -451,19 +506,19 @@ export abstract class BaseAspRepository {
       create: {
         asp_type: this.aspType,
         affiliate_link_id: item.affiliate_link_id,
-        currentTotalClicks: item.currentTotalClicks,
+        current_total_clicks: item.current_total_clicks,
         snapshot_date: today,
         created_at: now,
         updated_at: now,
       },
       update: {
-        currentTotalClicks: item.currentTotalClicks,
+        current_total_clicks: item.current_total_clicks,
         updated_at: now,
       },
     });
 
     this.logger.debug(
-      `Updated snapshot for ${this.aspType}/${item.affiliate_link_id}: ${item.currentTotalClicks}`,
+      `Updated snapshot for ${this.aspType}/${item.affiliate_link_id}: ${item.current_total_clicks}`,
     );
   }
 
@@ -483,7 +538,7 @@ export abstract class BaseAspRepository {
         asp_type: this.aspType,
         click_date_time: clickDateTime,
         affiliate_link_id: item.affiliate_link_id,
-        referrer_url: item.referrerUrl ?? null,
+        referrer_url: item.referrer_url ?? null,
         created_at: now,
         updated_at: now,
       };

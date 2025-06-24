@@ -22,41 +22,48 @@ export interface ReportResponseStructure<T> {
 
 export class ValidationUtil {
   /**
+   * オブジェクトの深いプロパティチェック
+   */
+  private static hasNestedProperty(obj: unknown, path: string[]): boolean {
+    let current = obj;
+
+    for (const key of path) {
+      if (
+        typeof current !== "object" ||
+        current === null ||
+        !(key in current)
+      ) {
+        return false;
+      }
+      current = (current as Record<string, unknown>)[key];
+    }
+
+    return true;
+  }
+
+  /**
+   * 配列プロパティのチェック
+   */
+  private static isArrayProperty(obj: unknown, path: string[]): boolean {
+    if (!this.hasNestedProperty(obj, path)) {
+      return false;
+    }
+
+    let current = obj;
+    for (const key of path) {
+      current = (current as Record<string, unknown>)[key];
+    }
+
+    return Array.isArray(current);
+  }
+
+  /**
    * ステータスAPIレスポンスのバリデーション
    */
   static isValidStatusResponse<T>(
     response: unknown,
   ): response is StatusResponseStructure<T> {
-    return (
-      typeof response === "object" &&
-      response !== null &&
-      "data" in response &&
-      typeof (response as Record<string, unknown>).data === "object" &&
-      (response as Record<string, unknown>).data !== null &&
-      "data" in
-        ((response as Record<string, unknown>).data as Record<
-          string,
-          unknown
-        >) &&
-      typeof (
-        (response as Record<string, unknown>).data as Record<string, unknown>
-      ).data === "object" &&
-      ((response as Record<string, unknown>).data as Record<string, unknown>)
-        .data !== null &&
-      "list" in
-        (((response as Record<string, unknown>).data as Record<string, unknown>)
-          .data as Record<string, unknown>) &&
-      Array.isArray(
-        (
-          (
-            (response as Record<string, unknown>).data as Record<
-              string,
-              unknown
-            >
-          ).data as Record<string, unknown>
-        ).list,
-      )
-    );
+    return this.isArrayProperty(response, ["data", "data", "list"]);
   }
 
   /**
@@ -65,36 +72,7 @@ export class ValidationUtil {
   static isValidReportResponse<T>(
     response: unknown,
   ): response is ReportResponseStructure<T> {
-    return (
-      typeof response === "object" &&
-      response !== null &&
-      "data" in response &&
-      typeof (response as Record<string, unknown>).data === "object" &&
-      (response as Record<string, unknown>).data !== null &&
-      "data" in
-        ((response as Record<string, unknown>).data as Record<
-          string,
-          unknown
-        >) &&
-      typeof (
-        (response as Record<string, unknown>).data as Record<string, unknown>
-      ).data === "object" &&
-      ((response as Record<string, unknown>).data as Record<string, unknown>)
-        .data !== null &&
-      "list" in
-        (((response as Record<string, unknown>).data as Record<string, unknown>)
-          .data as Record<string, unknown>) &&
-      Array.isArray(
-        (
-          (
-            (response as Record<string, unknown>).data as Record<
-              string,
-              unknown
-            >
-          ).data as Record<string, unknown>
-        ).list,
-      )
-    );
+    return this.isArrayProperty(response, ["data", "data", "list"]);
   }
 
   /**
@@ -115,5 +93,38 @@ export class ValidationUtil {
 
     const metrics = obj.metrics as Record<string, unknown>;
     return requiredMetrics.every((metric) => metrics[metric] !== undefined);
+  }
+
+  /**
+   * 日付文字列のバリデーション
+   */
+  static isValidDateString(date: string): boolean {
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(date)) {
+      return false;
+    }
+
+    const parsedDate = new Date(date);
+    return !isNaN(parsedDate.getTime());
+  }
+
+  /**
+   * 数値文字列のバリデーション
+   */
+  static isValidNumberString(value: string): boolean {
+    const parsed = parseFloat(value);
+    return !isNaN(parsed) && isFinite(parsed);
+  }
+
+  /**
+   * 必須フィールドのバリデーション
+   */
+  static hasRequiredFields(
+    obj: Record<string, unknown>,
+    requiredFields: string[],
+  ): boolean {
+    return requiredFields.every(
+      (field) => obj[field] !== undefined && obj[field] !== null,
+    );
   }
 }

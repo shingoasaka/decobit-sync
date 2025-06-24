@@ -7,7 +7,7 @@ interface ClickLogData {
   clickDateTime: Date;
   affiliate_link_id: number;
   referrer_link_id: number | null;
-  referrerUrl: string | null;
+  referrer_url: string | null;
 }
 
 @Injectable()

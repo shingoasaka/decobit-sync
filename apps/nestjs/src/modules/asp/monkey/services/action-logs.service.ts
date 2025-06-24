@@ -3,10 +3,7 @@ import { chromium, Browser, Page } from "playwright";
 import { MonkeyActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
-import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
-import { PrismaService } from "@prismaService";
-import { processReferrerLink } from "../../base/repository.base";
 import { parseToJst } from "src/libs/date-utils";
 
 interface RawMonkeyData {
@@ -19,10 +16,7 @@ interface RawMonkeyData {
 export class MonkeyActionLogService implements LogService {
   private readonly logger = new Logger(MonkeyActionLogService.name);
 
-  constructor(
-    private readonly repository: MonkeyActionLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: MonkeyActionLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -161,7 +155,7 @@ export class MonkeyActionLogService implements LogService {
           try {
             const actionDateTime = parseToJst(item["成果日時"]);
             const affiliateLinkName = item["タグ"]?.trim();
-            const referrerUrl = item["リファラ"]?.trim() || null;
+            const referrer_url = item["リファラ"]?.trim() || null;
 
             if (!actionDateTime) {
               this.logger.warn(`Invalid date format: ${item["成果日時"]}`);
@@ -176,14 +170,14 @@ export class MonkeyActionLogService implements LogService {
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
-            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
-              await processReferrerLink(this.prisma, this.logger, referrerUrl);
+            const { referrerLinkId, referrer_url: processedReferrerUrl } =
+              await this.repository.processReferrerLink(referrer_url);
 
             return {
               actionDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: referrerLinkId,
-              referrerUrl: processedReferrerUrl,
+              referrer_url: processedReferrerUrl,
               uid: null,
             };
           } catch (error) {

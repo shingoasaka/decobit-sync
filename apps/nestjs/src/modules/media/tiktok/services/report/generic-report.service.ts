@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { StatusBaseService } from "../../base/status-base.service";
 import { TikTokAccountService } from "../account.service";
-import { TikTokStatusItem } from "../../interfaces/status-response.interface";
 import {
   MediaError,
   ErrorType,
@@ -11,9 +10,10 @@ import {
 import { ERROR_MESSAGES } from "../../../common/errors/media.error";
 import { ApiHeaders } from "../../interfaces/api.interface";
 import { ValidationUtil } from "../../utils/validation.util";
+import { TikTokStatusItem } from "../../interfaces/status.interface";
 
 // ジェネリック型定義
-export interface ReportConfig<TReport, TStatus extends TikTokStatusItem, TDto> {
+export interface ReportConfig<TReport, TStatus extends StatusItemWithId, TDto> {
   entityName: string;
   idField: "ad_id" | "adgroup_id" | "campaign_id";
   statusApiUrl: string;
@@ -131,23 +131,6 @@ export abstract class GenericReportService extends StatusBaseService {
         TStatus,
         TDto
       >(allReportData, allStatusData, accountMapping, config);
-
-      // 詳細ログ出力
-      const reportDataCount = allReportData.length;
-      const statusDataCount = Array.from(allStatusData.values()).reduce(
-        (total, statusList) => total + statusList.length,
-        0,
-      );
-      const mergedCount = mergedRecords.length;
-      const failedCount = reportDataCount - mergedCount;
-
-      this.logInfo(`📊 ${config.entityName}データマージ結果:`);
-      this.logInfo(`  - レポートデータ取得: ${reportDataCount}件`);
-      this.logInfo(`  - ステータスデータ取得: ${statusDataCount}件`);
-      this.logInfo(`  - マージ成功: ${mergedCount}件`);
-      if (failedCount > 0) {
-        this.logWarn(`  - マージ失敗（ステータスなし）: ${failedCount}件`);
-      }
 
       // 保存
       if (mergedRecords.length > 0) {

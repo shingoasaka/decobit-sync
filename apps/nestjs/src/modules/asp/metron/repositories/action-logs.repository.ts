@@ -5,7 +5,6 @@ import {
   BaseActionLogRepository,
   processReferrerLink,
 } from "../../base/repository.base";
-import { parseToJst } from "src/libs/date-utils";
 
 /**
  * Metronのアクションログデータ形式
@@ -15,19 +14,12 @@ import { parseToJst } from "src/libs/date-utils";
  * - 代わりにsessionIdを使って、対応するクリックログからリファラ情報を取得する必要がある
  * - クリックログとアクションログはsessionIdで紐付けられる
  */
-interface RawMetronData {
-  actionDateTime?: string;
-  siteName?: string;
-  referrerUrl?: string; // sessionIDが同じクリックログのリファラを入れる
-  sessionId?: string; // クリックログとの紐付けに使用
-  clientInfo?: string;
-}
 
 interface ActionLogData {
   actionDateTime: Date;
   affiliate_link_id: number;
   referrer_link_id: number | null;
-  referrerUrl: string | null;
+  referrer_url: string | null;
   uid: string | null;
 }
 
@@ -48,11 +40,11 @@ export class MetronActionLogRepository extends BaseActionLogRepository {
    * @param sessionId クリックログとアクションログを紐付けるID
    * @returns リファラリンクIDとリファラURL
    */
-  private async getReferrerFromClickLog(
+  async getReferrerFromClickLog(
     sessionId: string | null,
-  ): Promise<{ referrerLinkId: number | null; referrerUrl: string | null }> {
+  ): Promise<{ referrerLinkId: number | null; referrer_url: string | null }> {
     if (!sessionId) {
-      return { referrerLinkId: null, referrerUrl: null };
+      return { referrerLinkId: null, referrer_url: null };
     }
 
     // クリックログからsessionIdに一致するレコードを検索
@@ -71,7 +63,7 @@ export class MetronActionLogRepository extends BaseActionLogRepository {
     });
 
     if (!clickLog?.referrer_url) {
-      return { referrerLinkId: null, referrerUrl: null };
+      return { referrerLinkId: null, referrer_url: null };
     }
 
     // クリックログのリファラURLを使ってReferrerLinkを処理

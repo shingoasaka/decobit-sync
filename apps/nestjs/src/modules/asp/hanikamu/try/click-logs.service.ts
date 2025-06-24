@@ -4,10 +4,8 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
-import { PrismaService } from "@prismaService";
 import { HanikamuClickLogRepository } from "../repositories/click-logs.repository";
 import { getNowJstForDisplay } from "src/libs/date-utils";
-import { processReferrerLink } from "../../base/repository.base";
 
 interface RawHanikamuData {
   ランディングページ?: string;
@@ -18,10 +16,7 @@ interface RawHanikamuData {
 export class TryClickLogService implements LogService {
   private readonly logger = new Logger(TryClickLogService.name);
 
-  constructor(
-    private readonly repository: HanikamuClickLogRepository,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly repository: HanikamuClickLogRepository) {}
 
   async fetchAndInsertLogs(): Promise<number> {
     let browser: Browser | null = null;
@@ -179,16 +174,16 @@ export class TryClickLogService implements LogService {
               return null;
             }
 
-            const currentTotalClicks = this.toInt(item["Click数"]);
+            const current_total_clicks = this.toInt(item["Click数"]);
 
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
             return {
               affiliate_link_id: affiliateLink.id,
-              currentTotalClicks,
+              current_total_clicks,
               referrer_link_id: null,
-              referrerUrl: null,
+              referrer_url: null,
             };
           } catch (error) {
             this.logger.error(

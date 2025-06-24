@@ -7,7 +7,7 @@ interface ActionLogData {
   actionDateTime: Date;
   affiliate_link_id: number;
   referrer_link_id: number | null;
-  referrerUrl: string | null;
+  referrer_url: string | null;
   uid: string | null;
 }
 
@@ -42,5 +42,58 @@ export class LadActionLogRepository extends BaseActionLogRepository {
         affiliate_link_name: affiliateLinkName,
       },
     });
+  }
+
+  async processReferrerLink(
+    referrer_url: string | null,
+  ): Promise<{ referrerLinkId: number | null; referrer_url: string | null }> {
+    if (!referrer_url) {
+      return { referrerLinkId: null, referrer_url: null };
+    }
+
+    const creativeValue = this.extractUtmCreative(referrer_url);
+    if (!creativeValue) {
+      return { referrerLinkId: null, referrer_url };
+    }
+
+    try {
+      // まず既存のレコードを検索
+      const existingLink = await this.prisma.referrerLink.findFirst({
+        where: {
+          creative_value: creativeValue,
+        },
+      });
+
+      if (existingLink) {
+        return { referrerLinkId: existingLink.id, referrer_url };
+      }
+
+      // 存在しない場合のみ新規作成
+      const newLink = await this.prisma.referrerLink.create({
+        data: {
+          creative_value: creativeValue,
+        },
+      });
+
+      return { referrerLinkId: newLink.id, referrer_url };
+    } catch (error: any) {
+      // 作成時に競合が発生した場合（他のプロセスが同時に作成した場合）
+      if (error.code === "P2002") {
+        // 再度検索して既存のレコードを取得
+        const existingLink = await this.prisma.referrerLink.findFirst({
+          where: {
+            creative_value: creativeValue,
+          },
+        });
+        if (existingLink) {
+          return { referrerLinkId: existingLink.id, referrer_url };
+        }
+      }
+      this.logger.warn(
+        `Failed to process referrer link for creative value: ${creativeValue}`,
+        error,
+      );
+      return { referrerLinkId: null, referrer_url };
+    }
   }
 }

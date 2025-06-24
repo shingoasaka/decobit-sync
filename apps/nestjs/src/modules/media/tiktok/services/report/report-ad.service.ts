@@ -4,12 +4,9 @@ import { GenericReportService, ReportConfig } from "./generic-report.service";
 import { TikTokAccountService } from "../account.service";
 import { TikTokAdRepository } from "../../repositories/report/report-ad.repository";
 import { DataMapper } from "../../utils/data-mapper.util";
-import {
-  TikTokAdReportDto,
-  TikTokAdMetrics,
-} from "../../dtos/tiktok-report.dto";
+import { TikTokAdReportDto } from "../../dtos/tiktok-report.dto";
 import { TikTokAdReport } from "../../interfaces/report.interface";
-import { TikTokAdStatusItem } from "../../interfaces/status-response.interface";
+import { TikTokAdStatusItem } from "../../interfaces/status.interface";
 
 /**
  * TikTok 広告レポートサービス
@@ -96,7 +93,6 @@ export class TikTokAdReportService extends GenericReportService {
    */
   public async saveReports(reports: TikTokAdReport[]): Promise<number> {
     if (!reports || reports.length === 0) {
-      this.logDebug("処理対象のデータがありません");
       return 0;
     }
 
@@ -118,25 +114,21 @@ export class TikTokAdReportService extends GenericReportService {
     accountIdMap: Map<string, number>,
     status?: TikTokAdStatusItem,
   ): TikTokAdReport | null {
-    const accountId = this.getAccountId(
-      dto.metrics.advertiser_id,
-      accountIdMap,
-    );
-    if (accountId === null) {
+    const accountId = accountIdMap.get(dto.metrics.advertiser_id);
+    if (!accountId) {
+      this.logWarn?.(
+        `アカウントIDが見つかりません: advertiser=${dto.metrics.advertiser_id}`,
+      );
       return null;
     }
 
-    const commonMetrics = DataMapper.convertCommonMetrics(
-      dto.metrics as TikTokAdMetrics,
-    );
-    const statusFields = DataMapper.convertStatusFields(status);
+    const commonMetrics = DataMapper.convertCommonMetrics(dto.metrics);
 
     return {
       ...commonMetrics,
       ad_account_id: accountId,
       ad_platform_account_id: dto.metrics.advertiser_id,
       stat_time_day: new Date(dto.dimensions.stat_time_day),
-      ...statusFields,
       platform_campaign_id: this.safeBigInt(dto.metrics.campaign_id),
       campaign_name: dto.metrics.campaign_name,
       platform_adgroup_id: this.safeBigInt(dto.metrics.adgroup_id),

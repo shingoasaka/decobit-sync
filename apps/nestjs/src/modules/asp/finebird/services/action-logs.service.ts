@@ -63,7 +63,9 @@ export class FinebirdActionLogService implements LogService {
       await this.login(page);
       const hasData = await this.navigateToReport(page);
       if (!hasData) {
-        console.warn("検索結果が存在しないため、ダウンロードをスキップします");
+        this.logger.warn(
+          "検索結果が存在しないため、ダウンロードをスキップします",
+        );
         return 0;
       }
       const downloadPath = await this.downloadReport(page);
@@ -114,6 +116,11 @@ export class FinebirdActionLogService implements LogService {
       ).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
 
+      /**
+       * Finebirdのレポートページでデータが存在しない場合のチェック
+       * Finebirdはデータが存在しない場合、colspan='17'の空のtd要素を表示する
+       * そのため、colspan='17'のtd要素が存在する場合、データが存在しないと判断する
+       */
       const emptyDataElement = await page.$("td[colspan='17']");
       if (emptyDataElement) {
         const emptyDataMessage = await page.evaluate(
@@ -124,7 +131,7 @@ export class FinebirdActionLogService implements LogService {
           emptyDataMessage &&
           emptyDataMessage.includes("該当するデータがありませんでした。")
         ) {
-          console.warn("検索結果が存在しませんが、処理を継続します");
+          this.logger.warn("検索結果が存在しませんが、処理を継続します");
           return false;
         }
       }
@@ -162,7 +169,7 @@ export class FinebirdActionLogService implements LogService {
   }
 
   private handleError(method: string, error: unknown): void {
-    console.error(
+    this.logger.error(
       `Error in ${method}:`,
       error instanceof Error ? error.message : "Unknown error",
     );
@@ -179,7 +186,7 @@ export class FinebirdActionLogService implements LogService {
       }) as RawFinebirdData[];
 
       if (!records || records.length === 0) {
-        console.warn("CSVにデータがありませんでした");
+        this.logger.warn("CSVにデータがありませんでした");
         return [];
       }
 
@@ -192,7 +199,7 @@ export class FinebirdActionLogService implements LogService {
       try {
         fs.unlinkSync(filePath);
       } catch (error) {
-        console.error("Error deleting temporary file:", error);
+        this.logger.error("Error deleting temporary file:", error);
       }
     }
   }
@@ -213,7 +220,7 @@ export class FinebirdActionLogService implements LogService {
           try {
             const actionDateTime = parseToJst(item["注文日時"]);
             const affiliateLinkName = item["サイト名"]?.trim();
-            const referrerUrl = item["リファラ"] || null;
+            const referrer_url = item["リファラ"] || null;
 
             if (!actionDateTime) {
               this.logger.warn(`Invalid date format: ${item["注文日時"]}`);
@@ -228,14 +235,14 @@ export class FinebirdActionLogService implements LogService {
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
-            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
-              await processReferrerLink(this.prisma, this.logger, referrerUrl);
+            const { referrerLinkId, referrer_url: processedReferrerUrl } =
+              await processReferrerLink(this.prisma, this.logger, referrer_url);
 
             return {
               actionDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: referrerLinkId,
-              referrerUrl: processedReferrerUrl,
+              referrer_url: processedReferrerUrl,
               uid: null,
             };
           } catch (error) {

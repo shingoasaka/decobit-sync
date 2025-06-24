@@ -1,7 +1,7 @@
 // 共通のメトリクス
 export interface TikTokMetrics {
-  advertiser_id: string;
   budget: string;
+  advertiser_id: string;
   spend: string;
   impressions: string;
   clicks: string;
@@ -31,6 +31,7 @@ export interface TikTokAdgroupMetrics extends TikTokMetrics {
 // Campaign用のメトリクス
 export interface TikTokCampaignMetrics extends TikTokMetrics {
   campaign_name: string;
+  campaign_budget: string;
 }
 
 // 共通のディメンション

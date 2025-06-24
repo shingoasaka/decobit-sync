@@ -28,7 +28,7 @@ export class TikTokAdgroupRepository extends BaseReportRepository<TikTokAdgroupR
 
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
-        const result = await tx.tikTokRawReportAdGroup.createMany({
+        const result = await tx.tikTokRawReportAdgroup.createMany({
           data: batch,
           skipDuplicates: true,
         });

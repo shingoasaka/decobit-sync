@@ -1,6 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
-import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
 import {
   getNowJstForDisplay,
@@ -9,7 +8,6 @@ import {
 } from "src/libs/date-utils";
 import { MetronActionLogRepository } from "../repositories/action-logs.repository";
 import { LogService } from "src/modules/logs/types";
-import { processReferrerLink } from "../../base/repository.base";
 
 interface RawMetronData {
   actionDateTime?: string;
@@ -25,7 +23,6 @@ export class MetronActionLogService implements LogService {
 
   constructor(
     private readonly http: HttpService,
-    private readonly prisma: PrismaService,
     private readonly repository: MetronActionLogRepository,
   ) {}
 
@@ -50,20 +47,15 @@ export class MetronActionLogService implements LogService {
       actionDateTime: `${startStr} - ${endStr}`,
     });
 
-    const response = await firstValueFrom(
-      this.http.post<{ params: { logs: RawMetronData[] } }>(this.apiUrl, body, {
-        headers,
-      }),
-    );
-
-    const logs = response.data?.params?.logs ?? [];
-
-    if (logs.length === 0) {
-      this.logger.warn("データが存在しませんでした");
-      return [];
+    try {
+      const response = await firstValueFrom(
+        this.http.post<RawMetronData[]>(this.apiUrl, body, { headers }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error("API呼び出しに失敗しました:", error);
+      throw error;
     }
-
-    return logs;
   }
 
   private async transformData(rawData: RawMetronData[]) {
@@ -82,7 +74,7 @@ export class MetronActionLogService implements LogService {
           try {
             const actionDateTime = parseToJst(item.actionDateTime);
             const affiliateLinkName = item.siteName?.trim();
-            const sessionId = item.sessionId || null;
+            const sessionId = item.sessionId?.trim() || null;
 
             if (!actionDateTime) {
               this.logger.warn(`Invalid date format: ${item.actionDateTime}`);
@@ -90,32 +82,22 @@ export class MetronActionLogService implements LogService {
             }
 
             if (!affiliateLinkName) {
-              this.logger.warn("siteName is empty");
+              this.logger.warn("サイト名が空です");
               return null;
             }
 
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
-            // クリックログからリファラ情報を取得
-            const { referrerLinkId, referrerUrl } =
-              await this.getReferrerFromClickLog(sessionId);
-
-            // uidの取得
-            let uid: string | null = null;
-            try {
-              const parsed = JSON.parse(item.clientInfo || "{}");
-              uid = parsed.userId1 || null;
-            } catch {
-              uid = null;
-            }
+            const { referrerLinkId, referrer_url } =
+              await this.repository.getReferrerFromClickLog(sessionId);
 
             return {
               actionDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: referrerLinkId,
-              referrerUrl,
-              uid,
+              referrer_url,
+              uid: null,
             };
           } catch (error) {
             this.logger.error(
@@ -130,35 +112,5 @@ export class MetronActionLogService implements LogService {
     return formatted.filter(
       (record): record is NonNullable<typeof record> => record !== null,
     );
-  }
-
-  private async getReferrerFromClickLog(
-    sessionId: string | null,
-  ): Promise<{ referrerLinkId: number | null; referrerUrl: string | null }> {
-    if (!sessionId) {
-      return { referrerLinkId: null, referrerUrl: null };
-    }
-
-    // クリックログからsessionIdに一致するレコードを検索
-    const clickLog = await this.prisma.aspClickLog.findFirst({
-      where: {
-        asp_type: "METRON",
-        referrer_url: {
-          not: null,
-          contains: `sessionId=${sessionId}`,
-        },
-      },
-      select: { referrer_url: true },
-      orderBy: {
-        click_date_time: "desc", // 最新のクリックログを取得
-      },
-    });
-
-    if (!clickLog?.referrer_url) {
-      return { referrerLinkId: null, referrerUrl: null };
-    }
-
-    // クリックログのリファラURLを使ってReferrerLinkを処理
-    return processReferrerLink(this.prisma, this.logger, clickLog.referrer_url);
   }
 }

@@ -1,12 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
-import { PrismaService } from "@prismaService";
 import { firstValueFrom } from "rxjs";
 import { formatDateTime, getNowJstForDisplay } from "src/libs/date-utils";
 import { MetronClickLogRepository } from "../repositories/click-logs.repository";
 import { LogService } from "src/modules/logs/types";
-import { processReferrerLink } from "../../base/repository.base";
 import { parseToJst } from "src/libs/date-utils";
+import { HttpService } from "@nestjs/axios";
 
 interface RawMetronData {
   clickDateTime?: string;
@@ -22,7 +20,6 @@ export class MetronClickLogService implements LogService {
 
   constructor(
     private readonly http: HttpService,
-    private readonly prisma: PrismaService,
     private readonly repository: MetronClickLogRepository,
   ) {}
 
@@ -47,20 +44,15 @@ export class MetronClickLogService implements LogService {
       clickDateTime: `${startStr} - ${endStr}`,
     });
 
-    const response = await firstValueFrom(
-      this.http.post<{ params: { logs: RawMetronData[] } }>(this.apiUrl, body, {
-        headers,
-      }),
-    );
-
-    const list = response.data?.params?.logs ?? [];
-
-    if (list.length === 0) {
-      this.logger.warn("クリックログは存在しませんでした");
-      return [];
+    try {
+      const response = await firstValueFrom(
+        this.http.post<RawMetronData[]>(this.apiUrl, body, { headers }),
+      );
+      return response.data;
+    } catch (error) {
+      this.logger.error("API呼び出しに失敗しました:", error);
+      throw error;
     }
-
-    return list;
   }
 
   private async transformData(rawData: RawMetronData[]) {
@@ -79,8 +71,7 @@ export class MetronClickLogService implements LogService {
           try {
             const clickDateTime = parseToJst(item.clickDateTime);
             const affiliateLinkName = item.siteName?.trim();
-            const referrerUrl = item.referrer || null;
-            const sessionId = item.sessionId || null;
+            const referrer_url = item.referrer?.trim() || null;
 
             if (!clickDateTime) {
               this.logger.warn(`Invalid date format: ${item.clickDateTime}`);
@@ -88,27 +79,21 @@ export class MetronClickLogService implements LogService {
             }
 
             if (!affiliateLinkName) {
-              this.logger.warn("siteName is empty");
+              this.logger.warn("サイト名が空です");
               return null;
             }
 
             const affiliateLink =
               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
-            // リファラリンクの処理
-            const { referrerLinkId, referrerUrl: processedReferrerUrl } =
-              await processReferrerLink(this.prisma, this.logger, referrerUrl);
-
-            // sessionIdを含めたリファラURLを保存
-            const finalReferrerUrl = sessionId
-              ? `${processedReferrerUrl || ""}${processedReferrerUrl ? "&" : "?"}sessionId=${sessionId}`
-              : processedReferrerUrl;
+            const { referrerLinkId, referrer_url: processedReferrerUrl } =
+              await this.repository.processReferrerLink(referrer_url);
 
             return {
               clickDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: referrerLinkId,
-              referrerUrl: finalReferrerUrl,
+              referrer_url: processedReferrerUrl,
             };
           } catch (error) {
             this.logger.error(

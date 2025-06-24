@@ -5,7 +5,6 @@ import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
-import { PrismaService } from "@prismaService";
 
 interface SampleAffiliateSelectors {
   LOGIN: {
@@ -64,7 +63,6 @@ export class SampleAffiliateActionLogService implements LogService {
 
   constructor(
     private readonly repository: SampleAffiliateActionLogRepository,
-    private readonly prisma: PrismaService,
   ) {}
 
   async fetchAndInsertLogs(): Promise<number> {
@@ -261,7 +259,7 @@ export class SampleAffiliateActionLogService implements LogService {
               actionDateTime,
               affiliate_link_id: affiliateLink.id,
               referrer_link_id: null,
-              referrerUrl: null,
+              referrer_url: null,
               uid: null,
             };
           } catch (error) {

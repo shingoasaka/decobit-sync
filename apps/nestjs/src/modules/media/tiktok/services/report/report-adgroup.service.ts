@@ -4,12 +4,9 @@ import { GenericReportService, ReportConfig } from "./generic-report.service";
 import { TikTokAccountService } from "../account.service";
 import { TikTokAdgroupRepository } from "../../repositories/report/report-adgroup.repository";
 import { DataMapper } from "../../utils/data-mapper.util";
-import {
-  TikTokAdgroupReportDto,
-  TikTokAdgroupMetrics,
-} from "../../dtos/tiktok-report.dto";
+import { TikTokAdgroupReportDto } from "../../dtos/tiktok-report.dto";
 import { TikTokAdgroupReport } from "../../interfaces/report.interface";
-import { TikTokAdgroupStatusItem } from "../../interfaces/status-response.interface";
+import { TikTokAdgroupStatusItem } from "../../interfaces/status.interface";
 
 /**
  * TikTok 広告グループレポートサービス
@@ -27,7 +24,6 @@ export class TikTokAdgroupReportService extends GenericReportService {
     "secondary_status",
     "operation_status",
     "modify_time",
-    "budget",
   ];
 
   constructor(
@@ -56,7 +52,6 @@ export class TikTokAdgroupReportService extends GenericReportService {
         "secondary_status",
         "operation_status",
         "modify_time",
-        "budget",
       ],
       apiUrl:
         "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/",
@@ -94,7 +89,6 @@ export class TikTokAdgroupReportService extends GenericReportService {
    */
   public async saveReports(reports: TikTokAdgroupReport[]): Promise<number> {
     if (!reports || reports.length === 0) {
-      this.logDebug("処理対象のデータがありません");
       return 0;
     }
 
@@ -116,25 +110,21 @@ export class TikTokAdgroupReportService extends GenericReportService {
     accountIdMap: Map<string, number>,
     status?: TikTokAdgroupStatusItem,
   ): TikTokAdgroupReport | null {
-    const accountId = this.getAccountId(
-      dto.metrics.advertiser_id,
-      accountIdMap,
-    );
-    if (accountId === null) {
+    const accountId = accountIdMap.get(dto.metrics.advertiser_id);
+    if (!accountId) {
+      this.logWarn?.(
+        `アカウントIDが見つかりません: advertiser=${dto.metrics.advertiser_id}`,
+      );
       return null;
     }
 
-    const commonMetrics = DataMapper.convertCommonMetrics(
-      dto.metrics as TikTokAdgroupMetrics,
-    );
-    const statusFields = DataMapper.convertStatusFields(status);
+    const commonMetrics = DataMapper.convertCommonMetrics(dto.metrics);
 
     return {
       ...commonMetrics,
       ad_account_id: accountId,
       ad_platform_account_id: dto.metrics.advertiser_id,
       stat_time_day: new Date(dto.dimensions.stat_time_day),
-      ...statusFields,
       platform_adgroup_id: this.safeBigInt(dto.dimensions.adgroup_id),
       adgroup_name: dto.metrics.adgroup_name,
     };

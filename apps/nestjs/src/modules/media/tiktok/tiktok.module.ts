@@ -1,30 +1,39 @@
 import { Module, forwardRef } from "@nestjs/common";
+import { HttpModule } from "@nestjs/axios";
 import { PrismaModule } from "src/prisma/prisma.module";
-import { TikTokCampaignRepository } from "./repositories/report/report-campaign.repository";
-import { TikTokAdgroupRepository } from "./repositories/report/report-adgroup.repository";
-import { TikTokAdRepository } from "./repositories/report/report-ad.repository";
+import { MediaModule } from "../media.module";
+import { TikTokAccountService } from "./services/account.service";
 import { TikTokCampaignReportService } from "./services/report/report-campaign.service";
 import { TikTokAdgroupReportService } from "./services/report/report-adgroup.service";
 import { TikTokAdReportService } from "./services/report/report-ad.service";
-import { HttpModule } from "@nestjs/axios";
-import { MediaModule } from "../media.module";
-import { TikTokAccountService } from "./services/account.service";
+import { TikTokCampaignRepository } from "./repositories/report/report-campaign.repository";
+import { TikTokAdgroupRepository } from "./repositories/report/report-adgroup.repository";
+import { TikTokAdRepository } from "./repositories/report/report-ad.repository";
+import { TikTokCampaignStatusHistoryRepository } from "./repositories/status/status-history-campaign.repository";
+import { TikTokAdgroupStatusHistoryRepository } from "./repositories/status/status-history-adgroup.repository";
+import { TikTokAdStatusHistoryRepository } from "./repositories/status/status-history-ad.repository";
 
 @Module({
   imports: [PrismaModule, HttpModule, forwardRef(() => MediaModule)],
   providers: [
-    TikTokCampaignRepository,
-    TikTokAdgroupRepository,
-    TikTokAdRepository,
+    TikTokAccountService,
     TikTokCampaignReportService,
     TikTokAdgroupReportService,
     TikTokAdReportService,
-    TikTokAccountService,
+    TikTokCampaignRepository,
+    TikTokAdgroupRepository,
+    TikTokAdRepository,
+    TikTokCampaignStatusHistoryRepository,
+    TikTokAdgroupStatusHistoryRepository,
+    TikTokAdStatusHistoryRepository,
   ],
   exports: [
     TikTokCampaignReportService,
     TikTokAdgroupReportService,
     TikTokAdReportService,
+    TikTokCampaignStatusHistoryRepository,
+    TikTokAdgroupStatusHistoryRepository,
+    TikTokAdStatusHistoryRepository,
   ],
 })
 export class TikTokModule {}

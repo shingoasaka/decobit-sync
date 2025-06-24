@@ -1,5 +1,7 @@
-import { TikTokMetrics } from "../dtos/tiktok-report.dto";
-import { TikTokStatusItem } from "../interfaces/status-response.interface";
+import {
+  TikTokMetrics,
+  TikTokCampaignMetrics,
+} from "../dtos/tiktok-report.dto";
 import { getNowJstForDB } from "src/libs/date-utils";
 
 /**
@@ -8,10 +10,11 @@ import { getNowJstForDB } from "src/libs/date-utils";
  */
 export class DataMapper {
   /**
-   * 共通メトリクスの変換
+   * 共通メトリクスの変換（全レベル共通）
    */
   static convertCommonMetrics<T extends TikTokMetrics>(metrics: T) {
     return {
+      budget: this.parseNumber(String(metrics.budget || "0")),
       spend: this.parseNumber(String(metrics.spend || "0")),
       impressions: this.parseNumber(String(metrics.impressions || "0")),
       clicks: this.parseNumber(String(metrics.clicks || "0")),
@@ -34,51 +37,15 @@ export class DataMapper {
   }
 
   /**
-   * ステータスフィールドの変換
+   * Campaign専用メトリクス変換（budget <- campaign_budget）
    */
-  static convertStatusFields(
-    status: (TikTokStatusItem & { budget?: string | number }) | undefined,
-  ) {
-    if (!status) {
-      return this.getDefaultStatusFields();
-    }
-
+  static convertCampaignMetrics(metrics: TikTokCampaignMetrics) {
     return {
-      status: status.secondary_status,
-      opt_status: status.operation_status,
-      status_updated_time: this.parseStatusUpdateTime(status.modify_time),
-      budget: this.parseStatusBudget(status),
+      ...this.convertCommonMetrics(metrics),
+      budget: this.parseNumber(
+        String(metrics.campaign_budget || metrics.budget || "0"),
+      ),
     };
-  }
-
-  /**
-   * デフォルトのステータスフィールドを取得
-   */
-  private static getDefaultStatusFields() {
-    return {
-      status: "UNKNOWN",
-      opt_status: "UNKNOWN",
-      status_updated_time: null,
-      budget: 0,
-    };
-  }
-
-  /**
-   * ステータス更新時間をパース
-   */
-  private static parseStatusUpdateTime(modifyTime?: string): Date | null {
-    return modifyTime ? new Date(modifyTime) : null;
-  }
-
-  /**
-   * ステータス予算をパース
-   */
-  private static parseStatusBudget(
-    status: TikTokStatusItem & { budget?: string | number },
-  ): number {
-    return "budget" in status && status.budget
-      ? this.parseNumber(status.budget)
-      : 0;
   }
 
   /**
