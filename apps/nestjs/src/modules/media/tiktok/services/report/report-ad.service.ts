@@ -7,13 +7,15 @@ import { DataMapper } from "../../utils/data-mapper.util";
 import { TikTokAdReportDto } from "../../dtos/tiktok-report.dto";
 import { TikTokAdReport } from "../../interfaces/report.interface";
 import { TikTokAdStatusItem } from "../../interfaces/status.interface";
+import { TikTokAdStatusHistoryRepository } from "../../repositories/status/status-history-ad.repository";
+import { TikTokAdStatusHistory } from "../../interfaces/status-history.interface";
 
 /**
  * TikTok 広告レポートサービス
  * ジェネリックサービスを活用した実装
  */
 @Injectable()
-export class TikTokAdReportService extends GenericReportService {
+export class TikTokAdReportService extends GenericReportService<TikTokAdStatusHistory> {
   // 抽象クラスの必須プロパティ
   protected readonly apiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
@@ -30,30 +32,37 @@ export class TikTokAdReportService extends GenericReportService {
     http: HttpService,
     tikTokAccountService: TikTokAccountService,
     private readonly adRepository: TikTokAdRepository,
+    adStatusHistoryRepository: TikTokAdStatusHistoryRepository,
   ) {
-    super(http, tikTokAccountService);
+    super(
+      http,
+      tikTokAccountService,
+      adStatusHistoryRepository,
+    );
   }
 
   /**
    * 広告レポート取得・保存
    */
   public async fetchAndInsertLogs(): Promise<number> {
-    const config: ReportConfig<
-      TikTokAdReport,
-      TikTokAdStatusItem,
-      TikTokAdReportDto
-    > = {
+    const config = this.getConfig();
+    return super.fetchAndInsertLogs(config);
+  }
+
+  /**
+   * 設定を取得
+   */
+  private getConfig(): ReportConfig<
+    TikTokAdReport,
+    TikTokAdStatusItem,
+    TikTokAdReportDto
+  > {
+    return {
       entityName: "広告",
       idField: "ad_id",
-      statusApiUrl: "https://business-api.tiktok.com/open_api/v1.3/ad/get/",
-      statusFields: [
-        "ad_id",
-        "secondary_status",
-        "operation_status",
-        "modify_time",
-      ],
-      apiUrl:
-        "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/",
+      statusApiUrl: this.statusApiUrl,
+      statusFields: this.statusFields,
+      apiUrl: this.apiUrl,
       metrics: [
         "budget",
         "spend",
@@ -84,26 +93,6 @@ export class TikTokAdReportService extends GenericReportService {
       convertDtoToEntity: (dto, accountIdMap, status) =>
         this.convertDtoToEntity(dto, accountIdMap, status),
     };
-
-    return super.fetchAndInsertLogs(config);
-  }
-
-  /**
-   * レポート保存
-   */
-  public async saveReports(reports: TikTokAdReport[]): Promise<number> {
-    if (!reports || reports.length === 0) {
-      return 0;
-    }
-
-    try {
-      const savedCount = await this.adRepository.save(reports);
-      this.logInfo(`✅ ${savedCount} 件の広告レポートを保存しました`);
-      return savedCount;
-    } catch (error) {
-      this.logError("広告レポートの保存に失敗しました", error);
-      throw error;
-    }
   }
 
   /**

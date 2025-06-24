@@ -10,13 +10,15 @@ import {
 } from "../../dtos/tiktok-report.dto";
 import { TikTokCampaignReport } from "../../interfaces/report.interface";
 import { TikTokCampaignStatusItem } from "../../interfaces/status.interface";
+import { TikTokCampaignStatusHistoryRepository } from "../../repositories/status/status-history-campaign.repository";
+import { TikTokCampaignStatusHistory } from "../../interfaces/status-history.interface";
 
 /**
  * TikTok キャンペーンレポートサービス
  * ジェネリックサービスを活用した実装
  */
 @Injectable()
-export class TikTokCampaignReportService extends GenericReportService {
+export class TikTokCampaignReportService extends GenericReportService<TikTokCampaignStatusHistory> {
   // 抽象クラスの必須プロパティ
   protected readonly apiUrl =
     "https://business-api.tiktok.com/open_api/v1.3/report/integrated/get/";
@@ -33,28 +35,36 @@ export class TikTokCampaignReportService extends GenericReportService {
     http: HttpService,
     tikTokAccountService: TikTokAccountService,
     private readonly campaignRepository: TikTokCampaignRepository,
+    campaignStatusHistoryRepository: TikTokCampaignStatusHistoryRepository,
   ) {
-    super(http, tikTokAccountService);
+    super(
+      http,
+      tikTokAccountService,
+      campaignStatusHistoryRepository,
+    );
   }
 
   /**
    * キャンペーンレポート取得・保存
    */
   public async fetchAndInsertLogs(): Promise<number> {
-    const config: ReportConfig<
-      TikTokCampaignReport,
-      TikTokCampaignStatusItem,
-      TikTokCampaignReportDto
-    > = {
+    const config = this.getConfig();
+    return super.fetchAndInsertLogs(config);
+  }
+
+  /**
+   * 設定を取得
+   */
+  private getConfig(): ReportConfig<
+    TikTokCampaignReport,
+    TikTokCampaignStatusItem,
+    TikTokCampaignReportDto
+  > {
+    return {
       entityName: "キャンペーン",
       idField: "campaign_id",
       statusApiUrl: this.statusApiUrl,
-      statusFields: [
-        "campaign_id",
-        "secondary_status",
-        "operation_status",
-        "modify_time",
-      ],
+      statusFields: this.statusFields,
       apiUrl: this.apiUrl,
       metrics: [
         "campaign_budget",
@@ -81,26 +91,6 @@ export class TikTokCampaignReportService extends GenericReportService {
       },
       convertDtoToEntity: this.convertDtoToEntity.bind(this),
     };
-
-    return super.fetchAndInsertLogs(config);
-  }
-
-  /**
-   * レポート保存
-   */
-  public async saveReports(reports: TikTokCampaignReport[]): Promise<number> {
-    if (!reports || reports.length === 0) {
-      return 0;
-    }
-
-    try {
-      const savedCount = await this.campaignRepository.save(reports);
-      this.logInfo(`✅ ${savedCount} 件のキャンペーンレポートを保存しました`);
-      return savedCount;
-    } catch (error) {
-      this.logError("キャンペーンレポートの保存に失敗しました", error);
-      throw error;
-    }
   }
 
   /**

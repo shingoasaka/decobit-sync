@@ -11,6 +11,7 @@ import { ERROR_MESSAGES } from "../../../common/errors/media.error";
 import { ApiHeaders } from "../../interfaces/api.interface";
 import { ValidationUtil } from "../../utils/validation.util";
 import { TikTokStatusItem } from "../../interfaces/status.interface";
+import { TikTokStatusHistoryBase } from "../../interfaces/status-history.interface";
 
 // ジェネリック型定義
 export interface ReportConfig<TReport, TStatus extends StatusItemWithId, TDto> {
@@ -65,15 +66,23 @@ export interface StatusItemWithId extends TikTokStatusItem {
   campaign_id?: string;
 }
 
+// ステータス履歴リポジトリのインターフェース
+export interface StatusHistoryRepository<T extends TikTokStatusHistoryBase> {
+  saveStatusHistory(records: T[]): Promise<number>;
+}
+
 /**
  * ジェネリックレポートサービス
  * Campaign, AdGroup, Adの共通ロジックを統合
  */
 @Injectable()
-export abstract class GenericReportService extends StatusBaseService {
+export abstract class GenericReportService<
+  TStatusHistory extends TikTokStatusHistoryBase
+> extends StatusBaseService {
   constructor(
     http: HttpService,
     private readonly tikTokAccountService: TikTokAccountService,
+    private readonly statusHistoryRepository: StatusHistoryRepository<TStatusHistory>,
   ) {
     super(http, GenericReportService.name);
   }
@@ -138,6 +147,21 @@ export abstract class GenericReportService extends StatusBaseService {
         this.logInfo(
           `✅ ${savedCount} 件の${config.entityName}レポートを保存しました`,
         );
+
+        // ステータス履歴を保存（エラーが発生しても処理を継続）
+        try {
+          await this.saveStatusHistory(
+            allStatusData,
+            accountMapping,
+            config.idField,
+          );
+        } catch (error) {
+          this.logError(
+            `${config.entityName}ステータス履歴保存でエラーが発生しましたが、処理を継続します`,
+            error,
+          );
+        }
+
         return savedCount;
       } else {
         this.logWarn("マージされたレコードが0件のため、保存をスキップ");
@@ -304,5 +328,97 @@ export abstract class GenericReportService extends StatusBaseService {
       throw new Error(`Invalid date format: ${dateStr}`);
     }
     return true;
+  }
+
+  /**
+   * ステータス履歴を保存
+   */
+  private async saveStatusHistory<TStatus extends StatusItemWithId>(
+    allStatusData: Map<string, TStatus[]>,
+    accountIdMap: Map<string, number>,
+    idField: string,
+  ): Promise<void> {
+    // ステータスデータが空の場合はスキップ
+    if (allStatusData.size === 0) {
+      this.logInfo("ステータスデータが空のため、ステータス履歴の保存をスキップします");
+      return;
+    }
+
+    const now = new Date();
+    let totalSaved = 0;
+    let errorCount = 0;
+
+    for (const [advertiserId, statusList] of allStatusData) {
+      const accountId = accountIdMap.get(advertiserId);
+      if (!accountId) {
+        this.logWarn(
+          `アカウントIDが見つかりません: advertiser=${advertiserId}`,
+        );
+        continue;
+      }
+
+      if (statusList.length === 0) {
+        this.logInfo(`ステータスデータが空のため、advertiser=${advertiserId}の保存をスキップします`);
+        continue;
+      }
+
+      const statusHistoryRecords = statusList.map((status) => {
+        const baseRecord = {
+          ad_account_id: accountId,
+          ad_platform_account_id: advertiserId,
+          status: status.secondary_status,
+          opt_status: status.operation_status,
+          status_updated_time: new Date(status.modify_time),
+          created_at: now,
+        };
+
+        // IDフィールドを動的に追加
+        const idValue = this.getStatusItemId(status, idField);
+        if (!idValue) {
+          throw new Error(`IDが見つかりません: ${idField}`);
+        }
+
+        return {
+          ...baseRecord,
+          [this.getPlatformIdField(idField)]: BigInt(idValue),
+        } as TStatusHistory;
+      });
+
+      try {
+        const savedCount = await this.statusHistoryRepository.saveStatusHistory(statusHistoryRecords);
+        totalSaved += savedCount;
+        this.logInfo(`✅ advertiser=${advertiserId}: ${savedCount}件のステータス履歴を保存しました`);
+      } catch (error) {
+        errorCount++;
+        this.logError(
+          `ステータス履歴保存失敗 (advertiser=${advertiserId})`,
+          error,
+        );
+      }
+    }
+
+    if (totalSaved > 0) {
+      this.logInfo(`✅ 合計${totalSaved}件のステータス履歴を保存しました`);
+    }
+    
+    if (errorCount > 0) {
+      this.logWarn(`${errorCount}件のステータス履歴保存でエラーが発生しました`);
+    }
+  }
+
+  /**
+   * IDフィールドからプラットフォームIDフィールド名を取得
+   */
+  private getPlatformIdField(idField: string): string {
+    switch (idField) {
+      case "ad_id":
+        return "platform_ad_id";
+      case "adgroup_id":
+        return "platform_adgroup_id";
+      case "campaign_id":
+        return "platform_campaign_id";
+      default:
+        throw new Error(`Unknown idField: ${idField}`);
+    }
   }
 }
