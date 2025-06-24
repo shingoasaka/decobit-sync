@@ -37,11 +37,7 @@ export class TikTokCampaignReportService extends GenericReportService<TikTokCamp
     private readonly campaignRepository: TikTokCampaignRepository,
     campaignStatusHistoryRepository: TikTokCampaignStatusHistoryRepository,
   ) {
-    super(
-      http,
-      tikTokAccountService,
-      campaignStatusHistoryRepository,
-    );
+    super(http, tikTokAccountService, campaignStatusHistoryRepository);
   }
 
   /**

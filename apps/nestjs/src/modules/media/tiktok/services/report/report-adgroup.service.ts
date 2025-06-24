@@ -34,11 +34,7 @@ export class TikTokAdgroupReportService extends GenericReportService<TikTokAdgro
     private readonly adgroupRepository: TikTokAdgroupRepository,
     adgroupStatusHistoryRepository: TikTokAdgroupStatusHistoryRepository,
   ) {
-    super(
-      http,
-      tikTokAccountService,
-      adgroupStatusHistoryRepository,
-    );
+    super(http, tikTokAccountService, adgroupStatusHistoryRepository);
   }
 
   /**

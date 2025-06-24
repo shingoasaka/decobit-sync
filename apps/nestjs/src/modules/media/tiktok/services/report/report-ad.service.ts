@@ -34,11 +34,7 @@ export class TikTokAdReportService extends GenericReportService<TikTokAdStatusHi
     private readonly adRepository: TikTokAdRepository,
     adStatusHistoryRepository: TikTokAdStatusHistoryRepository,
   ) {
-    super(
-      http,
-      tikTokAccountService,
-      adStatusHistoryRepository,
-    );
+    super(http, tikTokAccountService, adStatusHistoryRepository);
   }
 
   /**

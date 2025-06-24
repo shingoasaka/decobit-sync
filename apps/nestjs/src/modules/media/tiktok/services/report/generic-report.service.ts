@@ -77,7 +77,7 @@ export interface StatusHistoryRepository<T extends TikTokStatusHistoryBase> {
  */
 @Injectable()
 export abstract class GenericReportService<
-  TStatusHistory extends TikTokStatusHistoryBase
+  TStatusHistory extends TikTokStatusHistoryBase,
 > extends StatusBaseService {
   constructor(
     http: HttpService,
@@ -340,7 +340,9 @@ export abstract class GenericReportService<
   ): Promise<void> {
     // ステータスデータが空の場合はスキップ
     if (allStatusData.size === 0) {
-      this.logInfo("ステータスデータが空のため、ステータス履歴の保存をスキップします");
+      this.logInfo(
+        "ステータスデータが空のため、ステータス履歴の保存をスキップします",
+      );
       return;
     }
 
@@ -358,7 +360,9 @@ export abstract class GenericReportService<
       }
 
       if (statusList.length === 0) {
-        this.logInfo(`ステータスデータが空のため、advertiser=${advertiserId}の保存をスキップします`);
+        this.logInfo(
+          `ステータスデータが空のため、advertiser=${advertiserId}の保存をスキップします`,
+        );
         continue;
       }
 
@@ -385,9 +389,14 @@ export abstract class GenericReportService<
       });
 
       try {
-        const savedCount = await this.statusHistoryRepository.saveStatusHistory(statusHistoryRecords);
+        const savedCount =
+          await this.statusHistoryRepository.saveStatusHistory(
+            statusHistoryRecords,
+          );
         totalSaved += savedCount;
-        this.logInfo(`✅ advertiser=${advertiserId}: ${savedCount}件のステータス履歴を保存しました`);
+        this.logInfo(
+          `✅ advertiser=${advertiserId}: ${savedCount}件のステータス履歴を保存しました`,
+        );
       } catch (error) {
         errorCount++;
         this.logError(
@@ -400,7 +409,7 @@ export abstract class GenericReportService<
     if (totalSaved > 0) {
       this.logInfo(`✅ 合計${totalSaved}件のステータス履歴を保存しました`);
     }
-    
+
     if (errorCount > 0) {
       this.logWarn(`${errorCount}件のステータス履歴保存でエラーが発生しました`);
     }
