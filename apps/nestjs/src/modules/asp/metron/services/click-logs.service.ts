@@ -13,6 +13,16 @@ interface RawMetronData {
   sessionId?: string;
 }
 
+interface MetronApiResponse {
+  params: {
+    totalNum: string;
+    page: string;
+    logs: RawMetronData[];
+  };
+  errors: (string | object)[];
+  code: number;
+}
+
 @Injectable()
 export class MetronClickLogService implements LogService {
   private readonly logger = new Logger(MetronClickLogService.name);
@@ -46,9 +56,37 @@ export class MetronClickLogService implements LogService {
 
     try {
       const response = await firstValueFrom(
-        this.http.post<RawMetronData[]>(this.apiUrl, body, { headers }),
+        this.http.post<MetronApiResponse>(this.apiUrl, body, { headers }),
       );
-      return response.data;
+
+      // APIレスポンスの検証
+      if (!response.data) {
+        this.logger.warn("APIレスポンスが空です");
+        return [];
+      }
+
+      // HTTPステータスコードの確認
+      if (response.status !== 200) {
+        this.logger.error(`HTTPエラー: ${response.status}`, response.data);
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+
+      // エラーレスポンスの確認
+      if (response.data.errors && response.data.errors.length > 0) {
+        const errorMessages = response.data.errors.map((error: any) =>
+          typeof error === "string" ? error : JSON.stringify(error),
+        );
+        this.logger.error("APIエラーが発生しました:", errorMessages);
+        throw new Error(`Metron API Error: ${errorMessages.join(", ")}`);
+      }
+
+      // MetronのAPIレスポンス構造: { params: { logs: [...] } }
+      if (response.data.params && Array.isArray(response.data.params.logs)) {
+        return response.data.params.logs;
+      }
+
+      this.logger.warn(`APIレスポンスの構造が期待と異なります:`, response.data);
+      return [];
     } catch (error) {
       this.logger.error("API呼び出しに失敗しました:", error);
       throw error;
