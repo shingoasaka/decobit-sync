@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: operate_ad_dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: operate_ad_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: operate_ad_app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/operate_ad_dev
+      - PORT=3000
+      - HOST=0.0.0.0
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/nestjs/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: pnpm --filter operate-ad dev
+
+volumes:
+  pgdata:

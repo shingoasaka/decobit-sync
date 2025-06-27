@@ -1,11 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { chromium, Browser } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { HanikamuClickLogRepository } from "../repositories/click-logs.repository";
 import { getNowJstForDisplay } from "src/libs/date-utils";
+import { BaseAspService } from "../../base/base-asp.service";
 
 interface RawHanikamuData {
   ランディングページ?: string;
@@ -13,103 +14,112 @@ interface RawHanikamuData {
 }
 
 @Injectable()
-export class TryClickLogService implements LogService {
-  private readonly logger = new Logger(TryClickLogService.name);
-
-  constructor(private readonly repository: HanikamuClickLogRepository) {}
+export class TryClickLogService extends BaseAspService implements LogService {
+  constructor(private readonly repository: HanikamuClickLogRepository) {
+    super(TryClickLogService.name);
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performHanikamuOperation(page);
+      },
+      "Hanikamuクリックログ取得エラー",
+    );
+
+    return result || 0;
+  }
+
+  private async performHanikamuOperation(page: Page): Promise<number> {
+    await this.navigateToPage(page, "https://www.82comb.net/partner/login");
+
+    await page
+      .getByRole("textbox", { name: "Enter loginname" })
+      .fill(process.env.HANIKAMU_USERNAME ?? "");
+    await page
+      .getByRole("textbox", { name: "Enter password" })
+      .fill(process.env.HANIKAMU_PASSWORD ?? "");
+    await page.getByRole("button", { name: "LOGIN" }).click();
+
+    await page.waitForTimeout(2000);
+    await page.getByRole("link", { name: " Reports" }).click();
+    await page.getByRole("link", { name: "LP別" }).click();
+    await page.goto("https://www.82comb.net/partner/report/lp");
+    await page.waitForLoadState("networkidle");
+
+    await page.getByLabel("広告選択").selectOption("1176");
+    await page.waitForLoadState("networkidle");
+
+    const today = getNowJstForDisplay();
+    const formattedDate = today.getDate().toString();
+
     try {
-      browser = await chromium.launch({ headless: true });
-      const context = await browser.newContext();
-      const page = await context.newPage();
+      await page.locator('#search input[name="start_date"]').click();
+      await page.waitForSelector(".datepicker-days", { timeout: 10000 });
+      const startCalendar = page.locator(".datepicker-days").first();
 
-      // ログイン処理
-      await page.goto("https://www.82comb.net/partner/login");
-      await page
-        .getByRole("textbox", { name: "Enter loginname" })
-        .fill(process.env.HANIKAMU_USERNAME ?? "");
-      await page
-        .getByRole("textbox", { name: "Enter password" })
-        .fill(process.env.HANIKAMU_PASSWORD ?? "");
-      await page.getByRole("button", { name: "LOGIN" }).click();
+      await startCalendar
+        .locator("td.day")
+        .first()
+        .waitFor({ state: "attached", timeout: 10000 });
 
-      await page.waitForTimeout(2000);
-      await page.getByRole("link", { name: " Reports" }).click();
-      await page.getByRole("link", { name: "LP別" }).click();
-      await page.goto("https://www.82comb.net/partner/report/lp");
-      // ページの読み込みを待つ
+      await startCalendar
+        .locator("td.day:not(.old):not(.new)", {
+          hasText: new RegExp(`^${formattedDate}$`),
+        })
+        .click({ timeout: 10000 });
+
+      await page.locator('#search input[name="end_date"]').click();
+
+      const endCalendar = page.locator(".datepicker-days").nth(1);
+      await endCalendar
+        .locator("td.day")
+        .nth(1)
+        .waitFor({ state: "attached", timeout: 10000 });
+
+      await endCalendar
+        .locator("td.day:not(.old):not(.new)", {
+          hasText: new RegExp(`^${formattedDate}$`),
+        })
+        .click({ timeout: 10000 });
+
       await page.waitForLoadState("networkidle");
 
-      await page.getByLabel("広告選択").selectOption("1176");
-      // 選択後のページ更新を待つ
-      await page.waitForLoadState("networkidle");
+      const [download] = await Promise.all([
+        this.waitForDownload(page),
+        page
+          .getByRole("button", { name: "  上記条件でCSVダウンロード" })
+          .click(),
+      ]).catch((error: unknown) => {
+        this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+        return [null];
+      });
 
-      // 今日の日付を取得
-      const today = getNowJstForDisplay();
-      const formattedDate = today.getDate().toString();
-
-      try {
-        await page.locator('#search input[name="start_date"]').click();
-        await page.waitForSelector(".datepicker-days", { timeout: 10000 });
-        const startCalendar = page.locator(".datepicker-days").first();
-
-        await startCalendar
-          .locator("td.day")
-          .first()
-          .waitFor({ state: "attached", timeout: 10000 });
-
-        await startCalendar
-          .locator("td.day:not(.old):not(.new)", {
-            hasText: new RegExp(`^${formattedDate}$`),
-          })
-          .click({ timeout: 10000 });
-
-        await page.locator('#search input[name="end_date"]').click();
-
-        const endCalendar = page.locator(".datepicker-days").nth(1);
-        await endCalendar
-          .locator("td.day")
-          .nth(1)
-          .waitFor({ state: "attached", timeout: 10000 });
-
-        await endCalendar
-          .locator("td.day:not(.old):not(.new)", {
-            hasText: new RegExp(`^${formattedDate}$`),
-          })
-          .click({ timeout: 10000 });
-
-        // 日付入力後のページ更新を待つ
-        await page.waitForLoadState("networkidle");
-
-        // CSVダウンロード
-        const [download] = await Promise.all([
-          page.waitForEvent("download", { timeout: 60000 }),
-          page
-            .getByRole("button", { name: "  上記条件でCSVダウンロード" })
-            .click(),
-        ]);
-
-        const downloadPath = await download.path();
-        if (!downloadPath) {
-          throw new Error("ダウンロードパスが取得できません");
-        }
-
-        const rawData = await this.processCsv(downloadPath);
-        const formattedData = await this.transformData(rawData);
-        return await this.repository.save(formattedData);
-      } catch (error) {
-        this.logger.error("Error during fetchAndInsertLogs:", error);
+      if (!download) {
+        this.logger.warn(
+          "ダウンロードイベントが取得できませんでした。処理を中止します。",
+        );
         return 0;
       }
-    } catch (error) {
-      this.logger.error("Error during fetchAndInsertLogs:", error);
-      return 0;
-    } finally {
-      if (browser) {
-        await browser.close();
+
+      const downloadPath = await download.path().catch((error: unknown) => {
+        this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+        return null;
+      });
+
+      if (!downloadPath) {
+        this.logger.warn(
+          "ダウンロードパスが取得できません。処理を中止します。",
+        );
+        return 0;
       }
+
+      const rawData = await this.processCsv(downloadPath);
+      const formattedData = await this.transformData(rawData);
+      return await this.repository.save(formattedData);
+    } catch (error: unknown) {
+      this.logger.error("Hanikamu操作中にエラーが発生しました:", error);
+      return 0;
     }
   }
 
@@ -119,7 +129,7 @@ export class TryClickLogService implements LogService {
       const cleanValue = value.replace(/[,¥]/g, "");
       const num = parseInt(cleanValue, 10);
       return isNaN(num) ? 0 : num;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(`Invalid number format: ${value}`);
       return 0;
     }
@@ -141,14 +151,13 @@ export class TryClickLogService implements LogService {
       }
 
       return records;
-    } catch (error) {
-      throw new Error(
-        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
-      );
+    } catch (error: unknown) {
+      this.logger.error("CSVの処理に失敗しました:", error);
+      return [];
     } finally {
       try {
         fs.unlinkSync(filePath);
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error("Error deleting temporary file:", error);
       }
     }

@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { chromium, Browser } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
@@ -7,6 +7,7 @@ import { LogService } from "src/modules/logs/types";
 import dotenv from "dotenv";
 import { LadActionLogRepository } from "../repositories/action-logs.repository";
 import { parseToJst } from "src/libs/date-utils";
+import { BaseAspService } from "../../base/base-asp.service";
 
 dotenv.config();
 
@@ -17,111 +18,91 @@ interface RawLadData {
 }
 
 @Injectable()
-export class LadActionLogService implements LogService {
-  private readonly logger = new Logger(LadActionLogService.name);
-
-  constructor(private readonly repository: LadActionLogRepository) {}
+export class LadActionLogService extends BaseAspService implements LogService {
+  constructor(private readonly repository: LadActionLogRepository) {
+    super(LadActionLogService.name);
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performLadActionOperation(page);
+      },
+      "Ladアクションログ取得エラー",
+    );
 
-    try {
-      browser = await chromium.launch({
-        headless: true,
-        timeout: 30000,
-      });
-      const context = await browser.newContext({
-        acceptDownloads: true,
-        viewport: { width: 1280, height: 720 },
-      });
-      const page = await context.newPage();
+    return result || 0;
+  }
 
-      page.setDefaultNavigationTimeout(45000);
-      page.setDefaultTimeout(30000);
+  private async performLadActionOperation(page: Page): Promise<number> {
+    await this.navigateToPage(page, "https://admin038.l-ad.net/front/login/");
 
-      await page.goto("https://admin038.l-ad.net/front/login/", {
-        waitUntil: "domcontentloaded",
-      });
+    await page
+      .getByRole("textbox", { name: "ログインID" })
+      .fill(process.env.LAD_USERNAME ?? "");
+    await page
+      .getByRole("textbox", { name: "パスワード" })
+      .fill(process.env.LAD_PASSWORD ?? "");
+    await page.getByRole("button", { name: "ログイン" }).click();
 
-      await page
-        .getByRole("textbox", { name: "ログインID" })
-        .fill(process.env.LAD_USERNAME ?? "");
-      await page
-        .getByRole("textbox", { name: "パスワード" })
-        .fill(process.env.LAD_PASSWORD ?? "");
-      await page.getByRole("button", { name: "ログイン" }).click();
+    await page.waitForLoadState("domcontentloaded");
 
-      await page.waitForLoadState("domcontentloaded");
+    await page.getByRole("link", { name: "ログ集計" }).click();
+    await page.waitForLoadState("domcontentloaded");
 
-      await page.getByRole("link", { name: "ログ集計" }).click();
-      await page.waitForLoadState("domcontentloaded");
+    await page.getByRole("link", { name: "成果ログ" }).click();
+    await page.waitForLoadState("domcontentloaded");
 
-      await page.getByRole("link", { name: "成果ログ" }).click();
-      await page.waitForLoadState("domcontentloaded");
+    await page.getByRole("button", { name: "本日" }).click();
 
-      await page.getByRole("button", { name: "本日" }).click();
+    await page
+      .waitForResponse(
+        (response) =>
+          response.url().includes("/admin/actionlog/") &&
+          response.status() === 200,
+        { timeout: 20000 },
+      )
+      .catch(() =>
+        this.logger.warn("レスポンス待機タイムアウト、処理を継続します"),
+      );
 
-      await page
-        .waitForResponse(
-          (response) =>
-            response.url().includes("/admin/actionlog/") &&
-            response.status() === 200,
-          { timeout: 20000 },
-        )
-        .catch(() =>
-          this.logger.warn("レスポンス待機タイムアウト、処理を継続します"),
-        );
+    await page.getByRole("button", { name: " CSV生成" }).click();
 
-      await page.getByRole("button", { name: " CSV生成" }).click();
+    await page.waitForTimeout(60000);
 
-      await page.waitForTimeout(60000);
+    await this.navigateToPage(
+      page,
+      "https://admin038.l-ad.net/admin/actionlog/list",
+    );
 
-      await page.goto("https://admin038.l-ad.net/admin/actionlog/list", {
-        waitUntil: "domcontentloaded",
-      });
+    const [download] = await Promise.all([
+      this.waitForDownload(page),
+      page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
+    ]).catch((error: unknown) => {
+      this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+      return [null];
+    });
 
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 45000 }),
-        page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
-      ]).catch((error) => {
-        this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
-        return [null];
-      });
-
-      if (!download) {
-        this.logger.warn(
-          "ダウンロードイベントが取得できませんでした。処理を中止します。",
-        );
-        return 0;
-      }
-
-      const downloadPath = await download.path().catch((error) => {
-        this.logger.error("ダウンロードパスの取得に失敗しました:", error);
-        return null;
-      });
-
-      if (!downloadPath) {
-        this.logger.warn(
-          "ダウンロードパスが取得できません。処理を中止します。",
-        );
-        return 0;
-      }
-
-      const rawData = await this.processCsv(downloadPath);
-      const formattedData = await this.transformData(rawData);
-      return await this.repository.save(formattedData);
-    } catch (error) {
-      this.logger.error("Ladログ取得エラー:", error);
+    if (!download) {
+      this.logger.warn(
+        "ダウンロードイベントが取得できませんでした。処理を中止します。",
+      );
       return 0;
-    } finally {
-      if (browser) {
-        try {
-          await browser.close();
-        } catch (error) {
-          this.logger.error("ブラウザのクローズに失敗しました:", error);
-        }
-      }
     }
+
+    const downloadPath = await download.path().catch((error: unknown) => {
+      this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+      return null;
+    });
+
+    if (!downloadPath) {
+      this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
+      return 0;
+    }
+
+    const rawData = await this.processCsv(downloadPath);
+    const formattedData = await this.transformData(rawData);
+    return await this.repository.save(formattedData);
   }
 
   private async processCsv(filePath: string): Promise<RawLadData[]> {

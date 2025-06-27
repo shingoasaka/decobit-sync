@@ -1,10 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { chromium, Browser, Page } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
+import { LogService } from "src/modules/logs/types";
 import { CatsClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { parseToJst } from "src/libs/date-utils";
+import { BaseAspService } from "../../base/base-asp.service";
 
 interface RawCatsData {
   クリック日時?: string;
@@ -12,122 +14,69 @@ interface RawCatsData {
 }
 
 @Injectable()
-export class CatsClickLogService {
-  private readonly logger = new Logger(CatsClickLogService.name);
-  constructor(private readonly repository: CatsClickLogRepository) {}
+export class CatsClickLogService extends BaseAspService implements LogService {
+  constructor(private readonly repository: CatsClickLogRepository) {
+    super(CatsClickLogService.name);
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
-    try {
-      browser = await chromium.launch({ headless: true });
-      const page = await this.setupPage(browser);
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performCatsOperation(page);
+      },
+      "Catsクリックログ取得エラー",
+    );
 
-      await this.login(page);
-      if (!(await this.navigateToReport(page))) {
-        this.logger.warn(
-          "検索結果が存在しないため、ダウンロードをスキップします",
-        );
-        return 0;
-      }
+    return result || 0;
+  }
 
-      const downloadPath = await this.downloadReport(page);
-      const rawData = await this.processCsv(downloadPath);
-      const formattedData = await this.transformData(rawData);
-      return await this.repository.save(formattedData);
-    } catch (error) {
-      this.handleError("fetchAndInsertLogs", error);
+  private async performCatsOperation(page: Page): Promise<number> {
+    await this.navigateToPage(page, process.env.CATS_URL ?? "");
+
+    await page.fill('input[name="login_id"]', process.env.CATS_ID ?? "");
+    await page.fill('input[name="password"]', process.env.CATS_PASSWORD ?? "");
+    await page.click('input[type="submit"]');
+
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(2000);
+
+    await page.click('a[href="/report/click"]');
+    await page.waitForTimeout(2000);
+
+    await page.click('input[name="date_type"][value="today"]');
+    await page.waitForTimeout(2000);
+
+    await page.click('input[type="submit"]');
+    await page.waitForTimeout(2000);
+
+    const [download] = await Promise.all([
+      this.waitForDownload(page),
+      page.click('a[href*="download"]'),
+    ]).catch((error: unknown) => {
+      this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+      return [null];
+    });
+
+    if (!download) {
+      this.logger.warn(
+        "ダウンロードイベントが取得できませんでした。処理を中止します。",
+      );
       return 0;
-    } finally {
-      await browser?.close();
     }
-  }
 
-  private async setupPage(browser: Browser): Promise<Page> {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto(process.env.CATS_URL ?? "");
-    return page;
-  }
+    const downloadPath = await download.path().catch((error: unknown) => {
+      this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+      return null;
+    });
 
-  private async login(page: Page): Promise<void> {
-    try {
-      await page.fill(
-        'input[type="text"][name="loginId"]',
-        process.env.CATS_ID ?? "",
-      );
-      await page.fill(
-        'input[type="password"][name="password"]',
-        process.env.CATS_PASSWORD ?? "",
-      );
-      await page.click("button.btn.btn-primary.btn-block.btn-flat.btn-lg");
-      await page.waitForLoadState("networkidle");
-      await page.waitForTimeout(2000);
-      await page.goto(process.env.CATS_URL + "clicklog/list");
-    } catch (error) {
-      throw new Error("ログイン処理に失敗しました");
+    if (!downloadPath) {
+      this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
+      return 0;
     }
-  }
 
-  private async navigateToReport(page: Page): Promise<boolean> {
-    try {
-      await page.click(
-        "button.btn.btn-default.btn-sm.btn-flat.setDateButton[value='today']",
-      );
-      await page.waitForTimeout(2000);
-      await page.click("button.btn.btn-primary.searchFormSubmit");
-      await page.waitForTimeout(2000);
-
-      const emptyDataElement = await page.$(".dataTables_empty");
-      if (emptyDataElement) {
-        const emptyDataMessage = await page.evaluate(
-          (el) => el.textContent,
-          emptyDataElement,
-        );
-        return !emptyDataMessage?.includes("データはありません");
-      }
-
-      await page.click("#csvBtn");
-      await page.waitForTimeout(2000);
-      await page.reload();
-      await page.waitForLoadState("networkidle");
-
-      return true;
-    } catch (error) {
-      throw new Error("検索結果の取得に失敗しました");
-    }
-  }
-
-  private async downloadReport(page: Page): Promise<string> {
-    try {
-      const emptyDataElement = await page.$(".dataTables_empty");
-      if (emptyDataElement) {
-        const emptyDataMessage = await page.evaluate(
-          (el) => el.textContent,
-          emptyDataElement,
-        );
-        if (emptyDataMessage?.includes("データはありません")) {
-          throw new Error(
-            "データが存在しないため、ダウンロードをスキップします",
-          );
-        }
-      }
-
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 60000 }),
-        page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
-      ]);
-
-      const downloadPath = await download.path();
-      if (!downloadPath) {
-        throw new Error("ダウンロードファイルのパスが取得できませんでした");
-      }
-
-      return downloadPath;
-    } catch (error) {
-      throw new Error(
-        `レポートのダウンロードに失敗しました: ${error instanceof Error ? error.message : error}`,
-      );
-    }
+    const rawData = await this.processCsv(downloadPath);
+    const formattedData = await this.transformData(rawData);
+    return await this.repository.save(formattedData);
   }
 
   private async processCsv(downloadPath: string): Promise<RawCatsData[]> {
@@ -196,13 +145,6 @@ export class CatsClickLogService {
 
     return formatted.filter(
       (record): record is NonNullable<typeof record> => record !== null,
-    );
-  }
-
-  private handleError(method: string, error: unknown): void {
-    this.logger.error(
-      `❌ ${method} でエラーが発生しました:`,
-      error instanceof Error ? error.message : "Unknown error",
     );
   }
 }

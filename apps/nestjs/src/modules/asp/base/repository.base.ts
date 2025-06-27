@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "@prismaService";
-import { AspType, Prisma } from "@operate-ad/prisma";
+import { AspType } from "@operate-ad/prisma";
 import { getNowJstForDB } from "src/libs/date-utils";
 import { startOfDay } from "date-fns";
 
