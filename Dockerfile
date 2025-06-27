@@ -25,8 +25,27 @@
     
     # 本番用の軽量コンテナを作成
     FROM node:22-slim
-    RUN apt-get update -y && apt-get install -y openssl && \
-        npm install -g pnpm@9.12.3
+    RUN apt-get update -y && apt-get install -y \
+        openssl \
+        wget \
+        gnupg \
+        ca-certificates \
+        procps \
+        libxss1 \
+        libnss3 \
+        libnspr4 \
+        libatk-bridge2.0-0 \
+        libdrm2 \
+        libxkbcommon0 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxrandr2 \
+        libgbm1 \
+        libasound2 \
+        libpango-1.0-0 \
+        libcairo2 \
+        libatspi2.0-0 \
+        && npm install -g pnpm@9.12.3
     WORKDIR /app
     
     # build ステージから必要なファイルをコピー
@@ -44,6 +63,9 @@
     # 本番用依存関係だけをインストール (workspaceリンクは残す)
     RUN pnpm install --frozen-lockfile --prod --ignore-scripts && \
         pnpm rebuild
+    
+    # Playwrightのブラウザバイナリをインストール
+    RUN npx playwright install chromium --with-deps
     
     # 環境変数の設定
     ENV NODE_ENV=production

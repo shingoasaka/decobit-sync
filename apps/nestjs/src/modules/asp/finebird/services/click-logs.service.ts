@@ -1,11 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { chromium, Browser, Page } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
 import { FinebirdClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
 import { processReferrerLink } from "../../base/repository.base";
+import { BaseAspService } from "../../base/base-asp.service";
 
 interface RawFinebirdData {
   サイト名?: string;
@@ -46,36 +47,102 @@ const WAIT_TIME = {
 } as const;
 
 @Injectable()
-export class FinebirdClickLogService implements LogService {
-  private readonly logger = new Logger(FinebirdClickLogService.name);
-
+export class FinebirdClickLogService
+  extends BaseAspService
+  implements LogService
+{
   constructor(
     private readonly repository: FinebirdClickLogRepository,
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    super(FinebirdClickLogService.name);
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
-    try {
-      browser = await this.initializeBrowser();
-      const page = await this.setupPage(browser);
-      await this.login(page);
-      const hasData = await this.navigateToReport(page);
-      if (!hasData) {
-        this.logger.warn(
-          "検索結果が存在しないため、ダウンロードをスキップします",
-        );
-        return 0;
-      }
-      const downloadPath = await this.downloadReport(page);
-      const rawData = await this.processCsv(downloadPath);
-      const formattedData = await this.transformData(rawData);
-      return await this.repository.save(formattedData);
-    } catch (error) {
-      this.handleError("fetchAndInsertLogs", error);
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performFinebirdOperation(page);
+      },
+      "Finebirdクリックログ取得エラー",
+    );
+
+    return result || 0;
+  }
+
+  private async performFinebirdOperation(page: Page): Promise<number> {
+    await this.navigateToPage(page, process.env.FINEBIRD_URL ?? "");
+
+    await page.fill(SELECTORS.LOGIN.ID, process.env.FINEBIRD_ID ?? "");
+    await page.fill(
+      SELECTORS.LOGIN.PASSWORD,
+      process.env.FINEBIRD_PASSWORD ?? "",
+    );
+    await (await page.waitForSelector(SELECTORS.LOGIN.SUBMIT)).click();
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(WAIT_TIME.SHORT);
+    await page.goto(process.env.FINEBIRD_URL + "partneradmin/report/ad/list");
+
+    const hasData = await this.navigateToReport(page);
+    if (!hasData) {
+      this.logger.warn(
+        "検索結果が存在しないため、ダウンロードをスキップします",
+      );
       return 0;
-    } finally {
-      await browser?.close();
+    }
+
+    const [download] = await Promise.all([
+      this.waitForDownload(page),
+      (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
+    ]).catch((error: unknown) => {
+      this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+      return [null];
+    });
+
+    if (!download) {
+      this.logger.warn(
+        "ダウンロードイベントが取得できませんでした。処理を中止します。",
+      );
+      return 0;
+    }
+
+    const downloadPath = await download.path().catch((error: unknown) => {
+      this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+      return null;
+    });
+
+    if (!downloadPath) {
+      this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
+      return 0;
+    }
+
+    const rawData = await this.processCsv(downloadPath);
+    const formattedData = await this.transformData(rawData);
+    return await this.repository.save(formattedData);
+  }
+
+  private async navigateToReport(page: Page): Promise<boolean> {
+    try {
+      await (await page.waitForSelector(SELECTORS.REPORT.OPEN_SEARCH)).click();
+      await page.waitForTimeout(WAIT_TIME.SHORT);
+      await (await page.waitForSelector(SELECTORS.REPORT.TODAY)).click();
+      await page.waitForTimeout(WAIT_TIME.SHORT);
+      await (
+        await page.waitForSelector(SELECTORS.REPORT.SEARCH_BUTTON)
+      ).click();
+      await page.waitForTimeout(WAIT_TIME.SHORT);
+
+      const noDataElement = await page.$(".no-data");
+      if (noDataElement) {
+        return false;
+      }
+
+      return true;
+    } catch (error: unknown) {
+      this.logger.error(
+        "レポートナビゲーション中にエラーが発生しました:",
+        error,
+      );
+      return false;
     }
   }
 
@@ -85,7 +152,7 @@ export class FinebirdClickLogService implements LogService {
       const cleanValue = value.replace(/[,¥]/g, "");
       const num = parseInt(cleanValue, 10);
       return isNaN(num) ? 0 : num;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(`Invalid number format: ${value}`);
       return 0;
     }
@@ -107,14 +174,13 @@ export class FinebirdClickLogService implements LogService {
       }
 
       return records;
-    } catch (error) {
-      throw new Error(
-        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
-      );
+    } catch (error: unknown) {
+      this.logger.error("CSVの処理に失敗しました:", error);
+      return [];
     } finally {
       try {
         fs.unlinkSync(filePath);
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error("Error deleting temporary file:", error);
       }
     }
@@ -168,99 +234,6 @@ export class FinebirdClickLogService implements LogService {
 
     return formatted.filter(
       (record): record is NonNullable<typeof record> => record !== null,
-    );
-  }
-
-  private async initializeBrowser(): Promise<Browser> {
-    return await chromium.launch({ headless: true });
-  }
-
-  private async setupPage(browser: Browser) {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto(process.env.FINEBIRD_URL ?? "");
-    return page;
-  }
-
-  private async login(page: Page): Promise<void> {
-    await page.fill(SELECTORS.LOGIN.ID, process.env.FINEBIRD_ID ?? "");
-    await page.fill(
-      SELECTORS.LOGIN.PASSWORD,
-      process.env.FINEBIRD_PASSWORD ?? "",
-    );
-    await (await page.waitForSelector(SELECTORS.LOGIN.SUBMIT)).click();
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(WAIT_TIME.SHORT);
-    await page.goto(process.env.FINEBIRD_URL + "partneradmin/report/ad/list");
-  }
-
-  private async navigateToReport(page: Page): Promise<boolean> {
-    try {
-      await (await page.waitForSelector(SELECTORS.REPORT.OPEN_SEARCH)).click();
-      await page.waitForTimeout(WAIT_TIME.SHORT);
-      await (await page.waitForSelector(SELECTORS.REPORT.TODAY)).click();
-      await page.waitForTimeout(WAIT_TIME.SHORT);
-      await (
-        await page.waitForSelector(SELECTORS.REPORT.SEARCH_BUTTON)
-      ).click();
-      await page.waitForTimeout(WAIT_TIME.SHORT);
-
-      /**
-       * Finebirdのレポートページでデータが存在しない場合のチェック
-       * Finebirdはデータが存在しない場合、colspan='17'の空のtd要素を表示する
-       * そのため、colspan='17'のtd要素が存在する場合、データが存在しないと判断する
-       */
-      const emptyDataElement = await page.$("td[colspan='17']");
-      if (emptyDataElement) {
-        const emptyDataMessage = await page.evaluate(
-          (el) => el.textContent,
-          emptyDataElement,
-        );
-        if (
-          emptyDataMessage &&
-          emptyDataMessage.includes("該当するデータがありませんでした。")
-        ) {
-          this.logger.warn("検索結果が存在しませんが、処理を継続します");
-          return false;
-        }
-      }
-
-      return true;
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("TimeoutError")) {
-        throw new Error(
-          "ページ要素の取得に失敗しました。タイムアウトが発生しました。",
-        );
-      }
-      throw error;
-    }
-  }
-
-  private async downloadReport(page: Page): Promise<string> {
-    try {
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 60000 }),
-        (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
-      ]);
-
-      const downloadPath = await download.path();
-      if (!downloadPath) {
-        throw new Error("ダウンロードパスが取得できません");
-      }
-      return downloadPath;
-    } catch (error) {
-      throw new Error(
-        `レポートダウンロード中にエラー: ${
-          error instanceof Error ? error.message : error
-        }`,
-      );
-    }
-  }
-
-  private handleError(method: string, error: unknown): void {
-    this.logger.error(
-      `Error in ${method}:`,
-      error instanceof Error ? error.message : "Unknown error",
     );
   }
 }

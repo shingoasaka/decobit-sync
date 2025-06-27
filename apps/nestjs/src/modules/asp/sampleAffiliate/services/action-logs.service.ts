@@ -1,10 +1,11 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { chromium, Browser, Page } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
 import { SampleAffiliateActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
+import { BaseAspService } from "../../base/base-asp.service";
 
 interface SampleAffiliateSelectors {
   LOGIN: {
@@ -58,50 +59,30 @@ interface RawSampleAffiliateData {
 }
 
 @Injectable()
-export class SampleAffiliateActionLogService implements LogService {
-  private readonly logger = new Logger(SampleAffiliateActionLogService.name);
-
-  constructor(
-    private readonly repository: SampleAffiliateActionLogRepository,
-  ) {}
+export class SampleAffiliateActionLogService
+  extends BaseAspService
+  implements LogService
+{
+  constructor(private readonly repository: SampleAffiliateActionLogRepository) {
+    super(SampleAffiliateActionLogService.name);
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
-    try {
-      browser = await this.initializeBrowser();
-      const page = await this.setupPage(browser);
-      await this.login(page);
-      await this.navigateToReport(page);
-      const downloadPath = await this.downloadReport(page);
-      const rawData = await this.processCsv(downloadPath);
-      const formattedData = await this.transformData(rawData);
-      return await this.repository.save(formattedData);
-    } catch (error) {
-      this.logger.error("SampleAffiliateログ取得エラー:", error);
-      return 0;
-    } finally {
-      if (browser) {
-        try {
-          await browser.close();
-        } catch (error) {
-          this.logger.error("ブラウザのクローズに失敗しました:", error);
-        }
-      }
-    }
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performSampleAffiliateActionOperation(page);
+      },
+      "SampleAffiliateアクションログ取得エラー",
+    );
+
+    return result || 0;
   }
 
-  private async initializeBrowser(): Promise<Browser> {
-    return await chromium.launch({ headless: true });
-  }
+  private async performSampleAffiliateActionOperation(
+    page: Page,
+  ): Promise<number> {
+    await this.navigateToPage(page, process.env.SAMPLE_AFFILIATE_URL ?? "");
 
-  private async setupPage(browser: Browser): Promise<Page> {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto(process.env.SAMPLE_AFFILIATE_URL ?? "");
-    return page;
-  }
-
-  private async login(page: Page): Promise<void> {
     await page.fill(SELECTORS.LOGIN.ID, process.env.SAMPLE_AFFILIATE_ID ?? "");
     await page.fill(
       SELECTORS.LOGIN.PASSWORD,
@@ -110,9 +91,7 @@ export class SampleAffiliateActionLogService implements LogService {
     await (await page.waitForSelector(SELECTORS.LOGIN.SUBMIT)).click();
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(WAIT_TIME.SHORT);
-  }
 
-  private async navigateToReport(page: Page): Promise<void> {
     try {
       await (await page.waitForSelector(SELECTORS.REPORT.REPORT_MENU)).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
@@ -132,58 +111,73 @@ export class SampleAffiliateActionLogService implements LogService {
 
       const downloadButton = await page.$(SELECTORS.REPORT.DOWNLOAD);
       if (!downloadButton) {
-        throw new Error("検索結果が存在しません");
+        this.logger.warn("検索結果が存在しません");
+        return 0;
       }
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("TimeoutError")) {
-        throw new Error(
-          "ページ要素の取得に失敗しました。タイムアウトが発生しました。",
-        );
-      }
-      throw error;
-    }
-  }
-
-  private async downloadReport(page: Page): Promise<string> {
-    try {
-      const downloadPath = await this.initiateAndHandleDownload(page);
-      return downloadPath;
-    } catch (error) {
-      this.logger.error("ダウンロード中にエラーが発生しました:", error);
-      throw error;
-    }
-  }
-
-  private async initiateAndHandleDownload(page: Page): Promise<string> {
-    await this.clickDownloadLink(page);
-
-    const frameElement = await page.waitForSelector(
-      SELECTORS.DOWNLOAD_DIALOG.IFRAME,
-    );
-    const frame = await frameElement.contentFrame();
-
-    if (!frame) {
-      throw new Error("ダウンロードダイアログのiframeが見つかりません");
+    } catch (error: unknown) {
+      this.logger.error(
+        "レポートナビゲーション中にエラーが発生しました:",
+        error,
+      );
+      return 0;
     }
 
-    const confirmButton = await frame.waitForSelector(
-      SELECTORS.DOWNLOAD_DIALOG.CONFIRM_BUTTON,
-    );
-    if (!confirmButton) {
-      throw new Error("ダウンロード確認ボタンが見つかりません");
-    }
-
-    const [download] = await Promise.all([
-      page.waitForEvent("download", { timeout: 60000 }),
-      confirmButton.click(),
-    ]);
-
-    const downloadPath = await download.path();
+    const downloadPath = await this.initiateAndHandleDownload(page);
     if (!downloadPath) {
-      throw new Error("ダウンロードパスが取得できません");
+      this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
+      return 0;
     }
 
-    return downloadPath;
+    const rawData = await this.processCsv(downloadPath);
+    const formattedData = await this.transformData(rawData);
+    return await this.repository.save(formattedData);
+  }
+
+  private async initiateAndHandleDownload(page: Page): Promise<string | null> {
+    try {
+      await this.clickDownloadLink(page);
+
+      const frameElement = await page.waitForSelector(
+        SELECTORS.DOWNLOAD_DIALOG.IFRAME,
+      );
+      const frame = await frameElement.contentFrame();
+
+      if (!frame) {
+        this.logger.error("ダウンロードダイアログのiframeが見つかりません");
+        return null;
+      }
+
+      const confirmButton = await frame.waitForSelector(
+        SELECTORS.DOWNLOAD_DIALOG.CONFIRM_BUTTON,
+      );
+      if (!confirmButton) {
+        this.logger.error("ダウンロード確認ボタンが見つかりません");
+        return null;
+      }
+
+      const [download] = await Promise.all([
+        this.waitForDownload(page),
+        confirmButton.click(),
+      ]).catch((error: unknown) => {
+        this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+        return [null];
+      });
+
+      if (!download) {
+        this.logger.warn("ダウンロードイベントが取得できませんでした。");
+        return null;
+      }
+
+      const downloadPath = await download.path().catch((error: unknown) => {
+        this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+        return null;
+      });
+
+      return downloadPath;
+    } catch (error: unknown) {
+      this.logger.error("ダウンロード中にエラーが発生しました:", error);
+      return null;
+    }
   }
 
   private async clickDownloadLink(page: Page): Promise<void> {
@@ -200,9 +194,8 @@ export class SampleAffiliateActionLogService implements LogService {
   ): Promise<RawSampleAffiliateData[]> {
     try {
       const buffer = fs.readFileSync(filePath);
-      const sjisData = iconv.decode(buffer, "Shift_JIS");
-
-      const records = parse(sjisData, {
+      const utf8Data = iconv.decode(buffer, "Shift_JIS");
+      const records = parse(utf8Data, {
         columns: true,
         skip_empty_lines: true,
       }) as RawSampleAffiliateData[];
@@ -213,14 +206,13 @@ export class SampleAffiliateActionLogService implements LogService {
       }
 
       return records;
-    } catch (error) {
-      throw new Error(
-        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
-      );
+    } catch (error: unknown) {
+      this.logger.error("CSVの処理に失敗しました:", error);
+      return [];
     } finally {
       try {
         fs.unlinkSync(filePath);
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error("一時ファイルの削除に失敗しました:", error);
       }
     }

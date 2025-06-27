@@ -1,9 +1,10 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { chromium, Browser, Page } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
 import { MonkeyClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import { LogService } from "src/modules/logs/types";
+import { BaseAspService } from "../../base/base-asp.service";
 
 // 定数を別ファイルに分離することを推奨
 const CONFIG = {
@@ -41,112 +42,80 @@ interface RawMonkeyData {
 }
 
 @Injectable()
-export class MonkeyClickLogService implements LogService {
-  private readonly logger = new Logger(MonkeyClickLogService.name);
-
-  constructor(private readonly repository: MonkeyClickLogRepository) {}
+export class MonkeyClickLogService
+  extends BaseAspService
+  implements LogService
+{
+  constructor(private readonly repository: MonkeyClickLogRepository) {
+    super(MonkeyClickLogService.name);
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
-    try {
-      browser = await this.initializeBrowser();
-      const page = await this.setupPage(browser);
-      await this.login(page);
-      await this.navigateToReport(page);
-      const downloadPath = await this.downloadReport(page);
-      const rawData = await this.processCsv(downloadPath);
-      const formattedData = await this.transformData(rawData);
-      return await this.repository.save(formattedData);
-    } catch (error) {
-      this.logger.error("Monkeyログ取得エラー:", error);
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performMonkeyOperation(page);
+      },
+      "Monkeyクリックログ取得エラー",
+    );
+
+    return result || 0;
+  }
+
+  private async performMonkeyOperation(page: Page): Promise<number> {
+    const url = process.env.MONKEY_URL;
+    if (!url) {
+      this.logger.error("MONKEY_URL is not defined");
       return 0;
-    } finally {
-      if (browser) {
-        try {
-          await browser.close();
-        } catch (error) {
-          this.logger.error("ブラウザのクローズに失敗しました:", error);
-        }
-      }
     }
-  }
 
-  private async initializeBrowser(): Promise<Browser> {
-    try {
-      return await chromium.launch({
-        headless: true,
-        timeout: 30000,
-      });
-    } catch (error) {
-      throw new Error(
-        `Failed to initialize browser: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    }
-  }
+    await this.navigateToPage(page, url);
 
-  private async setupPage(browser: Browser): Promise<Page> {
-    try {
-      const context = await browser.newContext();
-      const page = await context.newPage();
-      const url = process.env.MONKEY_URL;
-      if (!url) throw new Error("MONKEY_URL is not defined");
-
-      await page.goto(url);
-      return page;
-    } catch (error) {
-      throw new Error(
-        `Failed to setup page: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
-    }
-  }
-
-  private async login(page: Page): Promise<void> {
     await page.fill('input[type="text"].ef', process.env.MONKEY_ID ?? "");
     await page.fill(
       'input[type="password"].ef',
       process.env.MONKEY_PASSWORD ?? "",
     );
     await (await page.waitForSelector("button.button.button-squere")).click();
+
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(2000);
-  }
 
-  private async navigateToReport(page: Page): Promise<void> {
-    try {
-      await page.waitForTimeout(2000);
-      await (
-        await page.waitForSelector('li[data-v-d2f0d4f2][id="TAG"].is-size-5')
-      ).click();
-      await page.waitForTimeout(2000);
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("TimeoutError")) {
-        throw new Error(
-          "ページ要素の取得に失敗しました。タイムアウトが発生しました。",
-        );
-      }
-      throw error;
-    }
-  }
+    await page.waitForTimeout(2000);
+    await (
+      await page.waitForSelector('li[data-v-d2f0d4f2][id="TAG"].is-size-5')
+    ).click();
+    await page.waitForTimeout(2000);
 
-  private async downloadReport(page: Page): Promise<string> {
-    try {
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 60000 }),
-        (
-          await page.waitForSelector("button[data-v-de104928].button.is-small")
-        ).click(),
-      ]);
+    const [download] = await Promise.all([
+      this.waitForDownload(page),
+      (
+        await page.waitForSelector("button[data-v-de104928].button.is-small")
+      ).click(),
+    ]).catch((error: unknown) => {
+      this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+      return [null];
+    });
 
-      const downloadPath = await download.path();
-      if (!downloadPath) {
-        throw new Error("ダウンロードパスが取得できません");
-      }
-      return downloadPath;
-    } catch (error) {
-      throw new Error(
-        `レポートダウンロード中にエラー: ${error instanceof Error ? error.message : error}`,
+    if (!download) {
+      this.logger.warn(
+        "ダウンロードイベントが取得できませんでした。処理を中止します。",
       );
+      return 0;
     }
+
+    const downloadPath = await download.path().catch((error: unknown) => {
+      this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+      return null;
+    });
+
+    if (!downloadPath) {
+      this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
+      return 0;
+    }
+
+    const rawData = await this.processCsv(downloadPath);
+    const formattedData = await this.transformData(rawData);
+    return await this.repository.save(formattedData);
   }
 
   private async processCsv(filePath: string): Promise<RawMonkeyData[]> {
@@ -166,14 +135,13 @@ export class MonkeyClickLogService implements LogService {
       }
 
       return records;
-    } catch (error) {
-      throw new Error(
-        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
-      );
+    } catch (error: unknown) {
+      this.logger.error("CSVの処理に失敗しました:", error);
+      return [];
     } finally {
       try {
         fs.unlinkSync(filePath);
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error("一時ファイルの削除に失敗しました:", error);
       }
     }

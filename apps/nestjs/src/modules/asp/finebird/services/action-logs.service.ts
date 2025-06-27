@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { chromium, Browser, Page } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
 import { FinebirdActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
@@ -7,6 +7,7 @@ import { LogService } from "src/modules/logs/types";
 import { PrismaService } from "@prismaService";
 import { processReferrerLink } from "../../base/repository.base";
 import { parseToJst } from "src/libs/date-utils";
+import { BaseAspService } from "../../base/base-asp.service";
 
 interface RawFinebirdData {
   注文日時?: string;
@@ -47,51 +48,31 @@ const WAIT_TIME = {
 } as const;
 
 @Injectable()
-export class FinebirdActionLogService implements LogService {
-  private readonly logger = new Logger(FinebirdActionLogService.name);
-
+export class FinebirdActionLogService
+  extends BaseAspService
+  implements LogService
+{
   constructor(
     private readonly repository: FinebirdActionLogRepository,
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    super(FinebirdActionLogService.name);
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
-    try {
-      browser = await this.initializeBrowser();
-      const page = await this.setupPage(browser);
-      await this.login(page);
-      const hasData = await this.navigateToReport(page);
-      if (!hasData) {
-        this.logger.warn(
-          "検索結果が存在しないため、ダウンロードをスキップします",
-        );
-        return 0;
-      }
-      const downloadPath = await this.downloadReport(page);
-      const rawData = await this.processCsv(downloadPath);
-      const formattedData = await this.transformData(rawData);
-      return await this.repository.save(formattedData);
-    } catch (error) {
-      this.handleError("fetchAndInsertLogs", error);
-      return 0;
-    } finally {
-      await browser?.close();
-    }
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performFinebirdActionOperation(page);
+      },
+      "Finebirdアクションログ取得エラー",
+    );
+
+    return result || 0;
   }
 
-  private async initializeBrowser(): Promise<Browser> {
-    return await chromium.launch({ headless: true });
-  }
+  private async performFinebirdActionOperation(page: Page): Promise<number> {
+    await this.navigateToPage(page, process.env.FINEBIRD_URL ?? "");
 
-  private async setupPage(browser: Browser) {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.goto(process.env.FINEBIRD_URL ?? "");
-    return page;
-  }
-
-  private async login(page: Page): Promise<void> {
     await page.fill(SELECTORS.LOGIN.ID, process.env.FINEBIRD_ID ?? "");
     await page.fill(
       SELECTORS.LOGIN.PASSWORD,
@@ -103,6 +84,43 @@ export class FinebirdActionLogService implements LogService {
     await page.goto(
       (process.env.FINEBIRD_URL ?? "") + "partneradmin/report/action/log/list",
     );
+
+    const hasData = await this.navigateToReport(page);
+    if (!hasData) {
+      this.logger.warn(
+        "検索結果が存在しないため、ダウンロードをスキップします",
+      );
+      return 0;
+    }
+
+    const [download] = await Promise.all([
+      this.waitForDownload(page),
+      (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
+    ]).catch((error: unknown) => {
+      this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+      return [null];
+    });
+
+    if (!download) {
+      this.logger.warn(
+        "ダウンロードイベントが取得できませんでした。処理を中止します。",
+      );
+      return 0;
+    }
+
+    const downloadPath = await download.path().catch((error: unknown) => {
+      this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+      return null;
+    });
+
+    if (!downloadPath) {
+      this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
+      return 0;
+    }
+
+    const rawData = await this.processCsv(downloadPath);
+    const formattedData = await this.transformData(rawData);
+    return await this.repository.save(formattedData);
   }
 
   private async navigateToReport(page: Page): Promise<boolean> {
@@ -145,34 +163,6 @@ export class FinebirdActionLogService implements LogService {
       }
       throw error;
     }
-  }
-
-  private async downloadReport(page: Page): Promise<string> {
-    try {
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 60000 }),
-        (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
-      ]);
-
-      const downloadPath = await download.path();
-      if (!downloadPath) {
-        throw new Error("ダウンロードパスが取得できません");
-      }
-      return downloadPath;
-    } catch (error) {
-      throw new Error(
-        `レポートダウンロード中にエラー: ${
-          error instanceof Error ? error.message : error
-        }`,
-      );
-    }
-  }
-
-  private handleError(method: string, error: unknown): void {
-    this.logger.error(
-      `Error in ${method}:`,
-      error instanceof Error ? error.message : "Unknown error",
-    );
   }
 
   private async processCsv(filePath: string): Promise<RawFinebirdData[]> {

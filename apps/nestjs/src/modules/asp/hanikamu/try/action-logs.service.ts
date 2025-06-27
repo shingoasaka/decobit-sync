@@ -1,5 +1,5 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { chromium, Browser } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
 import { HanikamuActionLogRepository } from "../repositories/action-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
@@ -7,6 +7,7 @@ import * as iconv from "iconv-lite";
 import { LogService } from "src/modules/logs/types";
 import { getNowJstForDisplay } from "src/libs/date-utils";
 import { parseToJst } from "src/libs/date-utils";
+import { BaseAspService } from "../../base/base-asp.service";
 
 interface RawHanikamuData {
   成果発生日?: string;
@@ -14,97 +15,104 @@ interface RawHanikamuData {
 }
 
 @Injectable()
-export class TryActionLogService implements LogService {
-  private readonly logger = new Logger(TryActionLogService.name);
-
-  constructor(private readonly repository: HanikamuActionLogRepository) {}
+export class TryActionLogService extends BaseAspService implements LogService {
+  constructor(private readonly repository: HanikamuActionLogRepository) {
+    super(TryActionLogService.name);
+  }
 
   async fetchAndInsertLogs(): Promise<number> {
-    let browser: Browser | null = null;
-    try {
-      // ブラウザを起動 (ヘッドレスモード)
-      browser = await chromium.launch({ headless: true });
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performHanikamuActionOperation(page);
+      },
+      "Hanikamuアクションログ取得エラー",
+    );
 
-      // 新しいブラウザコンテキストを作成
-      const context = await browser.newContext();
-      const page = await context.newPage();
+    return result || 0;
+  }
 
-      await page.goto("https://www.82comb.net/partner/login");
-      await page.fill(
-        'input[name="c_login_name"]',
-        process.env.HANIKAMU_USERNAME ?? "",
+  private async performHanikamuActionOperation(page: Page): Promise<number> {
+    await this.navigateToPage(page, "https://www.82comb.net/partner/login");
+
+    await page.fill(
+      'input[name="c_login_name"]',
+      process.env.HANIKAMU_USERNAME ?? "",
+    );
+    await page.fill(
+      'input[name="c_login_password"]',
+      process.env.HANIKAMU_PASSWORD ?? "",
+    );
+
+    await Promise.all([page.click('input[name="clientlogin"]')]);
+
+    await page.click("//a[@href='/partner/conversion/tracking']");
+    await page.waitForTimeout(2000);
+
+    await page.locator("#select_site").selectOption("1176");
+    await page.waitForTimeout(1000);
+
+    const today = getNowJstForDisplay();
+    const formattedDate = today.getDate().toString();
+    await page.locator('#search input[name="start_date"]').click();
+
+    await page.waitForSelector(".datepicker-days", { timeout: 10000 });
+    const startCalendar = page.locator(".datepicker-days").first();
+
+    await startCalendar
+      .locator("td.day")
+      .first()
+      .waitFor({ state: "attached", timeout: 10000 });
+
+    await startCalendar
+      .locator("td.day:not(.old):not(.new)", {
+        hasText: new RegExp(`^${formattedDate}$`),
+      })
+      .click({ timeout: 10000 });
+
+    await page.locator('#search input[name="end_date"]').click();
+
+    const endCalendar = page.locator(".datepicker-days").nth(1);
+    await endCalendar
+      .locator("td.day")
+      .nth(1)
+      .waitFor({ state: "attached", timeout: 10000 });
+
+    await endCalendar
+      .locator("td.day:not(.old):not(.new)", {
+        hasText: new RegExp(`^${formattedDate}$`),
+      })
+      .click({ timeout: 10000 });
+
+    await page.locator("label").filter({ hasText: "成果発生日" }).click();
+
+    const [download] = await Promise.all([
+      this.waitForDownload(page),
+      page.getByRole("button", { name: "  上記条件でCSVダウンロード" }).click(),
+    ]).catch((error: unknown) => {
+      this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+      return [null];
+    });
+
+    if (!download) {
+      this.logger.warn(
+        "ダウンロードイベントが取得できませんでした。処理を中止します。",
       );
-      await page.fill(
-        'input[name="c_login_password"]',
-        process.env.HANIKAMU_PASSWORD ?? "",
-      );
-
-      await Promise.all([page.click('input[name="clientlogin"]')]);
-
-      await page.click("//a[@href='/partner/conversion/tracking']");
-      await page.waitForTimeout(2000);
-
-      await page.locator("#select_site").selectOption("1176");
-      await page.waitForTimeout(1000);
-
-      // 今日の日付を取得
-      const today = getNowJstForDisplay();
-      const formattedDate = today.getDate().toString();
-      await page.locator('#search input[name="start_date"]').click();
-
-      await page.waitForSelector(".datepicker-days", { timeout: 10000 });
-      const startCalendar = page.locator(".datepicker-days").first();
-
-      await startCalendar
-        .locator("td.day")
-        .first()
-        .waitFor({ state: "attached", timeout: 10000 });
-
-      await startCalendar
-        .locator("td.day:not(.old):not(.new)", {
-          hasText: new RegExp(`^${formattedDate}$`),
-        })
-        .click({ timeout: 10000 });
-
-      await page.locator('#search input[name="end_date"]').click();
-
-      const endCalendar = page.locator(".datepicker-days").nth(1);
-      await endCalendar
-        .locator("td.day")
-        .nth(1)
-        .waitFor({ state: "attached", timeout: 10000 });
-
-      await endCalendar
-        .locator("td.day:not(.old):not(.new)", {
-          hasText: new RegExp(`^${formattedDate}$`),
-        })
-        .click({ timeout: 10000 });
-
-      await page.locator("label").filter({ hasText: "成果発生日" }).click();
-
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 60000 }),
-        page
-          .getByRole("button", { name: "  上記条件でCSVダウンロード" })
-          .click(),
-      ]);
-
-      const downloadPath = await download.path();
-      if (!downloadPath) {
-        throw new Error("ダウンロードパスが取得できません");
-      }
-
-      const rawData = await this.processCsv(downloadPath);
-      const formattedData = await this.transformData(rawData);
-      return await this.repository.save(formattedData);
-    } catch (error) {
-      this.logger.error("Error during fetchAndInsertLogs:", error);
       return 0;
-    } finally {
-      if (browser) {
-        await browser.close();
-      }
     }
+
+    const downloadPath = await download.path().catch((error: unknown) => {
+      this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+      return null;
+    });
+
+    if (!downloadPath) {
+      this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
+      return 0;
+    }
+
+    const rawData = await this.processCsv(downloadPath);
+    const formattedData = await this.transformData(rawData);
+    return await this.repository.save(formattedData);
   }
 
   private async processCsv(filePath: string): Promise<RawHanikamuData[]> {
@@ -123,14 +131,13 @@ export class TryActionLogService implements LogService {
       }
 
       return records;
-    } catch (error) {
-      throw new Error(
-        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
-      );
+    } catch (error: unknown) {
+      this.logger.error("CSVの処理に失敗しました:", error);
+      return [];
     } finally {
       try {
         fs.unlinkSync(filePath);
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error("Error deleting temporary file:", error);
       }
     }
