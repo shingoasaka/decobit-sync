@@ -52,7 +52,8 @@ export class MetronClickLogRepository extends BaseAspRepository {
       return { referrerLinkId: null, referrer_url: null };
     }
 
-    const creativeValue = this.extractUtmCreative(referrer_url);
+    const { creativeValue, originalUrl } =
+      this.extractUtmCreative(referrer_url);
     if (!creativeValue) {
       return { referrerLinkId: null, referrer_url };
     }
@@ -73,6 +74,7 @@ export class MetronClickLogRepository extends BaseAspRepository {
       const newLink = await this.prisma.referrerLink.create({
         data: {
           creative_value: creativeValue,
+          original_url: originalUrl,
         },
       });
 

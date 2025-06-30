@@ -39,17 +39,25 @@ interface ActionLog {
 /**
  * UTMパラメータからクリエイティブ値を抽出
  * @param referrer_url リファラURL
- * @returns utm_creativeパラメータの値、またはnull
+ * @returns utm_creativeパラメータの値と元のURL、またはnull
  */
-export function extractUtmCreative(referrer_url: string | null): string | null {
-  if (!referrer_url) return null;
+export function extractUtmCreative(referrer_url: string | null): {
+  creativeValue: string | null;
+  originalUrl: string | null;
+} {
+  if (!referrer_url) return { creativeValue: null, originalUrl: null };
+
   try {
     const url = new URL(referrer_url);
     const utmCreative = url.searchParams.get("utm_creative");
-    return utmCreative || null;
+
+    return {
+      creativeValue: utmCreative || null,
+      originalUrl: utmCreative ? referrer_url : null, // utm_creativeがある場合のみURL全体を保存
+    };
   } catch (error) {
     // URLのパースに失敗した場合はnullを返す
-    return null;
+    return { creativeValue: null, originalUrl: null };
   }
 }
 
@@ -68,7 +76,7 @@ export async function processReferrerLink(
     return { referrerLinkId: null, referrer_url: null };
   }
 
-  const creativeValue = extractUtmCreative(referrer_url);
+  const { creativeValue, originalUrl } = extractUtmCreative(referrer_url);
   if (!creativeValue) {
     return { referrerLinkId: null, referrer_url };
   }
@@ -80,6 +88,7 @@ export async function processReferrerLink(
       },
       create: {
         creative_value: creativeValue,
+        original_url: originalUrl,
       },
       update: {}, // 既存のレコードは更新不要
     });
@@ -113,7 +122,8 @@ export abstract class BaseActionLogRepository {
       return { referrerLinkId: null, referrer_url: null };
     }
 
-    const creativeValue = this.extractUtmCreative(referrer_url);
+    const { creativeValue, originalUrl } =
+      this.extractUtmCreative(referrer_url);
     if (!creativeValue) {
       return { referrerLinkId: null, referrer_url };
     }
@@ -125,6 +135,7 @@ export abstract class BaseActionLogRepository {
         },
         create: {
           creative_value: creativeValue,
+          original_url: originalUrl,
         },
         update: {}, // 既存のレコードは更新不要
       });
@@ -139,13 +150,20 @@ export abstract class BaseActionLogRepository {
     }
   }
 
-  protected extractUtmCreative(referrer_url: string): string | null {
+  protected extractUtmCreative(referrer_url: string): {
+    creativeValue: string | null;
+    originalUrl: string | null;
+  } {
     try {
       const url = new URL(referrer_url);
       const utmCreative = url.searchParams.get("utm_creative");
-      return utmCreative || null;
+
+      return {
+        creativeValue: utmCreative || null,
+        originalUrl: utmCreative ? referrer_url : null,
+      };
     } catch (error) {
-      return null;
+      return { creativeValue: null, originalUrl: null };
     }
   }
 
@@ -184,13 +202,20 @@ export abstract class BaseAspRepository {
     this.logger = new Logger(this.constructor.name);
   }
 
-  protected extractUtmCreative(referrer_url: string): string | null {
+  protected extractUtmCreative(referrer_url: string): {
+    creativeValue: string | null;
+    originalUrl: string | null;
+  } {
     try {
       const url = new URL(referrer_url);
       const utmCreative = url.searchParams.get("utm_creative");
-      return utmCreative || null;
+
+      return {
+        creativeValue: utmCreative || null,
+        originalUrl: utmCreative ? referrer_url : null,
+      };
     } catch (error) {
-      return null;
+      return { creativeValue: null, originalUrl: null };
     }
   }
 

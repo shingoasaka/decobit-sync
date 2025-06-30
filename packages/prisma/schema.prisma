@@ -345,6 +345,7 @@ model AffiliateLink {
 model ReferrerLink{
   id              Int     @id @default(autoincrement())
   creative_value  String  @unique
+  original_url    String?
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
