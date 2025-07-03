@@ -27,7 +27,7 @@ export class TikTokAdgroupStatusHistoryRepository {
 
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
-        const result = await tx.tikTokStatusHistoryAdgroup.createMany({
+        const result = await tx.tikTokAdgroupStatusHistory.createMany({
           data: batch,
           skipDuplicates: true,
         });
@@ -45,9 +45,9 @@ export class TikTokAdgroupStatusHistoryRepository {
   async getLatestStatus(
     adgroupId: bigint,
   ): Promise<TikTokAdgroupStatusHistory | null> {
-    return await this.prisma.tikTokStatusHistoryAdgroup.findFirst({
+    return await this.prisma.tikTokAdgroupStatusHistory.findFirst({
       where: { platform_adgroup_id: adgroupId },
-      orderBy: { status_updated_time: "desc" },
+      orderBy: { created_at: "desc" },
     });
   }
 
@@ -66,9 +66,9 @@ export class TikTokAdgroupStatusHistoryRepository {
       TikTokAdgroupStatusHistory[]
     >`
       SELECT DISTINCT ON (platform_adgroup_id) *
-      FROM "TikTokStatusHistoryAdgroup"
+      FROM "TikTokAdgroupStatusHistory"
       WHERE platform_adgroup_id = ANY(${adgroupIds}::bigint[])
-      ORDER BY platform_adgroup_id, status_updated_time DESC
+      ORDER BY platform_adgroup_id, created_at DESC
     `;
 
     return latestStatuses;

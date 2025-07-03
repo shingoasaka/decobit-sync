@@ -55,6 +55,7 @@ model User {
   firebase_uid                      String                         @unique // google_subに変更するか削除するか検討
   role                              Role
   department_id                     Int
+  is_active                         Boolean                        @default(true)
   created_at                        DateTime                       @default(now())
   updated_at                        DateTime                       @updatedAt
   department                        Department                     @relation(fields: [department_id], references: [id])
@@ -238,6 +239,8 @@ model TikTokRawReportCampaign {
   created_at             DateTime
 
   ad_account             AdAccount @relation(fields: [ad_account_id], references: [id])
+  @@index ([platform_campaign_id, stat_time_day,created_at])
+
 }
 
 model TikTokRawReportAdgroup {
@@ -260,6 +263,7 @@ model TikTokRawReportAdgroup {
   created_at             DateTime
 
   ad_account            AdAccount @relation(fields: [ad_account_id], references: [id])
+  @@index ([platform_adgroup_id, stat_time_day,created_at])
 }
 
 model TikTokRawReportAd {
@@ -287,45 +291,44 @@ model TikTokRawReportAd {
   created_at             DateTime
 
   ad_account            AdAccount @relation(fields: [ad_account_id], references: [id])
+  @@index ([platform_ad_id, stat_time_day,created_at])
+
 }
 
-model TikTokStatusHistoryCampaign {
+model TikTokCampaignStatusHistory {
   id                     Int      @id @default(autoincrement())
   ad_account_id          Int
   ad_platform_account_id String
   platform_campaign_id   BigInt
-  status                 String
-  opt_status             String
-  status_updated_time    DateTime
+  operation_status             String
+  secondary_status       String
   created_at             DateTime @default(now())
 
-  @@index([platform_campaign_id, status_updated_time])
+  @@index([platform_campaign_id, created_at])
 }
 
-model TikTokStatusHistoryAdgroup {
+model TikTokAdgroupStatusHistory {
   id                     Int      @id @default(autoincrement())
   ad_account_id          Int
   ad_platform_account_id String
   platform_adgroup_id    BigInt
-  status                 String
-  opt_status             String
-  status_updated_time    DateTime
+  operation_status             String
+  secondary_status       String
   created_at             DateTime @default(now())
 
-  @@index([platform_adgroup_id, status_updated_time])
+  @@index([platform_adgroup_id, created_at])
 }
 
-model TikTokStatusHistoryAd {
+model TikTokAdStatusHistory {
   id                     Int      @id @default(autoincrement())
   ad_account_id          Int
   ad_platform_account_id String
   platform_ad_id         BigInt
-  status                 String
-  opt_status             String
-  status_updated_time    DateTime
+  operation_status             String
+  secondary_status       String
   created_at             DateTime @default(now())
 
-  @@index([platform_ad_id, status_updated_time])
+  @@index([platform_ad_id, created_at])
 }
 
 model AffiliateLink {

@@ -27,7 +27,7 @@ export class TikTokCampaignStatusHistoryRepository {
 
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
-        const result = await tx.tikTokStatusHistoryCampaign.createMany({
+        const result = await tx.tikTokCampaignStatusHistory.createMany({
           data: batch,
           skipDuplicates: true,
         });
@@ -45,9 +45,9 @@ export class TikTokCampaignStatusHistoryRepository {
   async getLatestStatus(
     campaignId: bigint,
   ): Promise<TikTokCampaignStatusHistory | null> {
-    return await this.prisma.tikTokStatusHistoryCampaign.findFirst({
+    return await this.prisma.tikTokCampaignStatusHistory.findFirst({
       where: { platform_campaign_id: campaignId },
-      orderBy: { status_updated_time: "desc" },
+      orderBy: { created_at: "desc" },
     });
   }
 
@@ -66,9 +66,9 @@ export class TikTokCampaignStatusHistoryRepository {
       TikTokCampaignStatusHistory[]
     >`
       SELECT DISTINCT ON (platform_campaign_id) *
-      FROM "TikTokStatusHistoryCampaign"
+      FROM "TikTokCampaignStatusHistory"
       WHERE platform_campaign_id = ANY(${campaignIds}::bigint[])
-      ORDER BY platform_campaign_id, status_updated_time DESC
+      ORDER BY platform_campaign_id, created_at DESC
     `;
 
     return latestStatuses;

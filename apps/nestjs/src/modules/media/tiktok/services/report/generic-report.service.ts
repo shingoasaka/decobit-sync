@@ -370,9 +370,8 @@ export abstract class GenericReportService<
         const baseRecord = {
           ad_account_id: accountId,
           ad_platform_account_id: advertiserId,
-          status: status.secondary_status,
-          opt_status: status.operation_status,
-          status_updated_time: new Date(status.modify_time),
+          operation_status: status.operation_status,
+          secondary_status: status.secondary_status,
           created_at: now,
         };
 

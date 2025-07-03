@@ -7,12 +7,10 @@ export interface TikTokStatusHistoryBase {
   ad_account_id: number;
   /** プラットフォーム広告主ID */
   ad_platform_account_id: string;
-  /** ステータス変更日時 */
-  status_updated_time: Date;
-  /** サブステータス（例: ACTIVE, PAUSED など） */
-  status: string;
-  /** 運用ステータス（例: ENABLED, DISABLED など） */
-  opt_status: string;
+  /** 操作ステータス */
+  operation_status: string;
+  /** セカンダリステータス */
+  secondary_status: string;
   /** レコード作成日時 */
   created_at: Date;
 }
