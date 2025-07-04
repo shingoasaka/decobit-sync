@@ -13,8 +13,16 @@ import { TikTokCampaignStatusHistoryRepository } from "./repositories/status/sta
 import { TikTokAdgroupStatusHistoryRepository } from "./repositories/status/status-history-adgroup.repository";
 import { TikTokAdStatusHistoryRepository } from "./repositories/status/status-history-ad.repository";
 
+// 共通モジュール
+import { MasterDataModule } from "../common/master-data/master-data.module";
+
 @Module({
-  imports: [PrismaModule, HttpModule, forwardRef(() => MediaModule)],
+  imports: [
+    PrismaModule,
+    HttpModule,
+    forwardRef(() => MediaModule),
+    MasterDataModule,
+  ],
   providers: [
     TikTokAccountService,
     TikTokCampaignReportService,

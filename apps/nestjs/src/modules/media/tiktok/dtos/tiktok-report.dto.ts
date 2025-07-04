@@ -26,6 +26,7 @@ export interface TikTokAdMetrics extends TikTokMetrics {
 // Adgroup用のメトリクス
 export interface TikTokAdgroupMetrics extends TikTokMetrics {
   adgroup_name: string;
+  campaign_id: string; // campaign_idを追加
 }
 
 // Campaign用のメトリクス

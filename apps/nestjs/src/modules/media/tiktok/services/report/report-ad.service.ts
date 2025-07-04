@@ -9,6 +9,8 @@ import { TikTokAdReport } from "../../interfaces/report.interface";
 import { TikTokAdStatusItem } from "../../interfaces/status.interface";
 import { TikTokAdStatusHistoryRepository } from "../../repositories/status/status-history-ad.repository";
 import { TikTokAdStatusHistory } from "../../interfaces/status-history.interface";
+import { AdService } from "../../../common/master-data/services/ad.service";
+import { AdData } from "../../../common/interfaces/master-data.interface";
 
 /**
  * TikTok 広告レポートサービス
@@ -33,6 +35,7 @@ export class TikTokAdReportService extends GenericReportService<TikTokAdStatusHi
     tikTokAccountService: TikTokAccountService,
     private readonly adRepository: TikTokAdRepository,
     adStatusHistoryRepository: TikTokAdStatusHistoryRepository,
+    private readonly adService: AdService, // 共通サービスを注入
   ) {
     super(http, tikTokAccountService, adStatusHistoryRepository);
   }
@@ -109,7 +112,7 @@ export class TikTokAdReportService extends GenericReportService<TikTokAdStatusHi
 
     const commonMetrics = DataMapper.convertCommonMetrics(dto.metrics);
 
-    return {
+    const entity = {
       ...commonMetrics,
       ad_account_id: accountId,
       ad_platform_account_id: dto.metrics.advertiser_id,
@@ -122,5 +125,31 @@ export class TikTokAdReportService extends GenericReportService<TikTokAdStatusHi
       ad_name: dto.metrics.ad_name,
       ad_url: dto.metrics.ad_url,
     };
+
+    // 共通のAd同期処理を呼び出し
+    const adData: AdData = {
+      ad_account_id: accountId,
+      platform_ad_id: this.safeBigInt(dto.dimensions.ad_id),
+      ad_name: dto.metrics.ad_name,
+      platform_adgroup_id: this.safeBigInt(dto.metrics.adgroup_id),
+    };
+
+    // 非同期処理を明示的に実行（エラーはキャッチするが処理は継続）
+    this.adService
+      .syncFromReport("tiktok", [adData])
+      .then((result) => {
+        if (!result.success) {
+          this.logWarn?.(
+            `Ad同期エラー: ad_id=${dto.dimensions.ad_id}, error=${result.error}`,
+          );
+        }
+      })
+      .catch((error) => {
+        this.logWarn?.(
+          `Ad同期エラー: ad_id=${dto.dimensions.ad_id}, error=${error.message}`,
+        );
+      });
+
+    return entity;
   }
 }

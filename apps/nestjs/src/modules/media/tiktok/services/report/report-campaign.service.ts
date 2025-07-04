@@ -12,6 +12,8 @@ import { TikTokCampaignReport } from "../../interfaces/report.interface";
 import { TikTokCampaignStatusItem } from "../../interfaces/status.interface";
 import { TikTokCampaignStatusHistoryRepository } from "../../repositories/status/status-history-campaign.repository";
 import { TikTokCampaignStatusHistory } from "../../interfaces/status-history.interface";
+import { CampaignService } from "../../../common/master-data/services/campaign.service";
+import { CampaignData } from "../../../common/interfaces/master-data.interface";
 
 /**
  * TikTok キャンペーンレポートサービス
@@ -36,6 +38,7 @@ export class TikTokCampaignReportService extends GenericReportService<TikTokCamp
     tikTokAccountService: TikTokAccountService,
     private readonly campaignRepository: TikTokCampaignRepository,
     campaignStatusHistoryRepository: TikTokCampaignStatusHistoryRepository,
+    private readonly campaignService: CampaignService, // 共通サービスを注入
   ) {
     super(http, tikTokAccountService, campaignStatusHistoryRepository);
   }
@@ -109,7 +112,7 @@ export class TikTokCampaignReportService extends GenericReportService<TikTokCamp
       dto.metrics as TikTokCampaignMetrics,
     );
 
-    return {
+    const entity = {
       ...commonMetrics,
       ad_account_id: accountId,
       ad_platform_account_id: dto.metrics.advertiser_id,
@@ -117,5 +120,31 @@ export class TikTokCampaignReportService extends GenericReportService<TikTokCamp
       platform_campaign_id: this.safeBigInt(dto.dimensions.campaign_id),
       campaign_name: dto.metrics.campaign_name,
     };
+
+    // 共通のCampaign同期処理を呼び出し
+    // 型安全な変換
+    const campaignData: CampaignData = {
+      ad_account_id: accountId,
+      platform_campaign_id: this.safeBigInt(dto.dimensions.campaign_id),
+      campaign_name: dto.metrics.campaign_name,
+    };
+
+    // 非同期処理を明示的に実行（エラーはキャッチするが処理は継続）
+    this.campaignService
+      .syncFromReport("tiktok", [campaignData])
+      .then((result) => {
+        if (!result.success) {
+          this.logWarn?.(
+            `Campaign同期エラー: campaign_id=${dto.dimensions.campaign_id}, error=${result.error}`,
+          );
+        }
+      })
+      .catch((error) => {
+        this.logWarn?.(
+          `Campaign同期エラー: campaign_id=${dto.dimensions.campaign_id}, error=${error.message}`,
+        );
+      });
+
+    return entity;
   }
 }
