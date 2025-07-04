@@ -9,6 +9,8 @@ import { TikTokAdgroupReport } from "../../interfaces/report.interface";
 import { TikTokAdgroupStatusItem } from "../../interfaces/status.interface";
 import { TikTokAdgroupStatusHistoryRepository } from "../../repositories/status/status-history-adgroup.repository";
 import { TikTokAdgroupStatusHistory } from "../../interfaces/status-history.interface";
+import { AdgroupService } from "../../../common/master-data/services/adgroup.service";
+import { AdgroupData } from "../../../common/interfaces/master-data.interface";
 
 /**
  * TikTok 広告グループレポートサービス
@@ -33,6 +35,7 @@ export class TikTokAdgroupReportService extends GenericReportService<TikTokAdgro
     tikTokAccountService: TikTokAccountService,
     private readonly adgroupRepository: TikTokAdgroupRepository,
     adgroupStatusHistoryRepository: TikTokAdgroupStatusHistoryRepository,
+    private readonly adgroupService: AdgroupService, // 共通サービスを注入
   ) {
     super(http, tikTokAccountService, adgroupStatusHistoryRepository);
   }
@@ -71,6 +74,7 @@ export class TikTokAdgroupReportService extends GenericReportService<TikTokAdgro
         "conversion",
         "advertiser_id",
         "adgroup_name",
+        "campaign_id", // campaign_idを追加
       ],
       dimensions: ["adgroup_id", "stat_time_day"],
       dataLevel: "AUCTION_ADGROUP",
@@ -104,7 +108,7 @@ export class TikTokAdgroupReportService extends GenericReportService<TikTokAdgro
 
     const commonMetrics = DataMapper.convertCommonMetrics(dto.metrics);
 
-    return {
+    const entity = {
       ...commonMetrics,
       ad_account_id: accountId,
       ad_platform_account_id: dto.metrics.advertiser_id,
@@ -112,5 +116,34 @@ export class TikTokAdgroupReportService extends GenericReportService<TikTokAdgro
       platform_adgroup_id: this.safeBigInt(dto.dimensions.adgroup_id),
       adgroup_name: dto.metrics.adgroup_name,
     };
+
+    // 共通のAdgroup同期処理を呼び出し
+    // campaign_idが取得できる場合のみ同期処理を実行
+    if (dto.metrics.campaign_id) {
+      const adgroupData: AdgroupData = {
+        ad_account_id: accountId,
+        platform_adgroup_id: this.safeBigInt(dto.dimensions.adgroup_id),
+        adgroup_name: dto.metrics.adgroup_name,
+        platform_campaign_id: this.safeBigInt(dto.metrics.campaign_id),
+      };
+
+      // 非同期処理を明示的に実行（エラーはキャッチするが処理は継続）
+      this.adgroupService
+        .syncFromReport("tiktok", [adgroupData])
+        .then((result) => {
+          if (!result.success) {
+            this.logWarn?.(
+              `Adgroup同期エラー: adgroup_id=${dto.dimensions.adgroup_id}, error=${result.error}`,
+            );
+          }
+        })
+        .catch((error) => {
+          this.logWarn?.(
+            `Adgroup同期エラー: adgroup_id=${dto.dimensions.adgroup_id}, error=${error.message}`,
+          );
+        });
+    }
+
+    return entity;
   }
 }
