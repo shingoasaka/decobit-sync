@@ -117,7 +117,7 @@ export class TikTokCampaignReportService extends GenericReportService<TikTokCamp
       ad_account_id: accountId,
       ad_platform_account_id: dto.metrics.advertiser_id,
       stat_time_day: new Date(dto.dimensions.stat_time_day),
-      platform_campaign_id: this.safeBigInt(dto.dimensions.campaign_id),
+      platform_campaign_id: dto.dimensions.campaign_id,
       campaign_name: dto.metrics.campaign_name,
     };
 
@@ -125,7 +125,7 @@ export class TikTokCampaignReportService extends GenericReportService<TikTokCamp
     // 型安全な変換
     const campaignData: CampaignData = {
       ad_account_id: accountId,
-      platform_campaign_id: this.safeBigInt(dto.dimensions.campaign_id),
+      platform_campaign_id: dto.dimensions.campaign_id,
       campaign_name: dto.metrics.campaign_name,
     };
 

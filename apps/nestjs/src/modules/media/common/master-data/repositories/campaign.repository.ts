@@ -13,7 +13,7 @@ export class CampaignRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Campaignデータをupsert
+   * Campaignデータをupsert（バッチ処理版：大幅に高速化）
    * platform_campaign_idをキーとしたupsert処理
    * 個別レコードのエラーが全体を停止しないよう処理
    */
@@ -113,7 +113,7 @@ export class CampaignRepository {
   /**
    * platform_campaign_idからCampaignを取得
    */
-  async findByPlatformId(platformCampaignId: bigint) {
+  async findByPlatformId(platformCampaignId: string) {
     return await this.prisma.campaign.findUnique({
       where: {
         platform_campaign_id: platformCampaignId,

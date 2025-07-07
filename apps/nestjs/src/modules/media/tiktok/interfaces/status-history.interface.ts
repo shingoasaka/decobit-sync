@@ -21,7 +21,7 @@ export interface TikTokStatusHistoryBase {
  */
 export interface TikTokAdStatusHistory extends TikTokStatusHistoryBase {
   /** 広告ID */
-  platform_ad_id: bigint;
+  platform_ad_id: string;
 }
 
 /**
@@ -30,7 +30,7 @@ export interface TikTokAdStatusHistory extends TikTokStatusHistoryBase {
  */
 export interface TikTokAdgroupStatusHistory extends TikTokStatusHistoryBase {
   /** 広告グループID */
-  platform_adgroup_id: bigint;
+  platform_adgroup_id: string;
 }
 
 /**
@@ -39,5 +39,5 @@ export interface TikTokAdgroupStatusHistory extends TikTokStatusHistoryBase {
  */
 export interface TikTokCampaignStatusHistory extends TikTokStatusHistoryBase {
   /** キャンペーンID */
-  platform_campaign_id: bigint;
+  platform_campaign_id: string;
 }

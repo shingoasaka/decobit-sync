@@ -40,7 +40,7 @@ export class TikTokAdStatusHistoryRepository {
    * 最新のステータス履歴を取得
    * 指定された広告IDの最新ステータスを取得
    */
-  async getLatestStatus(adId: bigint): Promise<TikTokAdStatusHistory | null> {
+  async getLatestStatus(adId: string): Promise<TikTokAdStatusHistory | null> {
     return await this.prisma.tikTokAdStatusHistory.findFirst({
       where: { platform_ad_id: adId },
       orderBy: { created_at: "desc" },
@@ -50,7 +50,7 @@ export class TikTokAdStatusHistoryRepository {
   /**
    * 複数の広告の最新ステータスを一括取得
    */
-  async getLatestStatuses(adIds: bigint[]): Promise<TikTokAdStatusHistory[]> {
+  async getLatestStatuses(adIds: string[]): Promise<TikTokAdStatusHistory[]> {
     if (adIds.length === 0) {
       return [];
     }
@@ -59,7 +59,7 @@ export class TikTokAdStatusHistoryRepository {
     const latestStatuses = await this.prisma.$queryRaw<TikTokAdStatusHistory[]>`
       SELECT DISTINCT ON (platform_ad_id) *
       FROM "TikTokAdStatusHistory"
-      WHERE platform_ad_id = ANY(${adIds}::bigint[])
+      WHERE platform_ad_id = ANY(${adIds}::text[])
       ORDER BY platform_ad_id, created_at DESC
     `;
 

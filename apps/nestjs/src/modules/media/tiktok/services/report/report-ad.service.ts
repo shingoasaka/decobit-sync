@@ -63,7 +63,6 @@ export class TikTokAdReportService extends GenericReportService<TikTokAdStatusHi
       statusFields: this.statusFields,
       apiUrl: this.apiUrl,
       metrics: [
-        "budget",
         "spend",
         "impressions",
         "clicks",
@@ -74,12 +73,12 @@ export class TikTokAdReportService extends GenericReportService<TikTokAdStatusHi
         "reach",
         "conversion",
         "advertiser_id",
-        "ad_name",
-        "ad_url",
         "campaign_id",
         "campaign_name",
         "adgroup_id",
         "adgroup_name",
+        "ad_name",
+        "ad_url",
       ],
       dimensions: ["ad_id", "stat_time_day"],
       dataLevel: "AUCTION_AD",
@@ -117,21 +116,22 @@ export class TikTokAdReportService extends GenericReportService<TikTokAdStatusHi
       ad_account_id: accountId,
       ad_platform_account_id: dto.metrics.advertiser_id,
       stat_time_day: new Date(dto.dimensions.stat_time_day),
-      platform_campaign_id: this.safeBigInt(dto.metrics.campaign_id),
+      platform_campaign_id: dto.metrics.campaign_id,
       campaign_name: dto.metrics.campaign_name,
-      platform_adgroup_id: this.safeBigInt(dto.metrics.adgroup_id),
+      platform_adgroup_id: dto.metrics.adgroup_id,
       adgroup_name: dto.metrics.adgroup_name,
-      platform_ad_id: this.safeBigInt(dto.dimensions.ad_id),
+      platform_ad_id: dto.dimensions.ad_id,
       ad_name: dto.metrics.ad_name,
       ad_url: dto.metrics.ad_url,
     };
 
     // 共通のAd同期処理を呼び出し
+    // 型安全な変換
     const adData: AdData = {
       ad_account_id: accountId,
-      platform_ad_id: this.safeBigInt(dto.dimensions.ad_id),
+      platform_ad_id: dto.dimensions.ad_id,
       ad_name: dto.metrics.ad_name,
-      platform_adgroup_id: this.safeBigInt(dto.metrics.adgroup_id),
+      platform_adgroup_id: dto.metrics.adgroup_id,
     };
 
     // 非同期処理を明示的に実行（エラーはキャッチするが処理は継続）

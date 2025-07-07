@@ -13,7 +13,7 @@ export class AdRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Adデータをupsert
+   * Adデータをupsert（バッチ処理版：大幅に高速化）
    * platform_ad_idをキーとしたupsert処理
    * 個別レコードのエラーが全体を停止しないよう処理
    */
@@ -141,7 +141,7 @@ export class AdRepository {
   /**
    * platform_ad_idからAdを取得
    */
-  async findByPlatformId(platformAdId: bigint) {
+  async findByPlatformId(platformAdId: string) {
     return await this.prisma.ad.findUnique({
       where: {
         platform_ad_id: platformAdId,

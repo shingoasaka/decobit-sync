@@ -55,7 +55,7 @@ export class AdgroupService {
   /**
    * platform_adgroup_idからAdgroupを取得
    */
-  async findByPlatformId(platformAdgroupId: bigint) {
+  async findByPlatformId(platformAdgroupId: string) {
     return await this.adgroupRepository.findByPlatformId(platformAdgroupId);
   }
 }

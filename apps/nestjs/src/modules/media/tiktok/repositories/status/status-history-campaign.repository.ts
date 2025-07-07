@@ -43,7 +43,7 @@ export class TikTokCampaignStatusHistoryRepository {
    * 指定されたキャンペーンIDの最新ステータスを取得
    */
   async getLatestStatus(
-    campaignId: bigint,
+    campaignId: string,
   ): Promise<TikTokCampaignStatusHistory | null> {
     return await this.prisma.tikTokCampaignStatusHistory.findFirst({
       where: { platform_campaign_id: campaignId },
@@ -55,7 +55,7 @@ export class TikTokCampaignStatusHistoryRepository {
    * 複数のキャンペーンの最新ステータスを一括取得
    */
   async getLatestStatuses(
-    campaignIds: bigint[],
+    campaignIds: string[],
   ): Promise<TikTokCampaignStatusHistory[]> {
     if (campaignIds.length === 0) {
       return [];
@@ -67,7 +67,7 @@ export class TikTokCampaignStatusHistoryRepository {
     >`
       SELECT DISTINCT ON (platform_campaign_id) *
       FROM "TikTokCampaignStatusHistory"
-      WHERE platform_campaign_id = ANY(${campaignIds}::bigint[])
+      WHERE platform_campaign_id = ANY(${campaignIds}::text[])
       ORDER BY platform_campaign_id, created_at DESC
     `;
 
