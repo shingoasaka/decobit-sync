@@ -383,7 +383,7 @@ export abstract class GenericReportService<
 
         return {
           ...baseRecord,
-          [this.getPlatformIdField(idField)]: BigInt(idValue),
+          [this.getPlatformIdField(idField)]: idValue,
         } as TStatusHistory;
       });
 

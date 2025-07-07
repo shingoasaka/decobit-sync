@@ -55,7 +55,7 @@ export class AdService {
   /**
    * platform_ad_idからAdを取得
    */
-  async findByPlatformId(platformAdId: bigint) {
+  async findByPlatformId(platformAdId: string) {
     return await this.adRepository.findByPlatformId(platformAdId);
   }
 }

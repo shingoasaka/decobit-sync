@@ -40,15 +40,15 @@ export interface TikTokReportBase {
  */
 export interface TikTokAdReport extends TikTokReportBase {
   /** キャンペーンID */
-  platform_campaign_id: bigint;
+  platform_campaign_id: string;
   /** キャンペーン名 */
   campaign_name: string;
   /** 広告グループID */
-  platform_adgroup_id: bigint;
+  platform_adgroup_id: string;
   /** 広告グループ名 */
   adgroup_name: string;
   /** 広告ID */
-  platform_ad_id: bigint;
+  platform_ad_id: string;
   /** 広告名 */
   ad_name: string;
   /** 広告URL */
@@ -61,7 +61,7 @@ export interface TikTokAdReport extends TikTokReportBase {
  */
 export interface TikTokAdgroupReport extends TikTokReportBase {
   /** 広告グループID */
-  platform_adgroup_id: bigint;
+  platform_adgroup_id: string;
   /** 広告グループ名 */
   adgroup_name: string;
 }
@@ -72,7 +72,7 @@ export interface TikTokAdgroupReport extends TikTokReportBase {
  */
 export interface TikTokCampaignReport extends TikTokReportBase {
   /** キャンペーンID */
-  platform_campaign_id: bigint;
+  platform_campaign_id: string;
   /** キャンペーン名 */
   campaign_name: string;
 }

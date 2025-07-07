@@ -5,22 +5,22 @@
 
 export interface CampaignData {
   ad_account_id: number;
-  platform_campaign_id: bigint;
+  platform_campaign_id: string; // BigInt → string
   campaign_name: string;
 }
 
 export interface AdgroupData {
   ad_account_id: number;
-  platform_adgroup_id: bigint;
+  platform_adgroup_id: string; // BigInt → string
   adgroup_name: string;
-  platform_campaign_id: bigint; // 関連付け用
+  platform_campaign_id: string; // BigInt → string
 }
 
 export interface AdData {
   ad_account_id: number;
-  platform_ad_id: bigint;
+  platform_ad_id: string; // BigInt → string
   ad_name: string;
-  platform_adgroup_id: bigint; // 関連付け用
+  platform_adgroup_id: string; // BigInt → string
 }
 
 /**

@@ -55,7 +55,7 @@ export class CampaignService {
   /**
    * platform_campaign_idからCampaignを取得
    */
-  async findByPlatformId(platformCampaignId: bigint) {
+  async findByPlatformId(platformCampaignId: string) {
     return await this.campaignRepository.findByPlatformId(platformCampaignId);
   }
 }

@@ -81,17 +81,6 @@ export abstract class ReportBaseService {
     return true;
   }
 
-  protected safeBigInt(value: string | number | undefined): bigint {
-    if (value === undefined) {
-      throw new MediaError(
-        ERROR_MESSAGES.REQUIRED_ID_UNDEFINED,
-        ERROR_CODES.INVALID_METRICS,
-        ErrorType.VALIDATION,
-      );
-    }
-    return BigInt(value);
-  }
-
   protected parseNumber(value: string | number | undefined): number {
     const parsed = typeof value === "number" ? value : parseFloat(value ?? "");
     return Number.isFinite(parsed) ? parsed : 0;

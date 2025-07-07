@@ -43,7 +43,7 @@ export class TikTokAdgroupStatusHistoryRepository {
    * 指定された広告グループIDの最新ステータスを取得
    */
   async getLatestStatus(
-    adgroupId: bigint,
+    adgroupId: string,
   ): Promise<TikTokAdgroupStatusHistory | null> {
     return await this.prisma.tikTokAdgroupStatusHistory.findFirst({
       where: { platform_adgroup_id: adgroupId },
@@ -55,7 +55,7 @@ export class TikTokAdgroupStatusHistoryRepository {
    * 複数の広告グループの最新ステータスを一括取得
    */
   async getLatestStatuses(
-    adgroupIds: bigint[],
+    adgroupIds: string[],
   ): Promise<TikTokAdgroupStatusHistory[]> {
     if (adgroupIds.length === 0) {
       return [];
@@ -67,7 +67,7 @@ export class TikTokAdgroupStatusHistoryRepository {
     >`
       SELECT DISTINCT ON (platform_adgroup_id) *
       FROM "TikTokAdgroupStatusHistory"
-      WHERE platform_adgroup_id = ANY(${adgroupIds}::bigint[])
+      WHERE platform_adgroup_id = ANY(${adgroupIds}::text[])
       ORDER BY platform_adgroup_id, created_at DESC
     `;
 
