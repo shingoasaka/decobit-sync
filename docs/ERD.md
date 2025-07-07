@@ -227,7 +227,7 @@ int referrer_link_id FK "NULLABLE"
 AspType asp_type
 MatchType match_type "AFFILIATE_LINK | REFERRER_URL"
 MediaLevel media_level "Campaign | AdGroup | Ad"
-BigInt target_dim_id "媒体側のアプリ内ID"
+string target_dim_id "媒体側のアプリ内ID"
 datetime created_at
 datetime updated_at
 }
