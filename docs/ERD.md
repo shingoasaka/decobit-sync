@@ -94,7 +94,7 @@ datetime updated_at
 Campaign {
 int id PK
 int ad_account_id FK
-bigint platform_campaign_id "媒体側のcampaignId"
+string platform_campaign_id "媒体側のcampaignId"
 string platform_campaign_name
 datetime created_at
 }
@@ -102,7 +102,7 @@ AdGroup {
 int id PK
 int ad_account_id FK
 int campaign_id FK
-bigint platform_adgroup_id "媒体側のadgroupId"
+string platform_adgroup_id "媒体側のadgroupId"
 string platform_adgroup_name
 datetime created_at
 }
@@ -110,7 +110,7 @@ Ad {
 int id PK
 int ad_account_id FK
 int adgroup_id FK
-bigint platform_ad_id "媒体側のadId"
+string platform_ad_id "媒体側のadId"
 string ad_name
 datetime created_at
 }
@@ -119,7 +119,7 @@ int id PK
 int ad_account_id FK "AdAccount.id | NULLABLE"
 date stat_time_day
 string ad_platform_account_id
-bigint platform_campaign_id
+string platform_campaign_id
 int budget
 int spend
 int impressions
@@ -137,7 +137,7 @@ int id PK
 int ad_account_id FK "AdAccount.id | NULLABLE"
 date stat_time_day
 string ad_platform_account_id
-bigint platform_adgroup_id
+string platform_adgroup_id
 int budget
 int spend
 int impressions
@@ -155,11 +155,11 @@ int id PK
 int ad_account_id FK "AdAccount.id | NULLABLE"
 date stat_time_day
 string ad_platform_account_id
-bigint platform_campaign_id
+string platform_campaign_id
 string platform_campaign_name
-bigint platform_adgroup_id
+string platform_adgroup_id
 string platform_adgroup_name
-bigint platform_ad_id
+string platform_ad_id
 string platform_ad_name
 string ad_url
 int budget

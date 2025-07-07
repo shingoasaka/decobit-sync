@@ -32,22 +32,22 @@ src/modules/media/common/
 // interfaces/master-data.interface.ts
 export interface CampaignData {
   ad_account_id: number;
-  platform_campaign_id: bigint;
+  platform_campaign_id: string; // BigInt → String
   campaign_name: string;
 }
 
 export interface AdgroupData {
   ad_account_id: number;
-  platform_adgroup_id: bigint;
+  platform_adgroup_id: string; // BigInt → String
   adgroup_name: string;
-  platform_campaign_id: bigint;
+  platform_campaign_id: string; // BigInt → String
 }
 
 export interface AdData {
   ad_account_id: number;
-  platform_ad_id: bigint;
+  platform_ad_id: string; // BigInt → String
   ad_name: string;
-  platform_adgroup_id: bigint;
+  platform_adgroup_id: string; // BigInt → String
 }
 ```
 
@@ -179,13 +179,15 @@ if (missingCampaignIds.length > 0) {
 #### 安全な型変換
 
 ```typescript
-const safeBigInt = (value: any): bigint | null => {
-  try {
-    return BigInt(value);
-  } catch {
-    return null;
-  }
-};
+// String型の場合は変換不要（APIから文字列として取得される）
+const platformId = dto.dimensions.campaign_id; // 既にstring型
+
+// 必要に応じて数値変換（例：計算用）
+const numericId = parseInt(platformId, 10);
+if (isNaN(numericId)) {
+  this.logger.warn(`Invalid platform ID: ${platformId}`);
+  return null;
+}
 ```
 
 ### 5. レポートサービスとの統合
