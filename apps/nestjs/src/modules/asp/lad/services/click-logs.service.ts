@@ -39,10 +39,10 @@ export class LadClickLogService extends BaseAspService implements LogService {
 
     await page
       .getByRole("textbox", { name: "ログインID" })
-      .fill(process.env.LAD_USERNAME ?? "");
+      .fill(process.env.LAD_MEN_USERNAME ?? "");
     await page
       .getByRole("textbox", { name: "パスワード" })
-      .fill(process.env.LAD_PASSWORD ?? "");
+      .fill(process.env.LAD_MEN_PASSWORD ?? "");
     await page.getByRole("button", { name: "ログイン" }).click();
 
     await page.waitForLoadState("domcontentloaded");

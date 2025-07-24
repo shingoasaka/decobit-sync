@@ -81,8 +81,8 @@ export class AspCronService {
     private readonly RentracksClickLogService: RentracksClickLogService,
     private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
     private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
-    private readonly tryActionLogService: TryActionLogService,
-    private readonly tryClickLogService: TryClickLogService,
+    // private readonly tryActionLogService: TryActionLogService,
+    // private readonly tryClickLogService: TryClickLogService,
     private readonly commonLog: CommonLogService,
   ) {
     // 同時実行数の設定
@@ -131,8 +131,8 @@ export class AspCronService {
           name: "SampleAffiliate-Click",
           service: this.sampleAffiliateClickLogService,
         },
-        { name: "Try-Action", service: this.tryActionLogService },
-        { name: "Try-Click", service: this.tryClickLogService },
+        // { name: "Try-Action", service: this.tryActionLogService },
+        // { name: "Try-Click", service: this.tryClickLogService },
       ];
 
       // 結果を格納する配列
