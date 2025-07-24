@@ -1,6 +1,6 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
-import { CatsActionLogService } from "@asp/cats/services/action-logs.service";
+// import { CatsActionLogService } from "@asp/cats/services/action-logs.service";
 import { CatsClickLogService } from "@asp/cats/services/click-logs.service";
 import { FinebirdActionLogService } from "@asp/finebird/services/action-logs.service";
 import { FinebirdClickLogService } from "@asp/finebird/services/click-logs.service";
@@ -17,6 +17,7 @@ import { RentracksClickLogService } from "@asp/rentracks/services/click-logs.ser
 import { SampleAffiliateActionLogService } from "@asp/sampleAffiliate/services/action-logs.service";
 import { SampleAffiliateClickLogService } from "@asp/sampleAffiliate/services/click-logs.service";
 import { CommonLogService } from "@logs/common-log.service";
+import { writeToSpreadsheet } from "src/libs/spreadsheet-utils";
 
 // 実行結果の型定義
 interface ServiceResult {
@@ -59,7 +60,7 @@ class Semaphore {
 }
 
 @Injectable()
-export class AspCronService {
+export class AspCronService implements OnModuleInit {
   private readonly logger = new Logger(AspCronService.name);
   private isRunning = false;
   private readonly semaphore: Semaphore;
@@ -67,20 +68,20 @@ export class AspCronService {
   private readonly MAX_RETRIES = 1; // リトライ回数
 
   constructor(
-    private readonly catsActionLogService: CatsActionLogService,
-    private readonly catsClickLogService: CatsClickLogService,
-    private readonly finebirdActionLogService: FinebirdActionLogService,
-    private readonly finebirdClickLogService: FinebirdClickLogService,
-    private readonly LadActionLogService: LadActionLogService,
+    // private readonly catsActionLogService: CatsActionLogService,
+    // private readonly catsClickLogService: CatsClickLogService,
+    // private readonly finebirdActionLogService: FinebirdActionLogService,
+    // private readonly finebirdClickLogService: FinebirdClickLogService,
+    // private readonly LadActionLogService: LadActionLogService,
     private readonly LadClickLogService: LadClickLogService,
-    private readonly metronActionLogService: MetronActionLogService,
-    private readonly metronClickLogService: MetronClickLogService,
-    private readonly monkeyActionLogService: MonkeyActionLogService,
-    private readonly monkeyClickLogService: MonkeyClickLogService,
-    private readonly RentracksActionLogService: RentracksActionLogService,
-    private readonly RentracksClickLogService: RentracksClickLogService,
-    private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
-    private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
+    // private readonly metronActionLogService: MetronActionLogService,
+    // private readonly metronClickLogService: MetronClickLogService,
+    // private readonly monkeyActionLogService: MonkeyActionLogService,
+    // private readonly monkeyClickLogService: MonkeyClickLogService,
+    // private readonly RentracksActionLogService: RentracksActionLogService,
+    // private readonly RentracksClickLogService: RentracksClickLogService,
+    // private readonly sampleAffiliateActionLogService: SampleAffiliateActionLogService,
+    // private readonly sampleAffiliateClickLogService: SampleAffiliateClickLogService,
     // private readonly tryActionLogService: TryActionLogService,
     // private readonly tryClickLogService: TryClickLogService,
     private readonly commonLog: CommonLogService,
@@ -89,6 +90,10 @@ export class AspCronService {
     const concurrency = Number(process.env.BROWSER_WORKER_COUNT) || 3;
     this.semaphore = new Semaphore(concurrency);
     this.logger.log(`ASP Cron: 同時実行制御を設定 - 最大 ${concurrency} 並列`);
+  }
+
+  onModuleInit() {
+    this.logger.log("AspCronService が初期化されました。");
   }
 
   // 3分おきに実行される定期処理（ASPのログ取得）
@@ -111,26 +116,26 @@ export class AspCronService {
     try {
       // ASPサービスのリスト定義
       const aspServices = [
-        { name: "Cats-Action", service: this.catsActionLogService },
-        { name: "Cats-Click", service: this.catsClickLogService },
-        { name: "Finebird-Action", service: this.finebirdActionLogService },
-        { name: "Finebird-Click", service: this.finebirdClickLogService },
-        { name: "Lad-Action", service: this.LadActionLogService },
+        // { name: "Cats-Action", service: this.catsActionLogService },
+        // { name: "Cats-Click", service: this.catsClickLogService },
+        // { name: "Finebird-Action", service: this.finebirdActionLogService },
+        // { name: "Finebird-Click", service: this.finebirdClickLogService },
+        // { name: "Lad-Action", service: this.LadActionLogService },
         { name: "Lad-Click", service: this.LadClickLogService },
-        { name: "Metron-Click", service: this.metronClickLogService },
-        { name: "Metron-Action", service: this.metronActionLogService },
-        { name: "Monkey-Action", service: this.monkeyActionLogService },
-        { name: "Monkey-Click", service: this.monkeyClickLogService },
-        { name: "Rentracks-Action", service: this.RentracksActionLogService },
-        { name: "Rentracks-Click", service: this.RentracksClickLogService },
-        {
-          name: "SampleAffiliate-Action",
-          service: this.sampleAffiliateActionLogService,
-        },
-        {
-          name: "SampleAffiliate-Click",
-          service: this.sampleAffiliateClickLogService,
-        },
+        // { name: "Metron-Click", service: this.metronClickLogService },
+        // { name: "Metron-Action", service: this.metronActionLogService },
+        // { name: "Monkey-Action", service: this.monkeyActionLogService },
+        // { name: "Monkey-Click", service: this.monkeyClickLogService },
+        // { name: "Rentracks-Action", service: this.RentracksActionLogService },
+        // { name: "Rentracks-Click", service: this.RentracksClickLogService },
+        // {
+        //   name: "SampleAffiliate-Action",
+        //   service: this.sampleAffiliateActionLogService,
+        // },
+        // {
+        //   name: "SampleAffiliate-Click",
+        //   service: this.sampleAffiliateClickLogService,
+        // },
         // { name: "Try-Action", service: this.tryActionLogService },
         // { name: "Try-Click", service: this.tryClickLogService },
       ];
@@ -150,7 +155,7 @@ export class AspCronService {
 
           try {
             // タイムアウト付きでサービスを実行（リトライあり）
-            const count = await this.executeWithRetry(
+            const resultValue = await this.executeWithRetry(
               async () =>
                 await this.executeWithTimeout(
                   async () => await service.fetchAndInsertLogs(),
@@ -162,6 +167,7 @@ export class AspCronService {
               serviceLogger,
             );
 
+            const count = Array.isArray(resultValue) ? resultValue.length : resultValue;
             results.push({ name, success: true, count });
             serviceLogger.log(`処理完了: ${count}件のデータを取得`);
             await this.commonLog.log(

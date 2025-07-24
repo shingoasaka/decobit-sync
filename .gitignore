@@ -40,3 +40,32 @@ npm-debug.log*
 
 # README
 README.md
+keys/sheet-controller-key.json
+
+# 機密情報ファイル（APIキー、GCP認証ファイルなど）
+*.key
+*.pem
+*.crt
+*.cert
+*.p12
+*.jks
+*.json
+
+# 特定ファイル名（誤ってコミットしやすいパターン）
+*service-account*.json
+*credentials*.json
+*keyfile*.json
+*secret*.json
+*config*.json
+
+# .env 系
+.env
+.env.*
+!.env.example   # サンプルファイルは除外しない
+
+# OSやエディタによる生成ファイル（安全のため）
+.DS_Store
+.idea/
+.vscode/
+*.swp
+

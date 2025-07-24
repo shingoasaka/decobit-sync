@@ -1,18 +1,19 @@
 import { Module } from "@nestjs/common";
-import { PrismaService } from "@prismaService";
-import { LadActionLogRepository } from "./repositories/action-logs.repository";
-import { LadClickLogRepository } from "./repositories/click-logs.repository";
+import { PrismaService } from '../../../prisma/prisma.service';
+// import { LadActionLogRepository } from "./repositories/action-logs.repository";
+// import { LadClickLogRepository } from "./repositories/click-logs.repository";
 import { LadActionLogService } from "./services/action-logs.service";
 import { LadClickLogService } from "./services/click-logs.service";
 
 @Module({
   providers: [
-    LadActionLogRepository,
-    LadActionLogService,
-    LadClickLogRepository,
+    // LadActionLogRepository,
+    // LadActionLogService,
+    // LadClickLogRepository,
     LadClickLogService,
-    PrismaService,
+    // PrismaService,
   ],
-  exports: [LadActionLogService, LadClickLogService],
+  // exports: [LadActionLogService, LadClickLogService],
+  exports: [LadClickLogService],
 })
 export class LadModule {}

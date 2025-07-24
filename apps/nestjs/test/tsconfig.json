@@ -1,9 +1,23 @@
+// {
+//   "extends": "../tsconfig.json",
+//   "compilerOptions": {
+//     "types": ["jest", "node"],
+//     // "rootDir": "./"
+//     "rootDir": "./apps/nestjs/",
+//   },
+//   "include": ["**/*.ts"],
+//   "exclude": ["node_modules"]
+// }
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
     "types": ["jest", "node"],
-    "rootDir": "./"
+    "rootDir": "../",
+    "paths": {
+      "@prismaService": ["apps/nestjs/src/prisma/prisma.service.ts"]
+    }
   },
-  "include": ["**/*.ts"],
+  "include": ["../src/**/*.ts", "./**/*.ts"],
   "exclude": ["node_modules"]
 }
