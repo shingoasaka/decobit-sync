@@ -5,7 +5,7 @@ import { Injectable, Logger } from "@nestjs/common";
 // import { FinebirdClickLogService } from "@asp/finebird/services/click-logs.service";
 // import { TryActionLogService } from "@asp/hanikamu/try/action-logs.service";
 // import { TryClickLogService } from "@asp/hanikamu/try/click-logs.service";
-// import { LadActionLogService } from "@asp/lad/services/action-logs.service";
+import { LadActionLogService } from "@asp/lad/services/action-logs.service";
 import { LadClickLogService } from "@asp/lad/services/click-logs.service";
 // import { MetronActionLogService } from "@asp/metron/services/action-logs.service";
 // import { MetronClickLogService } from "@asp/metron/services/click-logs.service";
@@ -44,7 +44,7 @@ export class AspCollectionService {
     // private readonly catsClickLogService: CatsClickLogService,
     // private readonly finebirdActionLogService: FinebirdActionLogService,
     // private readonly finebirdClickLogService: FinebirdClickLogService,
-    // private readonly ladActionLogService: LadActionLogService,
+    private readonly ladActionLogService: LadActionLogService,
     private readonly ladClickLogService: LadClickLogService,
     // private readonly metronActionLogService: MetronActionLogService,
     // private readonly metronClickLogService: MetronClickLogService,
@@ -69,6 +69,7 @@ export class AspCollectionService {
 
     // ASPサービスのリスト定義
     const aspServices = [
+      { name: "Lad-Action", service: this.ladActionLogService },
       { name: "Lad-Click", service: this.ladClickLogService },
     ];
 
@@ -77,8 +78,8 @@ export class AspCollectionService {
     //   // { name: "Cats-Click", service: this.catsClickLogService },
     //   // { name: "Finebird-Action", service: this.finebirdActionLogService },
     //   // { name: "Finebird-Click", service: this.finebirdClickLogService },
-    //   // { name: "Lad-Action", service: this.ladActionLogService },
-    //   { name: "Lad-Click", service: this.ladClickLogService },
+      // { name: "Lad-Action", service: this.ladActionLogService },
+      // { name: "Lad-Click", service: this.ladClickLogService },
     //   // { name: "Metron-Click", service: this.metronClickLogService },
     //   // { name: "Metron-Action", service: this.metronActionLogService },
     //   // { name: "Monkey-Action", service: this.monkeyActionLogService },
@@ -114,13 +115,13 @@ export class AspCollectionService {
 
       try {
         // リトライとタイムアウト機能を削除し、直接サービスを実行
-        const count = await service.fetchAndInsertLogs();
+        const rawData = await service.fetchAndInsertLogs();
 
-        results.push({ name, success: true, count });
-        serviceLogger.log(`処理完了: ${count}件のデータを取得`);
+        results.push({ name, success: true, count: rawData.length });
+        serviceLogger.log(`処理完了: ${rawData.length}件のデータを取得`);
         await this.commonLog.log(
           "info",
-          `${count}件のデータを取得`,
+          `${rawData.length}件のデータを取得`,
           `ASP:${name}`,
         );
       } catch (error) {

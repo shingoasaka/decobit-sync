@@ -6,10 +6,12 @@
  * fetchAndInsertLogs() を実行することで、
  * 各サービスに合わせたログ取得 → DB保存を行います。
  */
+import { RawLadData } from "./raw-log-data";
 export interface LogService {
   /**
    * 外部サイトや API からアクションログなどを取得し、DBへ挿入する。
    * 処理件数（挿入されたレコード数など）を返す。
    */
-  fetchAndInsertLogs(): Promise<number>;
+  // fetchAndInsertLogs(): Promise<number>;
+  fetchAndInsertLogs(): Promise<RawLadData[]>;
 }

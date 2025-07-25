@@ -1,5 +1,4 @@
 import { google } from "googleapis";
-import { JWT } from "google-auth-library";
 
 interface WriteToSpreadsheetOptions {
   spreadsheetId: string;
@@ -57,4 +56,18 @@ export async function writeToSpreadsheet(options: WriteToSpreadsheetOptions) {
     console.error("❌ Google Sheets 書き込み失敗:", error);
     throw error;
   }
+}
+
+/**
+ * 汎用的な2次元配列変換関数
+ * Record<string, string | undefined>[] を Google Sheets 出力形式の string[][] に変換
+ */
+export function convertTo2DArray(
+  data: Record<string, string | undefined>[],
+): string[][] {
+  if (data.length === 0) return [];
+
+  const headers = Object.keys(data[0]);
+  const rows = data.map((row) => headers.map((key) => row[key] ?? ""));
+  return [headers, ...rows];
 }

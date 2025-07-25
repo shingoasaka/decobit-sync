@@ -1,23 +1,22 @@
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 // import { CatsActionLogService } from "@asp/cats/services/action-logs.service";
-import { CatsClickLogService } from "@asp/cats/services/click-logs.service";
-import { FinebirdActionLogService } from "@asp/finebird/services/action-logs.service";
-import { FinebirdClickLogService } from "@asp/finebird/services/click-logs.service";
-import { TryActionLogService } from "@asp/hanikamu/try/action-logs.service";
-import { TryClickLogService } from "@asp/hanikamu/try/click-logs.service";
+// import { CatsClickLogService } from "@asp/cats/services/click-logs.service";
+// import { FinebirdActionLogService } from "@asp/finebird/services/action-logs.service";
+// import { FinebirdClickLogService } from "@asp/finebird/services/click-logs.service";
+// import { TryActionLogService } from "@asp/hanikamu/try/action-logs.service";
+// import { TryClickLogService } from "@asp/hanikamu/try/click-logs.service";
 import { LadActionLogService } from "@asp/lad/services/action-logs.service";
 import { LadClickLogService } from "@asp/lad/services/click-logs.service";
-import { MetronActionLogService } from "@asp/metron/services/action-logs.service";
-import { MetronClickLogService } from "@asp/metron/services/click-logs.service";
-import { MonkeyActionLogService } from "@asp/monkey/services/action-logs.service";
-import { MonkeyClickLogService } from "@asp/monkey/services/click-logs.service";
-import { RentracksActionLogService } from "@asp/rentracks/services/action-logs.service";
-import { RentracksClickLogService } from "@asp/rentracks/services/click-logs.service";
-import { SampleAffiliateActionLogService } from "@asp/sampleAffiliate/services/action-logs.service";
-import { SampleAffiliateClickLogService } from "@asp/sampleAffiliate/services/click-logs.service";
+// import { MetronActionLogService } from "@asp/metron/services/action-logs.service";
+// import { MetronClickLogService } from "@asp/metron/services/click-logs.service";
+// import { MonkeyActionLogService } from "@asp/monkey/services/action-logs.service";
+// import { MonkeyClickLogService } from "@asp/monkey/services/click-logs.service";
+// import { RentracksActionLogService } from "@asp/rentracks/services/action-logs.service";
+// import { RentracksClickLogService } from "@asp/rentracks/services/click-logs.service";
+// import { SampleAffiliateActionLogService } from "@asp/sampleAffiliate/services/action-logs.service";
+// import { SampleAffiliateClickLogService } from "@asp/sampleAffiliate/services/click-logs.service";
 import { CommonLogService } from "@logs/common-log.service";
-import { writeToSpreadsheet } from "src/libs/spreadsheet-utils";
 
 // 実行結果の型定義
 interface ServiceResult {
@@ -72,7 +71,7 @@ export class AspCronService implements OnModuleInit {
     // private readonly catsClickLogService: CatsClickLogService,
     // private readonly finebirdActionLogService: FinebirdActionLogService,
     // private readonly finebirdClickLogService: FinebirdClickLogService,
-    // private readonly LadActionLogService: LadActionLogService,
+    private readonly LadActionLogService: LadActionLogService,
     private readonly LadClickLogService: LadClickLogService,
     // private readonly metronActionLogService: MetronActionLogService,
     // private readonly metronClickLogService: MetronClickLogService,
@@ -120,7 +119,7 @@ export class AspCronService implements OnModuleInit {
         // { name: "Cats-Click", service: this.catsClickLogService },
         // { name: "Finebird-Action", service: this.finebirdActionLogService },
         // { name: "Finebird-Click", service: this.finebirdClickLogService },
-        // { name: "Lad-Action", service: this.LadActionLogService },
+        { name: "Lad-Action", service: this.LadActionLogService },
         { name: "Lad-Click", service: this.LadClickLogService },
         // { name: "Metron-Click", service: this.metronClickLogService },
         // { name: "Metron-Action", service: this.metronActionLogService },

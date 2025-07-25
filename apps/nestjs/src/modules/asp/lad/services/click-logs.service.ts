@@ -8,25 +8,26 @@ import dotenv from "dotenv";
 // import { LadClickLogRepository } from "../repositories/click-logs.repository";
 // import { parseToJst } from "src/libs/date-utils";
 import { BaseAspService } from "../../base/base-asp.service";
-import { writeToSpreadsheet } from "src/libs/spreadsheet-utils";
+import { writeToSpreadsheet, convertTo2DArray } from "../../../../libs/spreadsheet-utils";
 
 dotenv.config();
 
 interface RawLadData {
-  クリック日時?: string;
-  広告名?: string;
-  リファラ?: string;
-  [key: string]: string | undefined; 
+  // クリック日時?: string;
+  // 広告名?: string;
+  // リファラ?: string;
+  [key: string]: string | undefined;
 }
 
 @Injectable()
 export class LadClickLogService extends BaseAspService implements LogService {
   // constructor(private readonly repository: LadClickLogRepository) {
   constructor() {
-    super(LadClickLogService.name);
+  super(LadClickLogService.name);
   }
 
-  async fetchAndInsertLogs(): Promise<number> {
+  // async fetchAndInsertLogs(): Promise<number> {
+  async fetchAndInsertLogs(): Promise<RawLadData[]> {
     console.log("🧪 fetchAndInsertLogs 実行されました");
 
     const result = await this.executeWithBrowser(
@@ -36,12 +37,12 @@ export class LadClickLogService extends BaseAspService implements LogService {
       "Ladクリックログ取得エラー",
     );
 
-    console.log("🧪 performLadOperation 終了:", result);
-
-    return result || 0;
+    // return result || 0;
+    return result || [];
   }
 
-  private async performLadOperation(page: Page): Promise<number> {
+  // private async performLadOperation(page: Page): Promise<number> {
+  private async performLadOperation(page: Page): Promise<RawLadData[]> {
     await this.navigateToPage(page, "https://admin038.l-ad.net/front/login/");
 
     await page
@@ -94,7 +95,7 @@ export class LadClickLogService extends BaseAspService implements LogService {
       this.logger.warn(
         "ダウンロードイベントが取得できませんでした。処理を中止します。",
       );
-      return 0;
+      return [];
     }
 
     const downloadPath = await download.path().catch((error: unknown) => {
@@ -104,37 +105,31 @@ export class LadClickLogService extends BaseAspService implements LogService {
 
     if (!downloadPath) {
       this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
-      return 0;
+      return [];
     }
 
     const rawData = await this.processCsv(downloadPath);
     console.log("🧪 rawData 件数:", rawData.length);
-    const formattedData = await this.transformData(rawData);
-    // スプレッドシートへの書き出し
+    // const formattedData = await this.transformData(rawData);
+    // return await this.repository.save(formattedData);
+
+    // スプレッドシート書き込み処理
     try {
-      // ["クリック日時", "広告名", "リファラ"],
-      // ...rawData.map((item) => [
-      //   item["クリック日時"] || "",
-      //   item["広告名"] || "",
-      //   item["リファラ"] || "",
-      // ]),
-      const headers = Object.keys(rawData[0] || {});
-      const values = rawData.map(item => headers.map(key => item[key] || ""));
-      console.log("🧪 writeToSpreadsheet を呼び出します");
       await writeToSpreadsheet({
+        // spreadsheetId: process.env.SPREADSHEET_ID_LAD_MEN_CLICK || "",
+        // sheetName: "Lad_Click_Referrer_Today_test",
         spreadsheetId: process.env.SPREADSHEET_ID_LAD_MEN_CLICK || "",
         sheetName: "Lad_Click_Referrer_Today_test",
-        values: [
-          headers, // ヘッダー行
-          ...values, // 全データ行
-        ],
+
+        values: convertTo2DArray(rawData),
       });
+
       this.logger.log("スプレッドシートへの書き出しに成功しました。");
     } catch (e) {
       this.logger.error(`スプレッドシートへの書き出しに失敗しました: ${e}`);
     }
-    // return await this.repository.save(formattedData);
-    return 1;
+
+    return rawData;
   }
 
   private async processCsv(filePath: string): Promise<RawLadData[]> {
@@ -149,10 +144,10 @@ export class LadClickLogService extends BaseAspService implements LogService {
         relax_column_count: true,
       }) as RawLadData[];
 
-      // if (!records || records.length === 0) {
-      //   this.logger.warn("CSVにデータがありませんでした");
-      //   return [];
-      // }
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return [];
+      }
 
       return records;
     } catch (error) {
@@ -168,60 +163,58 @@ export class LadClickLogService extends BaseAspService implements LogService {
     }
   }
 
-  private async transformData(rawData: RawLadData[]) {
-    // const formatted = await Promise.all(
-    //   rawData
-    //     .filter((item) => {
-    //       if (!item["クリック日時"] || !item["広告名"]) {
-    //         this.logger.warn(
-    //           `Skipping invalid record: ${JSON.stringify(item)}`,
-    //         );
-    //         return false;
-    //       }
-    //       return true;
-    //     })
-    //     .map(async (item) => {
-    //       try {
-    //         const clickDateTime = parseToJst(item["クリック日時"]);
-    //         const affiliateLinkName = item["広告名"]?.trim();
-    //         const referrer_url = item["リファラ"]?.trim() || null;
+  // private async transformData(rawData: RawLadData[]) {
+  //   const formatted = await Promise.all(
+  //     rawData
+  //       .filter((item) => {
+  //         if (!item["クリック日時"] || !item["広告名"]) {
+  //           this.logger.warn(
+  //             `Skipping invalid record: ${JSON.stringify(item)}`,
+  //           );
+  //           return false;
+  //         }
+  //         return true;
+  //       })
+  //       .map(async (item) => {
+  //         try {
+  //           const clickDateTime = parseToJst(item["クリック日時"]);
+  //           const affiliateLinkName = item["広告名"]?.trim();
+  //           const referrer_url = item["リファラ"]?.trim() || null;
 
-    //         if (!clickDateTime) {
-    //           this.logger.warn(`Invalid date format: ${item["クリック日時"]}`);
-    //           return null;
-    //         }
+  //           if (!clickDateTime) {
+  //             this.logger.warn(`Invalid date format: ${item["クリック日時"]}`);
+  //             return null;
+  //           }
 
-    //         if (!affiliateLinkName) {
-    //           this.logger.warn("広告名が空です");
-    //           return null;
-    //         }
+  //           if (!affiliateLinkName) {
+  //             this.logger.warn("広告名が空です");
+  //             return null;
+  //           }
 
-    //         const affiliateLink =
-    //           await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
+  //           const affiliateLink =
+  //             await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
-    //         const { referrerLinkId, referrer_url: processedReferrerUrl } =
-    //           await this.repository.processReferrerLink(referrer_url);
+  //           const { referrerLinkId, referrer_url: processedReferrerUrl } =
+  //             await this.repository.processReferrerLink(referrer_url);
 
-    //         return {
-    //           clickDateTime,
-    //           affiliate_link_id: affiliateLink.id,
-    //           referrer_link_id: referrerLinkId,
-    //           referrer_url: processedReferrerUrl,
-    //         };
-    //       } catch (error) {
-    //         this.logger.error(
-    //           `Error processing record: ${JSON.stringify(item)}`,
-    //           error,
-    //         );
-    //         return null;
-    //       }
-    //     }),
-    // );
+  //           return {
+  //             clickDateTime,
+  //             affiliate_link_id: affiliateLink.id,
+  //             referrer_link_id: referrerLinkId,
+  //             referrer_url: processedReferrerUrl,
+  //           };
+  //         } catch (error) {
+  //           this.logger.error(
+  //             `Error processing record: ${JSON.stringify(item)}`,
+  //             error,
+  //           );
+  //           return null;
+  //         }
+  //       }),
+  //   );
 
-    // return formatted.filter(
-    //   (record): record is NonNullable<typeof record> => record !== null,
-    // );
-
-    return rawData;
-  }
+  //   return formatted.filter(
+  //     (record): record is NonNullable<typeof record> => record !== null,
+  //   );
+  // }
 }

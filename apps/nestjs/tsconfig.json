@@ -17,9 +17,10 @@
       "@asp/*": ["src/modules/asp/*"],
       "@logs/*": ["src/modules/logs/*"],
       "@cron/*": ["src/modules/cron/*"],
-      "@common/*": ["src/modules/common/*"]
+      "@common/*": ["src/modules/common/*"],
+      "@libs/*": ["src/libs/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "libs/**/*"],
   "exclude": ["node_modules", "dist"]
 }

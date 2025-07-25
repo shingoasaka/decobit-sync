@@ -8,12 +8,11 @@ import { LadClickLogService } from "./services/click-logs.service";
 @Module({
   providers: [
     // LadActionLogRepository,
-    // LadActionLogService,
+    LadActionLogService,
     // LadClickLogRepository,
     LadClickLogService,
     // PrismaService,
   ],
-  // exports: [LadActionLogService, LadClickLogService],
-  exports: [LadClickLogService],
+  exports: [LadActionLogService, LadClickLogService],
 })
 export class LadModule {}
