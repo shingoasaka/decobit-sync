@@ -1,10 +1,11 @@
 import { Module } from "@nestjs/common";
 // import { CatsModule } from "./cats/cats.module";
-// import { FinebirdModule } from "./finebird/finebird.module";
+import { FinebirdModule } from "./finebird/finebird.module";
 // import { HanikamuModule } from "./hanikamu/hanikamu.module";
 import { LadModule } from "./lad/lad.module";
 import { LadClickLogService } from "./lad/services/click-logs.service";
-// import { metronModule } from "./metron/metron.module";
+import { metronModule } from "./metron/metron.module";
+import { WebanntenaModule } from './webanntena/webanntena.module';
 // import { MonkeyModule } from "./monkey/monkey.module";
 // import { RentracksModule } from "./rentracks/rentracks.module";
 // import { SampleAffiliateModule } from "./sampleAffiliate/sample_affiliate.module";
@@ -15,10 +16,11 @@ import { LogsModule } from "@logs/logs.module";
 @Module({
   imports: [
     // CatsModule,
-    // FinebirdModule,
+    FinebirdModule,
     // HanikamuModule,
     LadModule,
-    // metronModule,
+    metronModule,
+    WebanntenaModule,
     // MonkeyModule,
     // RentracksModule,
     // SampleAffiliateModule,
@@ -28,10 +30,11 @@ import { LogsModule } from "@logs/logs.module";
   providers: [AspCollectionService, LadClickLogService,],
   exports: [
     // CatsModule,
-    // FinebirdModule,
+    FinebirdModule,
     // HanikamuModule,
     LadModule,
-    // metronModule,
+    metronModule,
+    WebanntenaModule,
     // MonkeyModule,
     // RentracksModule,
     // SampleAffiliateModule,

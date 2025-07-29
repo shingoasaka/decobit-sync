@@ -1,21 +1,21 @@
 import { Injectable } from "@nestjs/common";
 import { Browser, Page } from "playwright";
-// import { FinebirdActionLogRepository } from "../repositories/action-logs.repository";
+// import { FinebirdClickLogRepository } from "../repositories/click-logs.repository";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 import { LogService } from "src/modules/logs/types";
 // import { PrismaService } from "@prismaService";
 // import { processReferrerLink } from "../../base/repository.base";
-// import { parseToJst } from "src/libs/date-utils";
 import { BaseAspService } from "../../base/base-asp.service";
 import { writeToSpreadsheet, convertTo2DArray } from "../../../../libs/spreadsheet-utils";
 
 // interface RawFinebirdData {
 interface RawLadData {
-//   注文日時?: string;
+
 //   サイト名?: string;
+//   総クリック?: string;
 //   リファラ?: string;
-    [key: string]: string | undefined;
+  [key: string]: string | undefined;
 }
 
 interface FinebirdSelectors {
@@ -26,7 +26,7 @@ interface FinebirdSelectors {
   };
   REPORT: {
     OPEN_SEARCH: string;
-    TODAY: string;
+    YESTERDAY: string;
     SEARCH_BUTTON: string;
     DOWNLOAD: string;
   };
@@ -40,7 +40,7 @@ const SELECTORS: FinebirdSelectors = {
   },
   REPORT: {
     OPEN_SEARCH: "div#searchField .card-header .card-title",
-    TODAY: "#today",
+    YESTERDAY: "#yesterday",
     SEARCH_BUTTON: "button.btn.btn-info.mt-1",
     DOWNLOAD: "button.btn.btn-outline-primary.float-end",
   },
@@ -51,35 +51,36 @@ const WAIT_TIME = {
 } as const;
 
 @Injectable()
-export class FinebirdActionLogService
+export class FinebirdClickLogYesterdayService
   extends BaseAspService
   implements LogService
 {
 //   constructor(
-//     private readonly repository: FinebirdActionLogRepository,
+//     private readonly repository: FinebirdClickLogRepository,
 //     private readonly prisma: PrismaService,
 //   ) {
   constructor() {
-    super(FinebirdActionLogService.name);
+    super(FinebirdClickLogYesterdayService.name);
   }
 
 //   async fetchAndInsertLogs(): Promise<number> {
-    async fetchAndInsertLogs(): Promise<RawLadData[]> {
+  async fetchAndInsertLogs(): Promise<RawLadData[]> {
     console.log("🧪 fetchAndInsertLogs 実行されました");
 
     const result = await this.executeWithBrowser(
       async (browser: Browser, page: Page) => {
-        return await this.performFinebirdActionOperation(page);
+        return await this.performFinebirdOperation(page);
       },
-      "Finebirdアクションログ取得エラー",
+      "Finebirdクリックログ取得エラー",
     );
 
     // return result || 0;
     return result || [];
-    }
+}
 
-//   private async performFinebirdActionOperation(page: Page): Promise<number> {
-  private async performFinebirdActionOperation(page: Page): Promise<RawLadData[]> {
+//   private async performFinebirdOperation(page: Page): Promise<number> {
+  private async performFinebirdOperation(page: Page): Promise<RawLadData[]> {
+
     await this.navigateToPage(page, process.env.FINEBIRD_URL ?? "");
 
     await page.fill(SELECTORS.LOGIN.ID, process.env.FINEBIRD_ID ?? "");
@@ -90,9 +91,7 @@ export class FinebirdActionLogService
     await (await page.waitForSelector(SELECTORS.LOGIN.SUBMIT)).click();
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(WAIT_TIME.SHORT);
-    await page.goto(
-      (process.env.FINEBIRD_URL ?? "") + "partneradmin/report/action/log/list",
-    );
+    await page.goto(process.env.FINEBIRD_URL + "partneradmin/report/ad/list");
 
     const hasData = await this.navigateToReport(page);
     if (!hasData) {
@@ -135,7 +134,7 @@ export class FinebirdActionLogService
     try {
     await writeToSpreadsheet({
         spreadsheetId: process.env.SPREADSHEET_ID_FINEBIRD || "",
-        sheetName: "afb_Today_test",
+        sheetName: "afb_click_Yesterday_test",
         values: convertTo2DArray(rawData),
     });
 
@@ -144,14 +143,14 @@ export class FinebirdActionLogService
     this.logger.error(`スプレッドシートへの書き出しに失敗しました: ${e}`);
     }
 
-    return rawData;   
+    return rawData;       
   }
 
   private async navigateToReport(page: Page): Promise<boolean> {
     try {
       await (await page.waitForSelector(SELECTORS.REPORT.OPEN_SEARCH)).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
-      await (await page.waitForSelector(SELECTORS.REPORT.TODAY)).click();
+      await (await page.waitForSelector(SELECTORS.REPORT.YESTERDAY)).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
       await (
         await page.waitForSelector(SELECTORS.REPORT.SEARCH_BUTTON)
@@ -163,7 +162,7 @@ export class FinebirdActionLogService
        * Finebirdはデータが存在しない場合、colspan='17'の空のtd要素を表示する
        * そのため、colspan='17'のtd要素が存在する場合、データが存在しないと判断する
        */
-      const emptyDataElement = await page.$("td[colspan='17']");
+      const emptyDataElement = await page.$("td[colspan='12']");
       if (emptyDataElement) {
         const emptyDataMessage = await page.evaluate(
           (el) => el.textContent,
@@ -207,14 +206,13 @@ export class FinebirdActionLogService
       }
 
       return records;
-    } catch (error) {
-      throw new Error(
-        `CSVの処理に失敗しました: ${error instanceof Error ? error.message : error}`,
-      );
+    } catch (error: unknown) {
+      this.logger.error("CSVの処理に失敗しました:", error);
+      return [];
     } finally {
       try {
         fs.unlinkSync(filePath);
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.error("Error deleting temporary file:", error);
       }
     }
@@ -224,7 +222,7 @@ export class FinebirdActionLogService
 //     const formatted = await Promise.all(
 //       rawData
 //         .filter((item) => {
-//           if (!item["注文日時"] || !item["サイト名"]) {
+//           if (!item["サイト名"]) {
 //             this.logger.warn(
 //               `Skipping invalid record: ${JSON.stringify(item)}`,
 //             );
@@ -234,19 +232,15 @@ export class FinebirdActionLogService
 //         })
 //         .map(async (item) => {
 //           try {
-//             const actionDateTime = parseToJst(item["注文日時"]);
 //             const affiliateLinkName = item["サイト名"]?.trim();
 //             const referrer_url = item["リファラ"] || null;
-
-//             if (!actionDateTime) {
-//               this.logger.warn(`Invalid date format: ${item["注文日時"]}`);
-//               return null;
-//             }
 
 //             if (!affiliateLinkName) {
 //               this.logger.warn("サイト名が空です");
 //               return null;
 //             }
+
+//             const current_total_clicks = this.toInt(item["総クリック"]);
 
 //             const affiliateLink =
 //               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
@@ -255,11 +249,10 @@ export class FinebirdActionLogService
 //               await processReferrerLink(this.prisma, this.logger, referrer_url);
 
 //             return {
-//               actionDateTime,
 //               affiliate_link_id: affiliateLink.id,
+//               current_total_clicks,
 //               referrer_link_id: referrerLinkId,
 //               referrer_url: processedReferrerUrl,
-//               uid: null,
 //             };
 //           } catch (error) {
 //             this.logger.error(

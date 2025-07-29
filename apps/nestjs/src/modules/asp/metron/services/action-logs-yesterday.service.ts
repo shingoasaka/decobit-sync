@@ -9,7 +9,7 @@ import {
 // import { MetronActionLogRepository } from "../repositories/action-logs.repository";
 import { LogService } from "src/modules/logs/types";
 import { writeToSpreadsheet, convertTo2DArray } from "../../../../libs/spreadsheet-utils";
-import { format } from "date-fns"; 
+import { subDays, format } from "date-fns";
 
 // interface RawMetronData {
 interface RawLadData {
@@ -32,8 +32,8 @@ interface MetronApiResponse {
 }
 
 @Injectable()
-export class MetronActionLogService implements LogService {
-  private readonly logger = new Logger(MetronActionLogService.name);
+export class MetronActionLogYesterdayService implements LogService {
+  private readonly logger = new Logger(MetronActionLogYesterdayService.name);
   // private readonly apiUrl = "https://api09.catsasp.net/log/action/listtime";
   private readonly apiUrl = "https://api09.catsasp.net/log/action/list";
 
@@ -91,11 +91,12 @@ export class MetronActionLogService implements LogService {
     // const body = new URLSearchParams({
     //   actionDateTime: `${startStr} - ${endStr}`,
     const today = getNowJstForDisplay();
-    const todayStr = format(today, "yyyy年MM月dd日");
+    const yesterday = subDays(today, 1); // ← 翌日を取得
+    const yesterdayStr = format(yesterday, "yyyy年MM月dd日");
     const headers = { apiKey: process.env.AFAD_API_KEY };
 
     const body = new URLSearchParams({
-      actionDateTime: `${todayStr} - ${todayStr}`,
+      actionDateTime: `${yesterdayStr} - ${yesterdayStr}`,
       row: "120",
       page: page.toString(),
     });

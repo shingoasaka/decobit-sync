@@ -20,10 +20,10 @@ interface RawLadData {
 }
 
 @Injectable()
-export class LadStActionLogService extends BaseAspService implements LogService {
+export class LadAdminActionLogYesterdayService extends BaseAspService implements LogService {
   // constructor(private readonly repository: LadActionLogRepository) {
   constructor() {
-  super(LadStActionLogService.name);
+  super(LadAdminActionLogYesterdayService.name);
   }
 
   // async fetchAndInsertLogs(): Promise<number> {
@@ -43,14 +43,14 @@ export class LadStActionLogService extends BaseAspService implements LogService 
 
   // private async performLadActionOperation(page: Page): Promise<number> {
   private async performLadActionOperation(page: Page): Promise<RawLadData[]> {
-    await this.navigateToPage(page, "https://admin038.l-ad.net/front/login/");
+    await this.navigateToPage(page, "https://newb.admin01.l-ad.net/admin/");
 
     await page
       .getByRole("textbox", { name: "ログインID" })
-      .fill(process.env.LAD_ST_USERNAME ?? "");
+      .fill(process.env.LAD_ADMIN_USERNAME ?? "");
     await page
       .getByRole("textbox", { name: "パスワード" })
-      .fill(process.env.LAD_ST_PASSWORD ?? "");
+      .fill(process.env.LAD_ADMIN_PASSWORD ?? "");
     await page.getByRole("button", { name: "ログイン" }).click();
 
     await page.waitForLoadState("domcontentloaded");
@@ -61,7 +61,7 @@ export class LadStActionLogService extends BaseAspService implements LogService 
     await page.getByRole("link", { name: "成果ログ" }).click();
     await page.waitForLoadState("domcontentloaded");
 
-    await page.getByRole("button", { name: "本日" }).click();
+    await page.getByRole('button', { name: '昨日', exact: true }).click();
 
     await page
       .waitForResponse(
@@ -80,7 +80,7 @@ export class LadStActionLogService extends BaseAspService implements LogService 
 
     await this.navigateToPage(
       page,
-      "https://admin038.l-ad.net/admin/actionlog/list",
+      "https://newb.admin01.l-ad.net/admin/actionlog/list",
     );
 
     const [download] = await Promise.all([
@@ -108,26 +108,26 @@ export class LadStActionLogService extends BaseAspService implements LogService 
       return [];
     }
 
-    const rawData = await this.processCsv(downloadPath);
-    console.log("🧪 rawData 件数:", rawData.length);
-    // const formattedData = await this.transformData(rawData);
-    // return await this.repository.save(formattedData);
+      const rawData = await this.processCsv(downloadPath);
+      console.log("🧪 rawData 件数:", rawData.length);
+      // const formattedData = await this.transformData(rawData);
+      // return await this.repository.save(formattedData);
 
-    // スプレッドシート書き込み処理
-    try {
-      await writeToSpreadsheet({
-        spreadsheetId: process.env.SPREADSHEET_ID_LAD_MEN_ACTION || "",
-        sheetName: "Lad_CV_Referrer_Today_ストラッシュ_test",
-        values: convertTo2DArray(rawData),
-      });
+      // スプレッドシート書き込み処理
+      try {
+        await writeToSpreadsheet({
+          spreadsheetId: process.env.SPREADSHEET_ID_LAD_ADMIN_ACTION || "",
+          sheetName: "Lad_CV_Referrer_Yesterday_AGA_CPF_test",
+          values: convertTo2DArray(rawData),
+        });
 
-      this.logger.log("スプレッドシートへの書き出しに成功しました。");
-    } catch (e) {
-      this.logger.error(`スプレッドシートへの書き出しに失敗しました: ${e}`);
+        this.logger.log("スプレッドシートへの書き出しに成功しました。");
+      } catch (e) {
+        this.logger.error(`スプレッドシートへの書き出しに失敗しました: ${e}`);
+      }
+
+      return rawData;
     }
-
-    return rawData;
-  }
 
   private async processCsv(filePath: string): Promise<RawLadData[]> {
     try {

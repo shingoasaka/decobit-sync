@@ -20,10 +20,10 @@ interface RawLadData {
 }
 
 @Injectable()
-export class LadStActionLogService extends BaseAspService implements LogService {
+export class LadMenCpfActionLogYesterdayService extends BaseAspService implements LogService {
   // constructor(private readonly repository: LadActionLogRepository) {
   constructor() {
-  super(LadStActionLogService.name);
+  super(LadMenCpfActionLogYesterdayService.name);
   }
 
   // async fetchAndInsertLogs(): Promise<number> {
@@ -47,10 +47,10 @@ export class LadStActionLogService extends BaseAspService implements LogService 
 
     await page
       .getByRole("textbox", { name: "ログインID" })
-      .fill(process.env.LAD_ST_USERNAME ?? "");
+      .fill(process.env.LAD_MEN_CPF_USERNAME ?? "");
     await page
       .getByRole("textbox", { name: "パスワード" })
-      .fill(process.env.LAD_ST_PASSWORD ?? "");
+      .fill(process.env.LAD_MEN_CPF_PASSWORD ?? "");
     await page.getByRole("button", { name: "ログイン" }).click();
 
     await page.waitForLoadState("domcontentloaded");
@@ -61,7 +61,7 @@ export class LadStActionLogService extends BaseAspService implements LogService 
     await page.getByRole("link", { name: "成果ログ" }).click();
     await page.waitForLoadState("domcontentloaded");
 
-    await page.getByRole("button", { name: "本日" }).click();
+    await page.getByRole('button', { name: '昨日', exact: true }).click();
 
     await page
       .waitForResponse(
@@ -117,7 +117,7 @@ export class LadStActionLogService extends BaseAspService implements LogService 
     try {
       await writeToSpreadsheet({
         spreadsheetId: process.env.SPREADSHEET_ID_LAD_MEN_ACTION || "",
-        sheetName: "Lad_CV_Referrer_Today_ストラッシュ_test",
+        sheetName: "Lad_CV_Referrer_Yesterday_CPF_test",
         values: convertTo2DArray(rawData),
       });
 

@@ -1,190 +1,222 @@
-// import { Injectable } from "@nestjs/common";
-// import { Browser, Page } from "playwright";
+import { Injectable } from "@nestjs/common";
+import { Browser, Page } from "playwright";
 // import { FinebirdClickLogRepository } from "../repositories/click-logs.repository";
-// import * as fs from "fs";
-// import { parse } from "csv-parse/sync";
-// import { LogService } from "src/modules/logs/types";
+import * as fs from "fs";
+import { parse } from "csv-parse/sync";
+import { LogService } from "src/modules/logs/types";
 // import { PrismaService } from "@prismaService";
 // import { processReferrerLink } from "../../base/repository.base";
-// import { BaseAspService } from "../../base/base-asp.service";
+import { BaseAspService } from "../../base/base-asp.service";
+import { writeToSpreadsheet, convertTo2DArray } from "../../../../libs/spreadsheet-utils";
 
 // interface RawFinebirdData {
+interface RawLadData {
+
 //   サイト名?: string;
 //   総クリック?: string;
 //   リファラ?: string;
-// }
+  [key: string]: string | undefined;
+}
 
-// interface FinebirdSelectors {
-//   LOGIN: {
-//     ID: string;
-//     PASSWORD: string;
-//     SUBMIT: string;
-//   };
-//   REPORT: {
-//     OPEN_SEARCH: string;
-//     TODAY: string;
-//     SEARCH_BUTTON: string;
-//     DOWNLOAD: string;
-//   };
-// }
+interface FinebirdSelectors {
+  LOGIN: {
+    ID: string;
+    PASSWORD: string;
+    SUBMIT: string;
+  };
+  REPORT: {
+    OPEN_SEARCH: string;
+    TODAY: string;
+    SEARCH_BUTTON: string;
+    DOWNLOAD: string;
+  };
+}
 
-// const SELECTORS: FinebirdSelectors = {
-//   LOGIN: {
-//     ID: 'input[type="text"][name="loginId"]',
-//     PASSWORD: 'input[type="password"][name="password"]',
-//     SUBMIT: 'input[type="submit"][value="パートナー様ログイン"]',
-//   },
-//   REPORT: {
-//     OPEN_SEARCH: "div#searchField .card-header .card-title",
-//     TODAY: "#today",
-//     SEARCH_BUTTON: "button.btn.btn-info.mt-1",
-//     DOWNLOAD: "button.btn.btn-outline-primary.float-end",
-//   },
-// } as const;
+const SELECTORS: FinebirdSelectors = {
+  LOGIN: {
+    ID: 'input[type="text"][name="loginId"]',
+    PASSWORD: 'input[type="password"][name="password"]',
+    SUBMIT: 'input[type="submit"][value="パートナー様ログイン"]',
+  },
+  REPORT: {
+    OPEN_SEARCH: "div#searchField .card-header .card-title",
+    TODAY: "#today",
+    SEARCH_BUTTON: "button.btn.btn-info.mt-1",
+    DOWNLOAD: "button.btn.btn-outline-primary.float-end",
+  },
+} as const;
 
-// const WAIT_TIME = {
-//   SHORT: 2000,
-// } as const;
+const WAIT_TIME = {
+  SHORT: 2000,
+} as const;
 
-// @Injectable()
-// export class FinebirdClickLogService
-//   extends BaseAspService
-//   implements LogService
-// {
+@Injectable()
+export class FinebirdClickLogService
+  extends BaseAspService
+  implements LogService
+{
 //   constructor(
 //     private readonly repository: FinebirdClickLogRepository,
 //     private readonly prisma: PrismaService,
 //   ) {
-//     super(FinebirdClickLogService.name);
-//   }
+  constructor() {
+    super(FinebirdClickLogService.name);
+  }
 
 //   async fetchAndInsertLogs(): Promise<number> {
-//     const result = await this.executeWithBrowser(
-//       async (browser: Browser, page: Page) => {
-//         return await this.performFinebirdOperation(page);
-//       },
-//       "Finebirdクリックログ取得エラー",
-//     );
+  async fetchAndInsertLogs(): Promise<RawLadData[]> {
+    console.log("🧪 fetchAndInsertLogs 実行されました");
 
-//     return result || 0;
-//   }
+    const result = await this.executeWithBrowser(
+      async (browser: Browser, page: Page) => {
+        return await this.performFinebirdOperation(page);
+      },
+      "Finebirdクリックログ取得エラー",
+    );
+
+    // return result || 0;
+    return result || [];
+}
 
 //   private async performFinebirdOperation(page: Page): Promise<number> {
-//     await this.navigateToPage(page, process.env.FINEBIRD_URL ?? "");
+  private async performFinebirdOperation(page: Page): Promise<RawLadData[]> {
 
-//     await page.fill(SELECTORS.LOGIN.ID, process.env.FINEBIRD_ID ?? "");
-//     await page.fill(
-//       SELECTORS.LOGIN.PASSWORD,
-//       process.env.FINEBIRD_PASSWORD ?? "",
-//     );
-//     await (await page.waitForSelector(SELECTORS.LOGIN.SUBMIT)).click();
-//     await page.waitForLoadState("networkidle");
-//     await page.waitForTimeout(WAIT_TIME.SHORT);
-//     await page.goto(process.env.FINEBIRD_URL + "partneradmin/report/ad/list");
+    await this.navigateToPage(page, process.env.FINEBIRD_URL ?? "");
 
-//     const hasData = await this.navigateToReport(page);
-//     if (!hasData) {
-//       this.logger.warn(
-//         "検索結果が存在しないため、ダウンロードをスキップします",
-//       );
-//       return 0;
-//     }
+    await page.fill(SELECTORS.LOGIN.ID, process.env.FINEBIRD_ID ?? "");
+    await page.fill(
+      SELECTORS.LOGIN.PASSWORD,
+      process.env.FINEBIRD_PASSWORD ?? "",
+    );
+    await (await page.waitForSelector(SELECTORS.LOGIN.SUBMIT)).click();
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(WAIT_TIME.SHORT);
+    await page.goto(process.env.FINEBIRD_URL + "partneradmin/report/ad/list");
 
-//     const [download] = await Promise.all([
-//       this.waitForDownload(page),
-//       (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
-//     ]).catch((error: unknown) => {
-//       this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
-//       return [null];
-//     });
+    const hasData = await this.navigateToReport(page);
+    if (!hasData) {
+      this.logger.warn(
+        "検索結果が存在しないため、ダウンロードをスキップします",
+      );
+      return [];
+    }
 
-//     if (!download) {
-//       this.logger.warn(
-//         "ダウンロードイベントが取得できませんでした。処理を中止します。",
-//       );
-//       return 0;
-//     }
+    const [download] = await Promise.all([
+      this.waitForDownload(page),
+      (await page.waitForSelector(SELECTORS.REPORT.DOWNLOAD)).click(),
+    ]).catch((error: unknown) => {
+      this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+      return [null];
+    });
 
-//     const downloadPath = await download.path().catch((error: unknown) => {
-//       this.logger.error("ダウンロードパスの取得に失敗しました:", error);
-//       return null;
-//     });
+    if (!download) {
+      this.logger.warn(
+        "ダウンロードイベントが取得できませんでした。処理を中止します。",
+      );
+      return [];
+    }
 
-//     if (!downloadPath) {
-//       this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
-//       return 0;
-//     }
+    const downloadPath = await download.path().catch((error: unknown) => {
+      this.logger.error("ダウンロードパスの取得に失敗しました:", error);
+      return null;
+    });
 
-//     const rawData = await this.processCsv(downloadPath);
-//     const formattedData = await this.transformData(rawData);
-//     return await this.repository.save(formattedData);
-//   }
+    if (!downloadPath) {
+      this.logger.warn("ダウンロードパスが取得できません。処理を中止します。");
+      return [];
+    }
 
-//   private async navigateToReport(page: Page): Promise<boolean> {
-//     try {
-//       await (await page.waitForSelector(SELECTORS.REPORT.OPEN_SEARCH)).click();
-//       await page.waitForTimeout(WAIT_TIME.SHORT);
-//       await (await page.waitForSelector(SELECTORS.REPORT.TODAY)).click();
-//       await page.waitForTimeout(WAIT_TIME.SHORT);
-//       await (
-//         await page.waitForSelector(SELECTORS.REPORT.SEARCH_BUTTON)
-//       ).click();
-//       await page.waitForTimeout(WAIT_TIME.SHORT);
+    const rawData = await this.processCsv(downloadPath);
+    // const formattedData = await this.transformData(rawData);
+    // return await this.repository.save(formattedData);
+    console.log("🧪 rawData 件数:", rawData.length);
+    // スプレッドシート書き込み処理
+    try {
+    await writeToSpreadsheet({
+        spreadsheetId: process.env.SPREADSHEET_ID_FINEBIRD || "",
+        sheetName: "afb_click_Today_test",
+        values: convertTo2DArray(rawData),
+    });
 
-//       const noDataElement = await page.$(".no-data");
-//       if (noDataElement) {
-//         return false;
-//       }
+    this.logger.log("スプレッドシートへの書き出しに成功しました。");
+    } catch (e) {
+    this.logger.error(`スプレッドシートへの書き出しに失敗しました: ${e}`);
+    }
 
-//       return true;
-//     } catch (error: unknown) {
-//       this.logger.error(
-//         "レポートナビゲーション中にエラーが発生しました:",
-//         error,
-//       );
-//       return false;
-//     }
-//   }
+    return rawData;       
+  }
 
-//   private toInt(value: string | null | undefined): number {
-//     if (!value) return 0;
-//     try {
-//       const cleanValue = value.replace(/[,¥]/g, "");
-//       const num = parseInt(cleanValue, 10);
-//       return isNaN(num) ? 0 : num;
-//     } catch (error: unknown) {
-//       this.logger.warn(`Invalid number format: ${value}`);
-//       return 0;
-//     }
-//   }
+  private async navigateToReport(page: Page): Promise<boolean> {
+    try {
+      await (await page.waitForSelector(SELECTORS.REPORT.OPEN_SEARCH)).click();
+      await page.waitForTimeout(WAIT_TIME.SHORT);
+      await (await page.waitForSelector(SELECTORS.REPORT.TODAY)).click();
+      await page.waitForTimeout(WAIT_TIME.SHORT);
+      await (
+        await page.waitForSelector(SELECTORS.REPORT.SEARCH_BUTTON)
+      ).click();
+      await page.waitForTimeout(WAIT_TIME.SHORT);
+
+      /**
+       * Finebirdのレポートページでデータが存在しない場合のチェック
+       * Finebirdはデータが存在しない場合、colspan='17'の空のtd要素を表示する
+       * そのため、colspan='17'のtd要素が存在する場合、データが存在しないと判断する
+       */
+      const emptyDataElement = await page.$("td[colspan='12']");
+      if (emptyDataElement) {
+        const emptyDataMessage = await page.evaluate(
+          (el) => el.textContent,
+          emptyDataElement,
+        );
+        if (
+          emptyDataMessage &&
+          emptyDataMessage.includes("該当するデータがありませんでした。")
+        ) {
+          this.logger.warn("検索結果が存在しませんが、処理を継続します");
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("TimeoutError")) {
+        throw new Error(
+          "ページ要素の取得に失敗しました。タイムアウトが発生しました。",
+        );
+      }
+      throw error;
+    }
+  }
 
 //   private async processCsv(filePath: string): Promise<RawFinebirdData[]> {
-//     try {
-//       const buffer = fs.readFileSync(filePath);
-//       const utf8Data = buffer.toString("utf8").replace(/^\uFEFF/, "");
+  private async processCsv(filePath: string): Promise<RawLadData[]> {
+    try {
+      const buffer = fs.readFileSync(filePath);
+      const utf8Data = buffer.toString("utf8").replace(/^\uFEFF/, "");
 
-//       const records = parse(utf8Data, {
-//         columns: true,
-//         skip_empty_lines: true,
-//       }) as RawFinebirdData[];
+      const records = parse(utf8Data, {
+        columns: true,
+        skip_empty_lines: true,
+    //   }) as RawFinebirdData[];
+      }) as RawLadData[];
 
-//       if (!records || records.length === 0) {
-//         this.logger.warn("CSVにデータがありませんでした");
-//         return [];
-//       }
+      if (!records || records.length === 0) {
+        this.logger.warn("CSVにデータがありませんでした");
+        return [];
+      }
 
-//       return records;
-//     } catch (error: unknown) {
-//       this.logger.error("CSVの処理に失敗しました:", error);
-//       return [];
-//     } finally {
-//       try {
-//         fs.unlinkSync(filePath);
-//       } catch (error: unknown) {
-//         this.logger.error("Error deleting temporary file:", error);
-//       }
-//     }
-//   }
+      return records;
+    } catch (error: unknown) {
+      this.logger.error("CSVの処理に失敗しました:", error);
+      return [];
+    } finally {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (error: unknown) {
+        this.logger.error("Error deleting temporary file:", error);
+      }
+    }
+  }
 
 //   private async transformData(rawData: RawFinebirdData[]) {
 //     const formatted = await Promise.all(
@@ -236,4 +268,4 @@
 //       (record): record is NonNullable<typeof record> => record !== null,
 //     );
 //   }
-// }
+}

@@ -1,14 +1,31 @@
 import { Injectable, Logger } from "@nestjs/common";
 // import { CatsActionLogService } from "@asp/cats/services/action-logs.service";
 // import { CatsClickLogService } from "@asp/cats/services/click-logs.service";
-// import { FinebirdActionLogService } from "@asp/finebird/services/action-logs.service";
-// import { FinebirdClickLogService } from "@asp/finebird/services/click-logs.service";
-// import { TryActionLogService } from "@asp/hanikamu/try/action-logs.service";
-// import { TryClickLogService } from "@asp/hanikamu/try/click-logs.service";
+import { FinebirdActionLogService } from "@asp/finebird/services/action-logs.service";
+import { FinebirdClickLogService } from "@asp/finebird/services/click-logs.service";
+import { FinebirdActionLogYesterdayService } from "@asp/finebird/services/action-logs-yesterday.service";
+import { FinebirdClickLogYesterdayService } from "@asp/finebird/services/click-logs-yesterday.service";
+
+// // import { TryActionLogService } from "@asp/hanikamu/try/action-logs.service";
+// // import { TryClickLogService } from "@asp/hanikamu/try/click-logs.service";
 import { LadActionLogService } from "@asp/lad/services/action-logs.service";
 import { LadClickLogService } from "@asp/lad/services/click-logs.service";
-// import { MetronActionLogService } from "@asp/metron/services/action-logs.service";
-// import { MetronClickLogService } from "@asp/metron/services/click-logs.service";
+import { LadActionLogYesterdayService } from "@asp/lad/services/action-logs-yesterday.service";
+import { LadClickLogYesterdayService } from "@asp/lad/services/click-logs-yesterday.service";
+import { LadStActionLogService } from "@asp/lad/st/services/action-logs.service";
+import { LadStClickLogService } from "@asp/lad/st/services/click-logs.service";
+import { LadStActionLogYesterdayService } from "@asp/lad/st/services/action-logs-yesterday.service";
+import { LadStClickLogYesterdayService } from "@asp/lad/st/services/click-logs-yesterday.service";
+import { LadMenCpfActionLogService } from "@asp/lad/mencpf/services/action-logs.service";
+import { LadMenCpfActionLogYesterdayService } from "@asp/lad/mencpf/services/action-logs-yesterday.service";
+import { LadAdminActionLogService } from "@asp/lad/admin/services/action-logs.service";
+import { LadAdminActionLogYesterdayService } from "@asp/lad/admin/services/action-logs-yesterday.service";
+import { MetronActionLogService } from "@asp/metron/services/action-logs.service";
+import { MetronClickLogService } from "@asp/metron/services/click-logs.service";
+// import { MetronActionLogYesterdayService } from "@asp/metron/services/action-logs-yesterday.service";
+import { MetronClickLogYesterdayService } from "@asp/metron/services/click-logs-yesterday.service";
+import { WebanntenaActionLogService } from "@asp/webanntena/services/action-logs.service";
+import { WebanntenaActionLogYesterdayService } from "@asp/webanntena/services/action-logs-yesterday.service";
 // import { MonkeyActionLogService } from "@asp/monkey/services/action-logs.service";
 // import { MonkeyClickLogService } from "@asp/monkey/services/click-logs.service";
 // import { RentracksActionLogService } from "@asp/rentracks/services/action-logs.service";
@@ -42,12 +59,28 @@ export class AspCollectionService {
   constructor(
     // private readonly catsActionLogService: CatsActionLogService,
     // private readonly catsClickLogService: CatsClickLogService,
-    // private readonly finebirdActionLogService: FinebirdActionLogService,
-    // private readonly finebirdClickLogService: FinebirdClickLogService,
+    private readonly finebirdActionLogService: FinebirdActionLogService,
+    private readonly finebirdClickLogService: FinebirdClickLogService,
+    private readonly finebirdActionLogYesterdayService: FinebirdActionLogYesterdayService,
+    private readonly finebirdClickLogYesterdayService: FinebirdClickLogYesterdayService,
     private readonly ladActionLogService: LadActionLogService,
     private readonly ladClickLogService: LadClickLogService,
-    // private readonly metronActionLogService: MetronActionLogService,
-    // private readonly metronClickLogService: MetronClickLogService,
+    private readonly ladStActionLogService: LadStActionLogService,
+    private readonly ladStClickLogService: LadStClickLogService,
+    private readonly ladStActionLogYesterdayService: LadStActionLogYesterdayService,
+    private readonly ladStClickLogYesterdayService: LadStClickLogYesterdayService,
+    private readonly ladActionLogYesterdayService: LadActionLogYesterdayService,
+    private readonly ladClickLogYesterdayService: LadClickLogYesterdayService,
+    private readonly ladMenCpfActionLogService: LadMenCpfActionLogService,
+    private readonly ladMenCpfActionLogYesterdayService: LadMenCpfActionLogYesterdayService,
+    private readonly ladAdminActionLogService: LadAdminActionLogService,
+    private readonly ladAdminActionLogYesterdayService: LadAdminActionLogYesterdayService,
+    private readonly metronActionLogService: MetronActionLogService,
+    private readonly metronClickLogService: MetronClickLogService,
+    // private readonly metronActionLogYesterdayService: MetronActionLogYesterdayService,
+    private readonly metronClickLogYesterdayService: MetronClickLogYesterdayService,
+    private readonly WebanntenaActionLogService: WebanntenaActionLogService,
+    private readonly WebanntenaActionLogYesterdayService: WebanntenaActionLogYesterdayService,
     // private readonly monkeyActionLogService: MonkeyActionLogService,
     // private readonly monkeyClickLogService: MonkeyClickLogService,
     // private readonly RentracksActionLogService: RentracksActionLogService,
@@ -71,6 +104,26 @@ export class AspCollectionService {
     const aspServices = [
       { name: "Lad-Action", service: this.ladActionLogService },
       { name: "Lad-Click", service: this.ladClickLogService },
+      { name: "Lad-Action-yesterday", service: this.ladActionLogYesterdayService },
+      { name: "Lad-Click-yesterday", service: this.ladClickLogYesterdayService },
+      { name: "Lad-St-Action", service: this.ladStActionLogService },
+      { name: "Lad-St-Click", service: this.ladStClickLogService },
+      { name: "Lad-St-Action-yesterday", service: this.ladStActionLogYesterdayService },
+      { name: "Lad-St-Click-yesterday", service: this.ladStClickLogYesterdayService },
+      { name: "Lad-Mencpf-Action", service: this.ladMenCpfActionLogService },
+      { name: "Lad-Mencpf-Action-yesterday", service: this.ladMenCpfActionLogYesterdayService },
+      { name: "Lad-Admin-Action", service: this.ladAdminActionLogService },
+      { name: "Lad-Admin-Action-yesterday", service: this.ladAdminActionLogYesterdayService },
+      { name: "Finebird-Action", service: this.finebirdActionLogService },
+      { name: "Finebird-Click", service: this.finebirdClickLogService },
+      { name: "Finebird-Action-yesterday", service: this.finebirdActionLogYesterdayService },
+      { name: "Finebird-Click-yesterday", service: this.finebirdClickLogYesterdayService },
+      { name: "Metron-Action", service: this.metronActionLogService },
+      { name: "Metron-Click", service: this.metronClickLogService },
+      // { name: "Metron-Action-yesterday", service: this.metronActionLogYesterdayService },
+      { name: "Metron-Click-yesterday", service: this.metronClickLogYesterdayService },
+      { name: "Webanntena-Action", service: this.WebanntenaActionLogService },
+      { name: "Webanntena-Action-yesterday", service: this.WebanntenaActionLogYesterdayService },
     ];
 
     // const aspServices = [

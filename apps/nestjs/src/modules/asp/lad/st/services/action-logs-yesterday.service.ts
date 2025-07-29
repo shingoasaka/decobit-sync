@@ -20,10 +20,10 @@ interface RawLadData {
 }
 
 @Injectable()
-export class LadStActionLogService extends BaseAspService implements LogService {
+export class LadStActionLogYesterdayService extends BaseAspService implements LogService {
   // constructor(private readonly repository: LadActionLogRepository) {
   constructor() {
-  super(LadStActionLogService.name);
+  super(LadStActionLogYesterdayService.name);
   }
 
   // async fetchAndInsertLogs(): Promise<number> {
@@ -61,7 +61,7 @@ export class LadStActionLogService extends BaseAspService implements LogService 
     await page.getByRole("link", { name: "成果ログ" }).click();
     await page.waitForLoadState("domcontentloaded");
 
-    await page.getByRole("button", { name: "本日" }).click();
+    await page.getByRole('button', { name: '昨日', exact: true }).click();
 
     await page
       .waitForResponse(
@@ -117,7 +117,7 @@ export class LadStActionLogService extends BaseAspService implements LogService 
     try {
       await writeToSpreadsheet({
         spreadsheetId: process.env.SPREADSHEET_ID_LAD_MEN_ACTION || "",
-        sheetName: "Lad_CV_Referrer_Today_ストラッシュ_test",
+        sheetName: "Lad_CV_Referrer_Yesterday_ストラッシュ_test",
         values: convertTo2DArray(rawData),
       });
 

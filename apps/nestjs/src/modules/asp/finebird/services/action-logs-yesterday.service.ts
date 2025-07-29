@@ -26,7 +26,7 @@ interface FinebirdSelectors {
   };
   REPORT: {
     OPEN_SEARCH: string;
-    TODAY: string;
+    YESTERDAY: string;
     SEARCH_BUTTON: string;
     DOWNLOAD: string;
   };
@@ -40,7 +40,7 @@ const SELECTORS: FinebirdSelectors = {
   },
   REPORT: {
     OPEN_SEARCH: "div#searchField .card-header .card-title",
-    TODAY: "#today",
+    YESTERDAY: "#yesterday",
     SEARCH_BUTTON: "button.btn.btn-info.mt-1",
     DOWNLOAD: "button.btn.btn-outline-primary.float-end",
   },
@@ -51,7 +51,7 @@ const WAIT_TIME = {
 } as const;
 
 @Injectable()
-export class FinebirdActionLogService
+export class FinebirdActionLogYesterdayService
   extends BaseAspService
   implements LogService
 {
@@ -60,7 +60,7 @@ export class FinebirdActionLogService
 //     private readonly prisma: PrismaService,
 //   ) {
   constructor() {
-    super(FinebirdActionLogService.name);
+    super(FinebirdActionLogYesterdayService.name);
   }
 
 //   async fetchAndInsertLogs(): Promise<number> {
@@ -135,7 +135,7 @@ export class FinebirdActionLogService
     try {
     await writeToSpreadsheet({
         spreadsheetId: process.env.SPREADSHEET_ID_FINEBIRD || "",
-        sheetName: "afb_Today_test",
+        sheetName: "afb_Yesterday_test",
         values: convertTo2DArray(rawData),
     });
 
@@ -151,7 +151,7 @@ export class FinebirdActionLogService
     try {
       await (await page.waitForSelector(SELECTORS.REPORT.OPEN_SEARCH)).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
-      await (await page.waitForSelector(SELECTORS.REPORT.TODAY)).click();
+      await (await page.waitForSelector(SELECTORS.REPORT.YESTERDAY)).click();
       await page.waitForTimeout(WAIT_TIME.SHORT);
       await (
         await page.waitForSelector(SELECTORS.REPORT.SEARCH_BUTTON)

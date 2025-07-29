@@ -1,22 +1,19 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { HttpService } from "@nestjs/axios";
 import { firstValueFrom } from "rxjs";
-import {
-  getNowJstForDisplay,
-  formatDateTimeJapanese,
-  parseToJst,
-} from "src/libs/date-utils";
-// import { MetronActionLogRepository } from "../repositories/action-logs.repository";
+import { formatDateTime, getNowJstForDisplay } from "src/libs/date-utils";
+// import { MetronClickLogRepository } from "../repositories/click-logs.repository";
 import { LogService } from "src/modules/logs/types";
+import { parseToJst } from "src/libs/date-utils";
+import { HttpService } from "@nestjs/axios";
 import { writeToSpreadsheet, convertTo2DArray } from "../../../../libs/spreadsheet-utils";
-import { format } from "date-fns"; 
+import { addHours, format, isBefore } from "date-fns";
 
 // interface RawMetronData {
 interface RawLadData {
-//   actionDateTime?: string;
+//   clickDateTime?: string;
 //   siteName?: string;
+//   referrer?: string;
 //   sessionId?: string;
-//   clientInfo?: string;
   [key: string]: string | undefined;
 }
 
@@ -26,46 +23,41 @@ interface MetronApiResponse {
     page: string;
     // logs: RawMetronData[];
     logs: RawLadData[];
-};
+  };
   errors: (string | object)[];
   code: number;
 }
 
 @Injectable()
-export class MetronActionLogService implements LogService {
-  private readonly logger = new Logger(MetronActionLogService.name);
-  // private readonly apiUrl = "https://api09.catsasp.net/log/action/listtime";
-  private readonly apiUrl = "https://api09.catsasp.net/log/action/list";
+export class MetronClickLogYesterdayService implements LogService {
+  private readonly logger = new Logger(MetronClickLogYesterdayService.name);
+  private readonly apiUrl = "https://api09.catsasp.net/log/click/listspan";
 
   constructor(
     private readonly http: HttpService,
-    // private readonly repository: MetronActionLogRepository,
+    // private readonly repository: MetronClickLogRepository,
   ) {}
 
 //   async fetchAndInsertLogs(): Promise<number> {
   async fetchAndInsertLogs(): Promise<RawLadData[]> {
     console.log("🧪 fetchAndInsertLogs 実行されました");
 
-    const allLogs: RawLadData[] = [];
-
-  try {
-    for (let page = 1; page <= 100; page++) {
-      const pageLogs = await this.fetchLogsByPage(page);
-      if (pageLogs.length === 0) break;
-
-      allLogs.push(...pageLogs);
-    }
-    // try {
-    //   const rawData = await this.fetchLogs();
+    try {
+      const rawData = await this.fetchLogsByHourlyRange();
     //   const formattedData = await this.transformData(rawData);
     //   return await this.repository.save(formattedData);
-    console.log("🧪 rawData 件数:", allLogs.length);
+    console.log("🧪 rawData 件数:", rawData.length);
+    rawData.sort((a, b) => {
+      const dateA = a.clickDateTime ? new Date(a.clickDateTime).getTime() : 0;
+      const dateB = b.clickDateTime ? new Date(b.clickDateTime).getTime() : 0;
+      return dateB - dateA;
+    });
     // スプレッドシート書き込み処理
     try {
     await writeToSpreadsheet({
-        spreadsheetId: process.env.SPREADSHEET_ID_METRON_ACTION || "",
-        sheetName: "Metron_test",
-        values: convertTo2DArray(allLogs),
+        spreadsheetId: process.env.SPREADSHEET_ID_METRON_CLICK || "",
+        sheetName: "Metron_Click_Referrer_Today_test",
+        values: convertTo2DArray(rawData),
     });
 
     this.logger.log("スプレッドシートへの書き出しに成功しました。");
@@ -73,48 +65,58 @@ export class MetronActionLogService implements LogService {
     this.logger.error(`スプレッドシートへの書き出しに失敗しました: ${e}`);
     }
 
-    return allLogs;   
-
+    return rawData;
 } catch (error) {
-      this.logger.error("ログ取得に失敗しました", error);
-      return  [];
+      this.logger.error("クリックログの取得に失敗しました", error);
+      return [];
     }
   }
 
 //   private async fetchLogs(): Promise<RawMetronData[]> {
-  private async fetchLogsByPage(page: number): Promise<RawLadData[]> {
+  private async fetchLogsByHourlyRange(): Promise<RawLadData[]> {
     // const end = getNowJstForDisplay();
     // const start = new Date(end.getTime() - 3 * 60_000);
-    // const startStr = formatDateTimeJapanese(start);
-    // const endStr = formatDateTimeJapanese(end);
-    // const headers = { apiKey: process.env.AFAD_API_KEY };
-    // const body = new URLSearchParams({
-    //   actionDateTime: `${startStr} - ${endStr}`,
-    const today = getNowJstForDisplay();
-    const todayStr = format(today, "yyyy年MM月dd日");
-    const headers = { apiKey: process.env.AFAD_API_KEY };
+    // const startStr = formatDateTime(start);
+    // const endStr = formatDateTime(end);
+    const allLogs: RawLadData[] = [];
+    const now = getNowJstForDisplay();
+    const start = new Date(now);
+    start.setDate(start.getDate() - 1);
+    start.setHours(0, 0, 0, 0);
 
-    const body = new URLSearchParams({
-      actionDateTime: `${todayStr} - ${todayStr}`,
-      row: "120",
-      page: page.toString(),
-    });
+    const end = new Date(start);
+    end.setHours(23, 59, 59, 999);
+    
+    let currentStart = new Date(start);
+
+    while (isBefore(currentStart, end)) {
+      const oneHourMinus1Sec = new Date(currentStart.getTime() + 59 * 60_000 + 59_000);
+      const currentEnd = new Date(Math.min(oneHourMinus1Sec.getTime(), end.getTime()));      
+      const startStr = formatDateTime(currentStart);
+      const endStr = formatDateTime(currentEnd);
+
+      const headers = { apiKey: process.env.AFAD_API_KEY };
+      const body = new URLSearchParams({
+        clickDateTime: `${startStr} - ${endStr}`,
+      });
 
     try {
       const response = await firstValueFrom(
         this.http.post<MetronApiResponse>(this.apiUrl, body, { headers }),
       );
- 
+
       // APIレスポンスの検証
       if (!response.data) {
         this.logger.warn("APIレスポンスが空です");
-        return [];
+        // return [];
+        continue;
       }
 
       // HTTPステータスコードの確認
       if (response.status !== 200) {
         this.logger.error(`HTTPエラー: ${response.status}`, response.data);
-        throw new Error(`HTTP Error: ${response.status}`);
+        // throw new Error(`HTTP Error: ${response.status}`);
+        continue;
       }
 
       // エラーレスポンスの確認
@@ -123,27 +125,34 @@ export class MetronActionLogService implements LogService {
           typeof error === "string" ? error : JSON.stringify(error),
         );
         this.logger.error("APIエラーが発生しました:", errorMessages);
-        throw new Error(`Metron API Error: ${errorMessages.join(", ")}`);
+        // throw new Error(`Metron API Error: ${errorMessages.join(", ")}`);
+        continue;
       }
 
       // MetronのAPIレスポンス構造: { params: { logs: [...] } }
       if (response.data.params && Array.isArray(response.data.params.logs)) {
-        return response.data.params.logs;
+        // return response.data.params.logs;
+        allLogs.push(...response.data.params.logs);
+        this.logger.log(`[${startStr} - ${endStr}] 取得件数: ${response.data.params.logs.length}`);
+      } else {
+        this.logger.warn(`APIレスポンスの構造が期待と異なります:`, response.data);
+      // return [];
       }
-
-      this.logger.warn(`APIレスポンスの構造が期待と異なります:`, response.data);
-      return [];
     } catch (error) {
       this.logger.error("API呼び出しに失敗しました:", error);
-      throw error;
+      // throw error;
+      continue;
     }
+    currentStart = addHours(currentStart, 1);
   }
-
+  return allLogs;
+  }
+    
 //   private async transformData(rawData: RawMetronData[]) {
 //     const formatted = await Promise.all(
 //       rawData
 //         .filter((item) => {
-//           if (!item.actionDateTime || !item.siteName) {
+//           if (!item.clickDateTime || !item.siteName) {
 //             this.logger.warn(
 //               `Skipping invalid record: ${JSON.stringify(item)}`,
 //             );
@@ -153,12 +162,12 @@ export class MetronActionLogService implements LogService {
 //         })
 //         .map(async (item) => {
 //           try {
-//             const actionDateTime = parseToJst(item.actionDateTime);
+//             const clickDateTime = parseToJst(item.clickDateTime);
 //             const affiliateLinkName = item.siteName?.trim();
-//             const sessionId = item.sessionId?.trim() || null;
+//             const referrer_url = item.referrer?.trim() || null;
 
-//             if (!actionDateTime) {
-//               this.logger.warn(`Invalid date format: ${item.actionDateTime}`);
+//             if (!clickDateTime) {
+//               this.logger.warn(`Invalid date format: ${item.clickDateTime}`);
 //               return null;
 //             }
 
@@ -170,15 +179,14 @@ export class MetronActionLogService implements LogService {
 //             const affiliateLink =
 //               await this.repository.getOrCreateAffiliateLink(affiliateLinkName);
 
-//             const { referrerLinkId, referrer_url } =
-//               await this.repository.getReferrerFromClickLog(sessionId);
+//             const { referrerLinkId, referrer_url: processedReferrerUrl } =
+//               await this.repository.processReferrerLink(referrer_url);
 
 //             return {
-//               actionDateTime,
+//               clickDateTime,
 //               affiliate_link_id: affiliateLink.id,
 //               referrer_link_id: referrerLinkId,
-//               referrer_url,
-//               uid: null,
+//               referrer_url: processedReferrerUrl,
 //             };
 //           } catch (error) {
 //             this.logger.error(
