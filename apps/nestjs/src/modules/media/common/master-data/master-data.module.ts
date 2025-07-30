@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { PrismaModule } from "src/prisma/prisma.module";
+// import { PrismaModule } from "src/prisma/prisma.module";
 
 // Services
 import { CampaignService } from "./services/campaign.service";
@@ -16,7 +16,7 @@ import { AdRepository } from "./repositories/ad.repository";
  * Campaign、Adgroup、Adの共通同期処理を提供
  */
 @Module({
-  imports: [PrismaModule],
+  // imports: [PrismaModule],
   providers: [
     // Services
     CampaignService,

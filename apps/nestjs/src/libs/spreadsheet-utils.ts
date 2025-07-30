@@ -43,6 +43,14 @@ export async function writeToSpreadsheet(options: WriteToSpreadsheetOptions) {
   console.log("貼り付け列数:", options.values[0]?.length || 0);
 
   try {
+    // ✅ まずシートの内容をクリア
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: options.spreadsheetId,
+      range: options.sheetName,
+    });
+
+    console.log("🧹 シートの内容をクリアしました");
+
     await sheets.spreadsheets.values.update({
       spreadsheetId: options.spreadsheetId,
       range: `${options.sheetName}!A1`,

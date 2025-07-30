@@ -127,8 +127,8 @@ export class AspCronService implements OnModuleInit {
     this.logger.log("AspCronService が初期化されました。");
   }
 
-  // 前日分のASPのログ取得（毎日0:00-3:00まで1時間おきに実施）
-  @Cron('0 0-3 * * *')
+  // 前日分のASPのログ取得（毎日0:00-6:00まで1時間おきに実施）
+  @Cron('0 0-6 * * *')
   async handleAspYesterdayDataCollection() {
     if (this.isRunning) {
       this.logger.warn("前回のASP昨日分処理がまだ完了していません。スキップします。");

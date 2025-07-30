@@ -56,7 +56,7 @@ export class MetronClickLogYesterdayService implements LogService {
     try {
     await writeToSpreadsheet({
         spreadsheetId: process.env.SPREADSHEET_ID_METRON_CLICK || "",
-        sheetName: "Metron_Click_Referrer_Today_test",
+        sheetName: "Metron_Click_Referrer_Yesterday_test",
         values: convertTo2DArray(rawData),
     });
 

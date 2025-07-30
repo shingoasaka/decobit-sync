@@ -1,6 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
-import { PrismaModule } from "src/prisma/prisma.module";
+// import { PrismaModule } from "src/prisma/prisma.module";
 import { MediaModule } from "../media.module";
 import { TikTokAccountService } from "./services/account.service";
 import { TikTokCampaignReportService } from "./services/report/report-campaign.service";
@@ -18,7 +18,7 @@ import { MasterDataModule } from "../common/master-data/master-data.module";
 
 @Module({
   imports: [
-    PrismaModule,
+    // PrismaModule,
     HttpModule,
     forwardRef(() => MediaModule),
     MasterDataModule,
