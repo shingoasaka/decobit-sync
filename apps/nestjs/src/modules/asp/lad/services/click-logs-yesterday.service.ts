@@ -54,12 +54,15 @@ export class LadClickLogYesterdayService extends BaseAspService implements LogSe
     await page.getByRole("button", { name: "ログイン" }).click();
 
     await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(1000);
 
     await page.getByRole("link", { name: "ログ集計" }).click();
     await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(1000);
 
     await page.getByRole("link", { name: "クリックログ", exact: true }).click();
     await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(1000);
 
     await page.getByRole('button', { name: '昨日', exact: true }).click();
 

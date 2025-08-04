@@ -33,6 +33,9 @@ import { WebanntenaActionLogYesterdayService } from "@asp/webanntena/services/ac
 // import { SampleAffiliateActionLogService } from "@asp/sampleAffiliate/services/action-logs.service";
 // import { SampleAffiliateClickLogService } from "@asp/sampleAffiliate/services/click-logs.service";
 import { CommonLogService } from "@logs/common-log.service";
+import * as fs from 'fs';
+import * as path from 'path';
+
 
 // 実行結果の型定義
 interface ServiceResult {
@@ -77,9 +80,9 @@ class Semaphore {
 @Injectable()
 export class AspCronService implements OnModuleInit {
   private readonly logger = new Logger(AspCronService.name);
-  private isRunning = false;
+  private isRunningYesterday = false;
+  private isRunningToday = false;
   private readonly semaphore: Semaphore;
-  private readonly TIMEOUT_MS = 120000; // 120秒
   private readonly MAX_RETRIES = 1; // リトライ回数
 
   constructor(
@@ -127,15 +130,18 @@ export class AspCronService implements OnModuleInit {
     this.logger.log("AspCronService が初期化されました。");
   }
 
-  // 前日分のASPのログ取得（毎日0:00-6:00まで1時間おきに実施）
-  @Cron('0 0-6 * * *')
+  // 前日分のASPのログ取得（1:00〜6:30まで、毎時30分ごと（1:00, 1:30, ..., 6:30））
+  @Cron('0,30 1-6 * * *')
   async handleAspYesterdayDataCollection() {
-    if (this.isRunning) {
+
+    const timeoutMs = 7 * 60 * 1000; // 7分
+
+    if (this.isRunningYesterday) {
       this.logger.warn("前回のASP昨日分処理がまだ完了していません。スキップします。");
       return;
     }
 
-    this.isRunning = true;
+    this.isRunningYesterday = true;
     this.logger.log("🌙 ASP 昨日分データ取得処理を開始");
     await this.commonLog.log(
       "info",
@@ -173,8 +179,8 @@ export class AspCronService implements OnModuleInit {
             async () =>
               await this.executeWithTimeout(
                 async () => await service.fetchAndInsertLogs(),
-                this.TIMEOUT_MS,
-                `${name} がタイムアウトしました（${this.TIMEOUT_MS}ms）`,
+                timeoutMs,
+                `${name} がタイムアウトしました（${timeoutMs}ms）`,
               ),
             name,
             this.MAX_RETRIES,
@@ -217,18 +223,44 @@ export class AspCronService implements OnModuleInit {
     this.logger.log(summary);
     await this.commonLog.log("info", summary, "AspCronService");
 
-    this.isRunning = false;
+    this.isRunningYesterday = false;
+
+    // // ログ出力処理（昨日分のみ）
+    // try {
+    //   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    //   const logDir = path.resolve(__dirname, '../../../../logs/yesterday'); // 保存先ディレクトリ（任意に変更可）
+    //   const logFile = path.join(logDir, `asp-yesterday-${timestamp}.log`);
+
+    //   if (!fs.existsSync(logDir)) {
+    //     fs.mkdirSync(logDir, { recursive: true });
+    //   }
+
+    //   const logText =
+    //     `=== ASP 昨日分 実行ログ ===\n` +
+    //     results.map(r =>
+    //       `[${r.name}] ${r.success ? `✅ 成功（${r.count ?? 0}件）` : `❌ 失敗 - ${r.error}`}`
+    //     ).join('\n') +
+    //     `\n---\n合計: ${results.length}件, 成功: ${succeeded}, 失敗: ${failed}, レコード数: ${totalRecords}, 処理時間: ${Math.round(duration / 1000)}秒`;
+
+    //   fs.writeFileSync(logFile, logText, { encoding: 'utf-8' });
+    //   this.logger.log(`📝 ログファイル出力完了: ${logFile}`);
+    // } catch (e) {
+    //   this.logger.error('❌ ログファイルの出力に失敗しました:', e);
+    // }
   }
 
   // 3分おきに実行される定期処理（ASPのログ取得）
   @Cron("*/3 * * * *")
   async handleAspDataCollection() {
-    if (this.isRunning) {
+
+    const timeoutMs = 2 * 60 * 1000; // 2分（120秒）
+
+    if (this.isRunningToday) {
       this.logger.warn("前回のASP処理がまだ完了していません。スキップします。");
       return;
     }
 
-    this.isRunning = true;
+    this.isRunningToday = true;
     this.logger.log("🚀 ASP データ取得処理を開始");
     await this.commonLog.log(
       "info",
@@ -288,8 +320,8 @@ export class AspCronService implements OnModuleInit {
               async () =>
                 await this.executeWithTimeout(
                   async () => await service.fetchAndInsertLogs(),
-                  this.TIMEOUT_MS,
-                  `${name} がタイムアウトしました（${this.TIMEOUT_MS}ms）`,
+                  timeoutMs,
+                  `${name} がタイムアウトしました（${timeoutMs}ms）`,
                 ),
               name,
               this.MAX_RETRIES,
@@ -343,7 +375,7 @@ export class AspCronService implements OnModuleInit {
       this.logger.error(`ASP処理でエラーが発生: ${errorMsg}`);
       await this.commonLog.logError("AspCronService", errorMsg, stack);
     } finally {
-      this.isRunning = false;
+      this.isRunningToday = false;
     }
   }
 

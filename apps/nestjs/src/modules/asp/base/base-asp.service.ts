@@ -21,7 +21,6 @@ export abstract class BaseAspService {
     const browser = await BrowserConfig.launchBrowser();
     const context = await BrowserConfig.createContext(browser);
     const page = await BrowserConfig.createPage(context);
-
     return { browser, page };
   }
 
