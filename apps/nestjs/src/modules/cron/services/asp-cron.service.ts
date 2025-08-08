@@ -130,8 +130,8 @@ export class AspCronService implements OnModuleInit {
     this.logger.log("AspCronService が初期化されました。");
   }
 
-  // 前日分のASPのログ取得（1:00〜6:30まで、毎時30分ごと（1:00, 1:30, ..., 6:30））
-  @Cron('0,30 1-6 * * *')
+  // 前日分のASPのログ取得（0:00〜6:30まで、毎時30分ごと（0:00, 1:30, ..., 6:30））
+  @Cron('0,30 0-6 * * *')
   async handleAspYesterdayDataCollection() {
 
     const timeoutMs = 7 * 60 * 1000; // 7分

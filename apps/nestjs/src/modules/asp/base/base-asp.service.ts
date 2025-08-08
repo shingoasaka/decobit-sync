@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { Browser, Page } from "playwright";
+import { Browser, Page, Download } from "playwright";
 import { BrowserConfig } from "src/libs/browser-config";
 
 /**
@@ -84,4 +84,22 @@ export abstract class BaseAspService {
   ): Promise<any> {
     return await page.waitForEvent("download", { timeout });
   }
+
+  protected async waitForDownload_lad(
+  page: Page,
+  expectedFileName: string,
+  timeout: number = 45000,
+): Promise<Download | null> {
+  const download = await page.waitForEvent("download", { timeout });
+
+  const suggestedFilename = download.suggestedFilename();
+  if (!suggestedFilename.includes(expectedFileName)) {
+    this.logger.warn(
+      `⚠️ ダウンロードされたファイル名が一致しません: ${suggestedFilename} ≠ ${expectedFileName}`,
+    );
+    return null;
+  }
+
+  return download;
+}
 }

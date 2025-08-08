@@ -86,13 +86,100 @@ export class LadClickLogService extends BaseAspService implements LogService {
       "https://admin038.l-ad.net/admin/clicklog/list",
     );
 
-    const [download] = await Promise.all([
-      this.waitForDownload(page),
-      page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
-    ]).catch((error: unknown) => {
-      this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
-      return [null];
+  await page.waitForSelector('div[class^="csvInfoExport"]', { timeout: 15000 }).catch(() => {
+    this.logger.warn("csvInfoExport ブロックが見つかりませんでした");
+  });
+
+    // 📅 対象日（本日）の文字列（例: 2025年08月06日(JST)）
+    const nowJst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const target = new Date(nowJst.getFullYear(), nowJst.getMonth(), nowJst.getDate());
+    const y = target.getFullYear();
+    const m = String(target.getMonth() + 1).padStart(2, '0');
+    const d = String(target.getDate()).padStart(2, '0');
+    const expectedDateStr = `${y}年${m}月${d}日`;
+
+  // 一覧から必要情報をまとめて取得（ブラウザ→Node に返す）
+  const blocks = await page.$$eval('div[class^="csvInfoExport"]', (nodes) => {
+    return Array.from(nodes).slice(0, 5).map((el, idx) => {
+      const text = (el.textContent || "").replace(/\s+/g, "");
+
+      // [対象期間:YYYY年MM月DD日-YYYY年MM月DD日] / [対象期間:YYYY年MM月DD日] を抽出
+      const m =
+        text.match(/\[対象期間:(\d{4}年\d{2}月\d{2}日)\s*[-〜]\s*(\d{4}年\d{2}月\d{2}日)\]/) ||
+        text.match(/\[対象期間:(\d{4}年\d{2}月\d{2}日)\]/);
+      const start = m?.[1] || null;
+      const end = (m && m.length >= 3 && m[2]) ? m[2] : start; // 右端が無ければ start を使う
+
+      // a要素からファイル名候補を吸い出す（onclick / data-file / href）
+      const a = el.querySelector("a") as HTMLAnchorElement | null;
+      const onclick = a?.getAttribute("onclick") || "";
+      let fileName =
+        onclick.match(/"(.*?\.csv)"/)?.[1] ||
+        a?.getAttribute("data-file") ||
+        a?.getAttribute("href")?.match(/[^/\\]+\.csv/)?.[0] ||
+        null;
+
+      // ダメならテキスト中の *.csv を最後の手段で拾う
+      if (!fileName) {
+        fileName = text.match(/[A-Za-z0-9_-]+\.csv/)?.[0] || null;
+      }
+
+      return {
+        index: idx + 1,        // csvInfoExport{index} に対応
+        rawText: text,
+        periodStart: start,
+        periodEnd: end,
+        fileName,
+        outerHTMLWhenNoFile: (!fileName && el instanceof HTMLElement) ? (el as HTMLElement).outerHTML : null,
+      };
     });
+  });
+
+  // 取得したブロックをログ（右端で突合するのを明示）
+  for (const b of blocks) {
+    console.log(`🧪 csvブロック確認: csvInfoExport${b.index}: ${b.rawText}`);
+    console.log(`🧪 periodStart: ${b.periodStart}, periodEnd(右端): ${b.periodEnd}, fileName: ${b.fileName}`);
+    if (!b.fileName && b.outerHTMLWhenNoFile) {
+      console.log(`🧪 fileNameが取れない要素のouterHTML: ${b.outerHTMLWhenNoFile}`);
+    }
+  }
+
+  // 突合に使う実値（右端）を事前にログ出しして目視確認
+  for (const b of blocks) {
+    const compareTarget = b.periodEnd ?? b.periodStart;
+    console.log(`🧪 突合直前ログ: compareTarget(右端)=${compareTarget} / expected=${expectedDateStr} / equal=${compareTarget === expectedDateStr}`);
+  }
+
+  // 右端（periodEnd）優先でヒット
+  const hit = blocks.find(b => (b.periodEnd ?? b.periodStart) === expectedDateStr && b.fileName);
+
+  if (!hit) {
+    this.logger.warn(`対象期間「${expectedDateStr}」（右端）に一致するCSVリンクが見つからず`);
+    return [];
+  }
+
+  console.log(`✅ ヒット: csvInfoExport${hit.index}, file=${hit.fileName}`);
+
+  // クリック対象（中の <a> ならOK。onclick/href どっちでも反応する想定）
+  const matchedFileName = hit.fileName!;
+  const targetSelector = `div.csvInfoExport${hit.index} a`;
+
+  // ダウンロード（ファイル名でガード）
+  const [download] = await Promise.all([
+    this.waitForDownload_lad(page, matchedFileName),
+    page.click(targetSelector),
+  ]).catch((err: unknown) => {
+    this.logger.error("ダウンロード待機中にエラー:", err);
+    return [null];
+  });
+
+    // const [download] = await Promise.all([
+    //   this.waitForDownload(page),
+    //   page.click('div.csvInfoExport1 a[href^="javascript:void(0)"]'),
+    // ]).catch((error: unknown) => {
+    //   this.logger.error("ダウンロード待機中にエラーが発生しました:", error);
+    //   return [null];
+    // });
 
     if (!download) {
       this.logger.warn(
